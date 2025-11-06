@@ -1,0 +1,62 @@
+{% extends "reception_panel/reception_base.html" %}
+
+{% block title %}رزرو نوبت - انتخاب بیمار{% endblock %}
+
+{% block page_title %}رزرو نوبت دستی (مرحله ۱: انتخاب بیمار){% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">انتخاب بیمار</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="mb-4">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تلفن یا نام کاربری..." value="{{ query }}">
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="bi bi-search"></i> جستجو
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">نام کامل</th>
+                        <th scope="col">شماره تلفن</th>
+                        <th scope="col">نام کاربری</th>
+                        <th scope="col">جنسیت</th>
+                        <th scope="col">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in patients %}
+                    <tr>
+                        <td>{{ p.get_full_name|default:"---" }}</td>
+                        <td>{{ p.phone_number }}</td>
+                        <td>{{ p.username }}</td>
+                        <td>{{ p.get_gender_display|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'reception_panel:booking_act_as' p.pk %}" class="btn btn-sm btn-success">
+                                <i class="bi bi-check-circle-fill"></i> انتخاب
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            {% if query %}
+                                هیچ بیماری با مشخصات «{{ query }}» یافت نشد.
+                            {% else %}
+                                هنوز هیچ بیماری ثبت نشده است.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

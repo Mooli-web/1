@@ -1,0 +1,66 @@
+{% extends "reception_panel/reception_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>روز هفته</th>
+                                    <th>ساعت شروع</th>
+                                    <th>ساعت پایان</th>
+                                    <th>مخصوص جنسیت</th>
+                                    <th>حذف؟</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for form in formset %}
+                                <tr class="formset-row">
+                                    {{ form.id }}
+                                    <td>{{ form.day_of_week|as_crispy_field }}</td>
+                                    <td>{{ form.start_time|as_crispy_field }}</td>
+                                    <td>{{ form.end_time|as_crispy_field }}</td>
+                                    <td>{{ form.gender_specific|as_crispy_field }}</td>
+                                    <td>
+                                        {% if form.instance.pk and formset.can_delete %}
+                                        {{ form.DELETE|as_crispy_field }}
+                                        {% endif %}
+                                        </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-grid mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1">ذخیره تغییرات</button>
+                        <a href="{% url 'reception_panel:service_list' %}" class="btn btn-outline-secondary btn-lg">بازگشت</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Hide labels for form fields inside the table rows
+    document.querySelectorAll('.formset-row .form-label').forEach(function(label) {
+        label.style.display = 'none';
+    });
+});
+</script>
+{% endblock %}

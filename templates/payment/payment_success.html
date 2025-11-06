@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}پرداخت موفق{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="alert alert-success" role="alert">
+            <h4 class="alert-heading">پرداخت موفق!</h4>
+            <p>پرداخت شما با موفقیت انجام شد و نوبت شما در سیستم ثبت گردید.</p>
+            <hr>
+            <p class="mb-0">کد رهگیری شما: <strong>{{ ref_id }}</strong></p>
+        </div>
+        <a href="{% url 'users:dashboard' %}" class="btn btn-primary mt-3">بازگشت به داشبورد</a>
+    </div>
+</div>
+{% endblock %}

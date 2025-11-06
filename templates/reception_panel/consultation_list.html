@@ -1,0 +1,34 @@
+{% extends "reception_panel/reception_base.html" %}
+
+{% block title %}مدیریت مشاوره‌ها{% endblock %}
+
+{% block page_title %}مدیریت مشاوره‌ها{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">لیست درخواست‌های مشاوره</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for req in requests %}
+            <a href="{% url 'reception_panel:consultation_detail' req.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ req.subject }}</h5>
+                    <small>{{ req.created_at|date:"Y/m/d" }}</small>
+                </div>
+                <p class="mb-1 text-muted">بیمار: {{ req.patient.get_full_name|default:req.patient.username }} ({{ req.patient.phone_number }})</p>
+                <small>وضعیت: <span class="badge 
+                    {% if req.status == 'PENDING' %}bg-warning text-dark
+                    {% elif req.status == 'ANSWERED' %}bg-success
+                    {% else %}bg-secondary
+                    {% endif %}
+                ">{{ req.get_status_display }}</span></small>
+            </a>
+            {% empty %}
+            <p>در حال حاضر هیچ درخواست مشاوره‌ای ثبت نشده است.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

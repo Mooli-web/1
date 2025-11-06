@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}وبلاگ{% endblock %}
+{% block content %}
+<div class="text-center mb-5">
+    <h1 class="display-4">آخرین مقالات و اخبار</h1>
+    <p class="lead text-muted">دانش خود را در زمینه زیبایی و سلامت پوست و مو افزایش دهید.</p>
+</div>
+<div class="row g-4">
+    {% for post in posts %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 blog-card">
+            <a href="{{ post.get_absolute_url }}">
+                {% if post.image %}
+                    <img src="{{ post.image.url }}" class="card-img-top" alt="{{ post.title }}">
+                {% endif %}
+            </a>
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title"><a href="{{ post.get_absolute_url }}" class="text-dark text-decoration-none">{{ post.title }}</a></h5>
+                
+                <p class="card-text text-muted small">
+                    <i class="bi bi-eye-fill"></i> {{ post.view_count }} | 
+                    <i class="bi bi-heart-fill"></i> {{ post.total_likes }}
+                </p>
+
+                <p class="card-text text-muted flex-grow-1">{{ post.content|truncatewords:25 }}</p>
+                <a href="{{ post.get_absolute_url }}" class="btn btn-outline-primary mt-auto">ادامه مطلب</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

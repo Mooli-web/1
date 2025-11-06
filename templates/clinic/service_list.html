@@ -1,0 +1,33 @@
+{# a_copy/templates/clinic/service_list.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}خدمات ما | کلینیک زیبایی{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <h1 class="display-4">تخصصی در هنر زیبایی</h1>
+    <p class="lead mt-3">
+        باور ما این است که زیبایی حقیقی در جزئیات نهفته است. ما با تلفیق دانش پزشکی و هنر، به شما کمک می‌کنیم تا بهترین نسخه از خود را کشف کنید.
+    </p>
+</section>
+
+<div class="row g-4">
+    {% for service in services %}
+    <div class="col-lg-4 col-md-6 service-card-wrapper" style="--delay: {% widthratio forloop.counter0 1 100 %}ms;">
+        <div class="service-card">
+            <h3 class="card-title">{{ service.name }}</h3>
+            <p class="card-text">{{ service.description }}</p>
+            <div class="service-card-footer">
+                <span class="service-price">{{ service.price|floatformat:"0" }} تومان</span>
+                <a href="{% url 'booking:create_booking' %}" class="btn btn-primary">رزرو</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <p class="text-center">در حال حاضر خدمتی برای نمایش وجود ندارد.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

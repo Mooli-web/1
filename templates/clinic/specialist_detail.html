@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ specialist }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4 text-center">
+        {% if specialist.profile_image %}
+            <img src="{{ specialist.profile_image.url }}" class="img-fluid rounded-circle shadow-sm" alt="{{ specialist }}">
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <h1>{{ specialist }}</h1>
+        <h4 class="text-muted">{{ specialist.specialty }}</h4>
+        <hr class="my-4">
+        <p class="lead">{{ specialist.bio }}</p>
+        <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg mt-3">رزرو نوبت با {{ specialist.user.first_name }}</a>
+    </div>
+</div>
+{% endblock %}

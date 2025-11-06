@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}لیست مشاوره‌ها{% endblock %}
+{% block content %}
+<h1 class="mb-4">مشاوره‌های من</h1>
+<a href="{% url 'consultation:create_request' %}" class="btn btn-primary mb-4">ایجاد درخواست مشاوره جدید</a>
+<div class="list-group">
+    {% for req in requests %}
+    <a href="{% url 'consultation:request_detail' req.pk %}" class="list-group-item list-group-item-action">
+        <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ req.subject }}</h5>
+            <small>{{ req.created_at|date:"Y/m/d" }}</small>
+        </div>
+        <p class="mb-1 text-muted">{{ req.description|truncatewords:15 }}</p>
+        <small>وضعیت: {{ req.get_status_display }}</small>
+    </a>
+    {% empty %}
+    <p>شما هنوز هیچ درخواست مشاوره‌ای ثبت نکرده‌اید.</p>
+    {% endfor %}
+</div>
+{% endblock %}

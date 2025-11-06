@@ -1,0 +1,12 @@
+clinic_env/
+__pycache__/
+*.pyc
+db.sqlite3
+.vscode/
+.env
+media/
+images/
+__init__.py
+migrations/
+asgi.py
+wsgi.py

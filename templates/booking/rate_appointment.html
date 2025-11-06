@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}ثبت نظر برای نوبت{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">ثبت نظر</h2>
+                <p>شما در حال ثبت نظر برای نوبت <strong>{{ appointment.get_services_display }}</strong> در تاریخ <strong>{{ appointment.start_time|date:"Y/m/d" }}</strong> هستید.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg mt-3">ثبت نظر</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

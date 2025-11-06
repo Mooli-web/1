@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}صفحه اصلی{% endblock %}
+
+{# --- Override base template classes for full-screen immersive design --- #}
+{% block navbar_extra_class %}navbar-transparent-on-top{% endblock %}
+{% block main_container_class %}container-fluid p-0{% endblock %} {# Remove padding and use full-width #}
+
+{% block content %}
+{# --- 1. New Immersive Hero Section --- #}
+<section class="hero-section">
+    <div class="hero-overlay"></div> {# This is for the dark tint #}
+    <div class="hero-text-content">
+        <h1 class="display-4">هنر زیبایی، تخصص ماست</h1>
+        <p class="lead">ما به شما کمک می‌کنیم تا بهترین نسخه از خود را کشف کنید.</p>
+        <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg mt-3">رزرو نوبت آنلاین</a>
+    </div>
+</section>
+
+{# --- شروع بازطراحی Visio (بلوک‌های تمام‌عرض) --- #}
+
+{% for group in service_groups %}
+<section class="feature-block {% if not group.home_page_image %}{% if forloop.counter|divisibleby:2 %}bg-light-gray{% else %}bg-white{% endif %}{% endif %}">
+    
+    {# --- MODIFIED: This wrapper now contains the image, overlay, and content --- #}
+    <div class="home-image-wrapper-overlay">
+        
+        {% if group.home_page_image %}
+            <img src="{{ group.home_page_image.url }}" alt="{{ group.name }}" class="feature-block-bg-img">
+            <div class="feature-block-overlay"></div>
+        {% endif %}
+
+        <div class="container-fluid px-md-5 feature-block-content text-center">
+            
+            <h2 class="display-4 mb-3">{{ group.name }}</h2>
+            <p class="lead mb-4">{{ group.description|truncatewords:30 }}</p>
+
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'clinic:service_list' %}" class="btn btn-primary btn-lg px-4 gap-3">اطلاعات بیشتر</a>
+                {# --- MODIFIED: Changed to outline-light to be visible on dark overlay --- #}
+                <a href="{% url 'booking:create_booking' %}" class="btn btn-outline-light btn-lg px-4">رزرو نوبت</a>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endfor %}
+
+<section class="feature-block bg-light-gray">
+   <div class="container-fluid py-5 my-4 px-md-5">
+
+       <h2 class="display-4 text-center mb-5">نظرات مراجعین ما</h2>
+
+       <div class="row g-5 justify-content-center">
+            {% for testimonial in testimonials %}
+            <div class="col-lg-4 col-md-6">
+                <figure class="text-center">
+                    <blockquote class="blockquote">
+                        <p class="fs-5 fst-italic">"{{ testimonial.comment }}"</p>
+                    </blockquote>
+                    <figcaption class="blockquote-footer">
+                        {{ testimonial.patient_name }} برای <cite title="Source Title">{{ testimonial.service.name }}</cite>
+                    </figcaption>
+                </figure>
+            </div>
+            {% empty %}
+             <p class="text-center text-muted">هنوز نظری ثبت نشده است.</p>
+            {% endfor %}
+       </div>
+
+   </div></section>
+
+{# --- پایان بازطراحی Visio --- #}
+{% endblock %}

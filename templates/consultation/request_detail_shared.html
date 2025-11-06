@@ -1,0 +1,40 @@
+{% extends base_template %} {% load crispy_forms_tags %}
+{% block title %}جزئیات مشاوره{% endblock %}
+{% block content %}
+<h2>{{ consultation_request.subject }}</h2>
+<p>
+    درخواست از: <strong>{{ consultation_request.patient.get_full_name|default:consultation_request.patient.username }}</strong>
+    <br>
+    <br>
+    وضعیت: <strong>{{ consultation_request.get_status_display }}</strong>
+</p>
+<hr>
+<div class="chat-box mb-3 bg-white">
+    
+    <div class="message patient">
+        <p class="mb-0">{{ consultation_request.description }}</p>
+        <small>
+            <strong>(شرح اولیه درخواست)</strong> - 
+            {{ consultation_request.patient.get_full_name|default:consultation_request.patient.username }} - 
+            {{ consultation_request.created_at|date:"H:i - Y/m/d" }}
+        </small>
+    </div>
+    {% for msg in messages %}
+        <div class="message {% if msg.user.role == 'PATIENT' %}patient{% else %}staff{% endif %}">
+            <p class="mb-0">{{ msg.message }}</p>
+            <small>{{ msg.user.get_full_name|default:msg.user.username }} - {{ msg.timestamp|date:"H:i - Y/m/d" }}</small>
+        </div>
+    {% endfor %}
+</div>
+
+{% if consultation_request.status != 'CLOSED' %}
+<form method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button type="submit" class="btn btn-primary mt-2">ارسال پیام</button>
+</form>
+{% else %}
+<div class="alert alert-warning">این مشاوره بسته شده است و امکان ارسال پیام جدید وجود ندارد.</div>
+{% endif %}
+
+{% endblock %}

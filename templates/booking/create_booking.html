@@ -1,0 +1,177 @@
+{# mooli-web/1/1-108afa36b6d3b8572ca403177904f4e3aab9489b/templates/booking/create_booking.html #}
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load static %} {# <-- افزودن لود استاتیک #}
+
+{% block title %}رزرو نوبت جدید{% endblock %}
+
+{# --- CSS ها با نسخه flatpickr-jalali-support جایگزین شدند --- #}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/themes/dark.css">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4 shadow-lg border-0 rounded-4">
+            <div class="card-body">
+                <h1 class="mb-4 text-center text-primary">رزرو نوبت</h1>
+                
+                {% if request.user.is_staff and patient_user_for_template %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        شما در حال رزرو نوبت برای بیمار: <strong>{{ patient_user_for_template.get_full_name|default:patient_user_for_template.username }}</strong> هستید.
+                    </div>
+                {% endif %}
+                
+                <form method="POST" id="bookingForm"
+                      data-get-slots-url="{% url 'booking:get_available_slots' %}"
+                      data-get-month-availability-url="{% url 'booking:get_month_availability' %}"
+                      data-get-services-url="{% url 'booking:get_services_for_group' %}"
+                      data-apply-discount-url="{% url 'booking:apply_discount' %}"
+                      data-csrf-token="{{ csrf_token }}"
+                      data-max-discount="{{ max_discount|default:0 }}">
+                    
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="serviceGroup" class="form-label fs-5">۱. انتخاب گروه خدمت:</label>
+                        <select name="service_group" id="serviceGroup" class="form-select form-select-lg" required>
+                            <option value="">--- انتخاب کنید ---</option>
+                            {% for group in groups %}
+                                <option value="{{ group.id }}">{{ group.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="servicesContainer" class="mb-3">
+                        </div>
+                    
+                    <div id="devicesContainer" class="mb-3">
+                        </div>
+
+                    <div class="mb-3">
+                        <label for="datePickerInput" class="form-label fs-5">۳. انتخاب تاریخ:</label>
+                        
+                        <input type="text" id="datePickerInput" class="form-control form-control-lg" required autocomplete="off" placeholder="لطفاً ابتدا خدمت را انتخاب کنید..." readonly>
+                        
+                        <div id="calendarContainer" class="mt-3"></div>
+                        
+                        <input type="hidden" name="gregorian_date" id="gregorianDateInput">
+                    </div>
+
+
+                    <div id="slotsContainer" class="mb-4">
+                        </div>
+                    
+                    <div class="mb-3">
+                        <label for="discountCode" class="form-label">کد تخفیف دارید؟</label>
+                        <div class="input-group">
+                            <input type="text" name="discount_code" class="form-control" id="discountCode" placeholder="کد تخفیف را وارد کنید">
+                            <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">اعمال کد</button>
+                        </div>
+                        <div id="discountMessage" class="form-text mt-2"></div>
+                    </div>
+
+                    {% if user_points > 0 %}
+                    <div class="alert alert-info mt-3">
+                        <div class="form-check fs-5">
+                            <input class="form-check-input" type="checkbox" name="apply_points" id="apply_points">
+                            <label class="form-check-label" for="apply_points">
+                                می‌خواهم از <strong>{{ user_points }}</strong> امتیاز خود برای دریافت <strong class="text-danger">۰ تومان</strong> تخفیف استفاده کنم.
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <hr class="my-4">
+                    <div class="text-center">
+                        <h4 class="mb-3">مبلغ نهایی قابل پرداخت:</h4>
+                        <h2 id="finalPrice" class="text-success fw-bold">۰ تومان</h2>
+                    </div>
+
+                    <input type="hidden" name="slot" id="selectedSlot">
+                    <input type="hidden" id="basePrice" value="0">
+                    <input type="hidden" id="totalDuration" value="0">
+                    <input type="hidden" name="device_id" id="selectedDevice">
+                    
+                    {% if request.user.is_staff and patient_user_for_template %}
+                    <div class="form-check fs-5 my-3 alert alert-warning">
+                        <input class="form-check-input" type="checkbox" name="manual_confirm" id="manual_confirm">
+                        <label class="form-check-label fw-bold" for="manual_confirm">
+                            تایید دستی نوبت (بدون نیاز به پرداخت آنلاین)
+                        </label>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid mt-4">
+                        <button type="button" id="confirmBtn" class="btn btn-primary btn-lg" disabled>ادامه و پرداخت</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmationModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">تایید نهایی اطلاعات</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>لطفاً توجه داشته باشید که تمام اطلاع‌رسانی‌ها از طریق **شماره تلفن و ایمیل ثبت‌شده** در پروفایل شما انجام خواهد شد.</p>
+        <p class="fw-bold text-danger">مسئولیت صحت اطلاعات وارد شده بر عهده شماست.</p>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="infoConfirmationCheck">
+          <label class="form-check-label" for="infoConfirmationCheck">
+            اطلاعات تماس خود را بررسی کرده‌ام و صحت آن را تایید می‌کنم.
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بازگشت</button>
+        <button type="button" id="submitBtn" class="btn btn-primary" disabled>تایید و رفتن به صفحه پرداخت</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{# --- اسکریپت‌ها با نسخه flatpickr-jalali-support جایگزین شدند --- #}
+{% block extra_js %}
+{{ block.super }} 
+
+<script>
+// --- Navbar Scroll Behavior (کد مربوط به هدر صفحه اصلی، بدون تغییر) ---
+document.addEventListener('DOMContentLoaded', function() {
+    const navbar = document.querySelector('.navbar.sticky-top');
+    if (navbar && navbar.classList.contains('navbar-transparent-on-top')) {
+        const scrollTrigger = 50; 
+        const handleScroll = () => {
+            if (window.scrollY > scrollTrigger) {
+                navbar.classList.add('navbar-scrolled');
+                navbar.classList.remove('navbar-transparent-on-top');
+            } else {
+                navbar.classList.remove('navbar-scrolled');
+                navbar.classList.add('navbar-transparent-on-top');
+            }
+        };
+        handleScroll(); 
+        window.addEventListener('scroll', handleScroll);
+    }
+});
+// --- End Navbar Scroll Behavior ---
+</script>
+
+{# --- persian-date.js برای منطق داخلی booking.js حفظ شده است --- #}
+<script src="https://cdn.jsdelivr.net/npm/persian-date/dist/persian-date.min.js"></script>
+
+{# --- JS اصلی با نسخه flatpickr-jalali-support جایگزین شد --- #}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/flatpickr.min.js"></script>
+
+{# --- فایل l10n/fa.js و پلاگین جلالی حذف شدند چون در فایل بالا ادغام شده‌اند --- #}
+
+<script src="{% static 'js/booking.js' %}"></script>
+{% endblock %}

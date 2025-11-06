@@ -1,0 +1,150 @@
+{# a_copy/templates/users/dashboard.html #}
+{% extends "base.html" %}
+
+{% block title %}داشبورد کاربری{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4">
+    <div class="col-md-8">
+        <h1 class="display-5">سلام، {{ user.first_name|default:user.username }}!</h1>
+        <p class="lead text-muted">به پنل کاربری خود خوش آمدید.</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <div class="card text-center bg-light">
+            <div class="card-body">
+                <h5 class="card-title text-muted mb-2">امتیاز شما</h5>
+                <p class="card-text display-4 text-primary">{{ user_points }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg my-3 px-5">رزرو نوبت جدید</a>
+
+<hr class="my-5">
+
+<h2>نوبت‌های در انتظار امتیازدهی</h2>
+{% if unrated_appointments %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">خدمات</th>
+                    <th scope="col">دستگاه</th>
+                    <th scope="col">تاریخ و ساعت</th>
+                    <th scope="col">وضعیت</th>
+                    <th scope="col">اقدام</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in unrated_appointments %}
+                    <tr>
+                        <td>{{ app.get_services_display }}</td>
+                        <td>{{ app.selected_device.name|default:"-" }}</td>
+                        <td>{{ app.start_time|date:"Y/m/d - H:i" }}</td>
+                        <td>
+                            <span class="badge bg-info text-dark">{{ app.get_status_display }}</span>
+                        </td>
+                        <td>
+                            <a href="{% url 'booking:rate_appointment' app.id %}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-star-fill"></i> ثبت نظر
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info mt-3" role="alert">
+        شما نوبت "انجام شده" ای در انتظار ثبت نظر ندارید.
+    </div>
+{% endif %}
+
+<hr class="my-5">
+
+<h2>تاریخچه سایر نوبت‌ها</h2>
+{% if other_appointments %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">خدمات</th>
+                    <th scope="col">دستگاه</th>
+                    <th scope="col">تاریخ و ساعت</th>
+                    <th scope="col">وضعیت</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in other_appointments %}
+                    <tr>
+                        <td>{{ app.get_services_display }}</td>
+                        <td>{{ app.selected_device.name|default:"-" }}</td>
+                        <td>{{ app.start_time|date:"Y/m/d - H:i" }}</td>
+                        <td>
+                            {% if app.status == 'CONFIRMED' %}
+                                <span class="badge bg-success">{{ app.get_status_display }}</span>
+                            {% elif app.status == 'PENDING' %}
+                                <span class="badge bg-warning text-dark">{{ app.get_status_display }}</span>
+                            {% elif app.status == 'CANCELED' %}
+                                <span class="badge bg-danger">{{ app.get_status_display }}</span>
+                            {% elif app.status == 'DONE' %}
+                                 <span class="badge bg-info text-dark">{{ app.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ app.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info mt-3" role="alert">
+        شما تاکنون هیچ نوبت دیگری رزرو نکرده‌اید.
+    </div>
+{% endif %}
+
+<hr class="my-5">
+
+<h2>تاریخچه تراکنش‌ها</h2>
+{% if transactions %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">خدمت مرتبط</th>
+                    <th scope="col">مبلغ (تومان)</th>
+                    <th scope="col">وضعیت پرداخت</th>
+                    <th scope="col">تاریخ</th>
+                    <th scope="col">کد رهگیری</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trans in transactions %}
+                    <tr>
+                        <td>{{ trans.appointment.get_services_display }}</td>
+                        <td>{{ trans.amount|floatformat:"0" }} تومان</td>
+                        <td>
+                            {% if trans.status == 'SUCCESS' %}
+                                <span class="badge bg-success">{{ trans.get_status_display }}</span>
+                            {% elif trans.status == 'PENDING' %}
+                                <span class="badge bg-warning text-dark">{{ trans.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">{{ trans.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ trans.created_at|date:"Y/m/d - H:i" }}</td>
+                        <td>{{ trans.authority|default:"---" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info mt-3" role="alert">
+        شما تاکنون هیچ تراکنشی ثبت نکرده‌اید.
+    </div>
+{% endif %}
+
+{% endblock %}

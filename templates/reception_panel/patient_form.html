@@ -1,0 +1,41 @@
+{% extends "reception_panel/reception_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% if u_form %}
+                        <fieldset class="form-group">
+                            <legend class="border-bottom mb-3">اطلاعات کاربری</legend>
+                            {{ u_form|crispy }}
+                        </fieldset>
+
+                        <fieldset class="form-group mt-4">
+                            <legend class="border-bottom mb-3">پروفایل (امتیاز و تصویر)</legend>
+                            {{ p_form|crispy }}
+                        </fieldset>
+                    {% else %}
+                        <fieldset class="form-group">
+                            {{ form|crispy }}
+                        </fieldset>
+                    {% endif %}
+                    
+                    <div class="d-grid mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1">ذخیره تغییرات</button>
+                        <a href="{% url 'reception_panel:patient_list' %}" class="btn btn-outline-secondary btn-lg">بازگشت</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

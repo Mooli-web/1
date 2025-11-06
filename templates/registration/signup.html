@@ -1,0 +1,54 @@
+{# a_copy/templates/registration/signup.html #}
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}ثبت‌نام در کلینیک زیبایی{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">ایجاد حساب کاربری جدید</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="togglePassword1" onclick="togglePasswordVisibility('id_password1', this)">
+                        <label class="form-check-label" for="togglePassword1">
+                            نمایش رمز عبور
+                        </label>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="togglePassword2" onclick="togglePasswordVisibility('id_password2', this)">
+                        <label class="form-check-label" for="togglePassword2">
+                            نمایش تکرار رمز عبور
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg mt-3">ثبت‌نام</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small>حساب کاربری دارید؟ <a href="{% url 'login' %}">وارد شوید</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePasswordVisibility(fieldId, checkbox) {
+        var passwordField = document.getElementById(fieldId);
+        if (checkbox.checked) {
+            passwordField.type = "text";
+        } else {
+            passwordField.type = "password";
+        }
+    }
+</script>
+{% endblock %}

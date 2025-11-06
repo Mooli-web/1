@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}پرداخت ناموفق{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">پرداخت ناموفق!</h4>
+            <p>متاسفانه در فرآیند پرداخت خطایی رخ داد. مبلغی از حساب شما کسر نگردیده است.</p>
+            <hr>
+            {% if error_message %}
+                <p class="mb-0"><strong>دلیل خطا:</strong> {{ error_message }}</p>
+            {% else %}
+                <p class="mb-0">لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.</p>
+            {% endif %}
+        </div>
+        <a href="{% url 'users:dashboard' %}" class="btn btn-secondary mt-3">بازگشت به داشبورد</a>
+    </div>
+</div>
+{% endblock %}

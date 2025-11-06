@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}گالری نمونه کارها{% endblock %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <h1 class="display-4">گالری نمونه کارها</h1>
+    <p class="lead text-muted">مشاهده نتایج درخشان خدمات ما.</p>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 g-4">
+    {% for item in portfolio_items %}
+    <div class="col">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">{{ item.title }}</h5>
+                <small>{{ item.service.name|default:"عمومی" }}</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6 text-center">
+                        <h6>قبل</h6>
+                        <img src="{{ item.before_image.url }}" alt="تصویر قبل از {{ item.title }}" class="img-fluid rounded shadow">
+                    </div>
+                    <div class="col-6 text-center">
+                        <h6>بعد</h6>
+                        <img src="{{ item.after_image.url }}" alt="تصویر بعد از {{ item.title }}" class="img-fluid rounded shadow">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col">
+        <div class="alert alert-info">هیچ نمونه کاری برای نمایش وجود ندارد.</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
