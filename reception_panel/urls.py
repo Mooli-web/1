@@ -1,40 +1,41 @@
-# a_copy/reception_panel/urls.py
+# reception_panel/urls.py
+# فایل اصلاح‌شده: برای وارد کردن ویو از 5 فایل مجزا.
 
 from django.urls import path
+# --- وارد کردن تمام فایل‌های ویو ---
 from . import views
+from . import views_patient
+from . import views_appointment
+from . import views_consultation
+from . import views_clinic
 
 app_name = 'reception_panel'
 
 urlpatterns = [
+    # --- views.py ---
     path('login/', views.reception_login_view, name='login'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
-    
-    # Patient Management (REFACTORED)
-    path('patients/', views.patient_list_view, name='patient_list'),
-    path('patients/new/', views.patient_create_view, name='patient_create'),
-    # --- CHANGED: 'patient_update_view' removed, logic merged into 'patient_detail' ---
-    path('patients/<int:pk>/', views.patient_detail_view, name='patient_detail'),
-    
-    # Consultation URLs
-    path('consultations/', views.consultation_list_view, name='consultation_list'),
-    path('consultations/<int:pk>/', views.consultation_detail_view, name='consultation_detail'),
-    
-    # Manual Booking URLs
-    path('booking/select-patient/', views.booking_select_patient_view, name='booking_select_patient'),
-    path('booking/act-as/<int:patient_id>/', views.booking_act_as_view, name='booking_act_as'),
-    
-    # Appointment List & Management (EXPANDED)
-    path('appointments/', views.appointment_list_view, name='appointment_list'),
-    # --- ADDED: Appointment management URLs ---
-    path('appointments/<int:pk>/cancel/', views.cancel_appointment_view, name='appointment_cancel'),
-    path('appointments/<int:pk>/mark-done/', views.mark_appointment_done_view, name='appointment_mark_done'),
-    
-    # API URL
     path('api/notifications/mark-as-read/', views.mark_notifications_as_read_api, name='mark_notifications_as_read'),
+
+    # --- views_patient.py ---
+    path('patients/', views_patient.patient_list_view, name='patient_list'),
+    path('patients/new/', views_patient.patient_create_view, name='patient_create'),
+    path('patients/<int:pk>/', views_patient.patient_detail_view, name='patient_detail'),
     
-    # --- ADDED: Service & WorkHours Management ---
-    path('clinic/services/', views.service_list_view, name='service_list'),
-    path('clinic/services/<int:pk>/edit/', views.service_update_view, name='service_update'),
-    path('clinic/work-hours/group/<int:group_id>/', views.work_hours_update_view, name='work_hours_group_update'),
-    path('clinic/work-hours/service/<int:service_id>/', views.work_hours_update_view, name='work_hours_service_update'),
+    # --- views_consultation.py ---
+    path('consultations/', views_consultation.consultation_list_view, name='consultation_list'),
+    path('consultations/<int:pk>/', views_consultation.consultation_detail_view, name='consultation_detail'),
+    
+    # --- views_appointment.py ---
+    path('booking/select-patient/', views_appointment.booking_select_patient_view, name='booking_select_patient'),
+    path('booking/act-as/<int:patient_id>/', views_appointment.booking_act_as_view, name='booking_act_as'),
+    path('appointments/', views_appointment.appointment_list_view, name='appointment_list'),
+    path('appointments/<int:pk>/cancel/', views_appointment.cancel_appointment_view, name='appointment_cancel'),
+    path('appointments/<int:pk>/mark-done/', views_appointment.mark_appointment_done_view, name='appointment_mark_done'),
+    
+    # --- views_clinic.py ---
+    path('clinic/services/', views_clinic.service_list_view, name='service_list'),
+    path('clinic/services/<int:pk>/edit/', views_clinic.service_update_view, name='service_update'),
+    path('clinic/work-hours/group/<int:group_id>/', views_clinic.work_hours_update_view, name='work_hours_group_update'),
+    path('clinic/work-hours/service/<int:service_id>/', views_clinic.work_hours_update_view, name='work_hours_service_update'),
 ]
