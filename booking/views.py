@@ -1,5 +1,5 @@
 # booking/views.py
-# فایل اصلاح‌شده: این فایل فقط شامل ویوهای رندرکننده HTML است.
+# فایل اصلاح‌شده: منطق ریدایرکت منشی اصلاح شد.
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -81,6 +81,8 @@ def create_booking_view(request):
 
         # --- 4. Validate Time and Check Overlap ---
         try:
+            # --- اصلاحیه: فرمت ISO (که FullCalendar ارسال می‌کند) را پشتیبانی نمی‌کند ---
+            # --- ما در booking.js فرمت را به 'Y-m-d H:M' تبدیل کردیم، پس این کد باید درست کار کند ---
             naive_start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
             aware_start_time = timezone.make_aware(naive_start_time)
             aware_end_time = aware_start_time + timedelta(minutes=total_duration)
@@ -129,13 +131,17 @@ def create_booking_view(request):
                 new_appointment.services.set(selected_services)
             
             # --- 7. Redirect based on flow ---
+            
+            # --- *** شروع اصلاحیه *** ---
             if is_reception_booking:
+                # سشن منشی را پاک کن
                 if 'reception_acting_as_patient_id' in request.session:
                     del request.session['reception_acting_as_patient_id']
                 
                 if status == 'CONFIRMED': # Manually confirmed
                     messages.success(request, f"نوبت برای {patient_user.username} با موفقیت (به صورت دستی) ثبت شد.")
                     
+                    # به سایر کارمندان اطلاع بده
                     staff_users = CustomUser.objects.filter(is_staff=True)
                     notification_link = request.build_absolute_uri(reverse('reception_panel:appointment_list'))
                     for staff in staff_users:
@@ -144,10 +150,23 @@ def create_booking_view(request):
                             message=f"نوبت دستی جدید برای {patient_user.username} ثبت شد.",
                             link=notification_link
                         )
-                    return redirect('reception_panel:dashboard')
-                else:
-                    return redirect(reverse('payment:start_payment', args=[new_appointment.id]))
+                
+                else: # status == 'PENDING'
+                    messages.success(request, f"نوبت برای {patient_user.username} ایجاد شد و در 'انتظار پرداخت' است.")
+                    
+                    # به بیمار اطلاع بده که نوبتی در انتظار پرداخت دارد
+                    notification_link = request.build_absolute_uri(reverse('users:dashboard'))
+                    Notification.objects.create(
+                        user=patient_user, # ارسال اعلان به بیمار
+                        message=f"یک نوبت در انتظار پرداخت توسط پذیرش برای شما ثبت شد.",
+                        link=notification_link
+                    )
 
+                # در هر صورت (چه تایید دستی و چه در انتظار پرداخت)، منشی باید به پنل خود بازگردد
+                return redirect('reception_panel:dashboard')
+            # --- *** پایان اصلاحیه *** ---
+
+            # اگر کاربر عادی بود (نه منشی)، او را به صفحه پرداخت بفرست
             return redirect(reverse('payment:start_payment', args=[new_appointment.id]))
 
         except Exception as e:

@@ -1,12 +1,12 @@
-// mooli-web/1/1-108afa36b6d3b8572ca403177904f4e3aab9489b/static/js/booking.js
+// static/js/booking.js
+// --- نسخه کامل با اصلاحیه FullCalendar (حذف گزینه نامعتبر calendarSystem) ---
+
 $(document).ready(function() {
-    console.log("booking.js لود شد (نسخه flatpickr-jalali-support v3 - Fix نهایی).");
+    console.log("booking.js v2.0 (FullCalendar) لود شد.");
 
     // --- خواندن data attributes از فرم ---
     const bookingForm = $('#bookingForm');
-    
-    const GET_SLOTS_URL = bookingForm.attr('data-get-slots-url');
-    const GET_MONTH_URL = bookingForm.attr('data-get-month-availability-url');
+    const GET_SLOTS_URL = bookingForm.attr('data-get-slots-url'); // <-- API جدید
     const GET_SERVICES_URL = bookingForm.attr('data-get-services-url');
     const APPLY_DISCOUNT_URL = bookingForm.attr('data-apply-discount-url');
     const CSRF_TOKEN = bookingForm.attr('data-csrf-token');
@@ -18,12 +18,10 @@ $(document).ready(function() {
     const devicesContainer = $('#devicesContainer');
     const selectedDeviceInput = $('#selectedDevice');
     
-    // --- سلکتورهای تقویم ---
-    const datePickerInput = $('#datePickerInput'); 
-    const calendarContainer = $('#calendarContainer');
-    const gregorianDateInput = $('#gregorianDateInput');
-    
+    // --- سلکتورهای تقوim ---
+    const calendarContainerEl = document.getElementById('calendarContainer');
     const slotsContainer = $('#slotsContainer');
+    
     const selectedSlotInput = $('#selectedSlot');
     const confirmBtn = $('#confirmBtn');
     const submitBtn = $('#submitBtn');
@@ -42,12 +40,14 @@ $(document).ready(function() {
     const basePriceInput = $('#basePrice');
     const totalDurationInput = $('#totalDuration');
     
-    let allowMultipleSelection = false;
-    let calendarInstance = null;
-    let currentMonthData = {}; 
+    let calendarInstance = null; // متغیر برای نگهداری نمونه FullCalendar
+
+    // ====================================================================
+    // --- ۱. توابع کمکی اصلی (محاسبه قیمت و ...) ---
+    // ====================================================================
 
     /**
-     * تابع به‌روزرسانی قیمت نهایی
+     * (بدون تغییر) تابع به‌روزرسانی قیمت نهایی
      */
     function updateFinalPrice() {
         let basePrice = parseFloat(basePriceInput.val() || 0);
@@ -70,198 +70,219 @@ $(document).ready(function() {
     }
 
     /**
-     * [جایگزین شده با flatpickr-jalali-support]
+     * (جدید) تابع کمکی برای فرمت کردن زمان (H:M)
      */
-    async function updateCalendarAvailability(year, month) {
-        console.log(`۱. updateCalendarAvailability فراخوانی شد برای ماه جلالی: ${year}-${month}`);
+    function formatTime(date) {
+        // اطمینان از اینکه زمان به درستی در منطقه زمانی تهران نمایش داده می‌شود
+        return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' });
+    }
 
-        const totalDuration = totalDurationInput.val();
-        let service_ids = [];
-        $('.service-item:checked').each(function() {
-            service_ids.push($(this).val());
-        });
+    /**
+     * (جدید) تابع کمکی برای فرمت کردن تاریخ (YYYY-MM-DD)
+     */
+    function getIsoDate(date) {
+        // تبدیل تاریخ به رشته تاریخ محلی (ISO) بر اساس منطقه زمانی مرورگر
+        let localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return localDate.toISOString().split('T')[0];
+    }
+    
+    /**
+     * (جدید) تابع نمایش اسلات‌ها برای روزی که کلیک شده
+     */
+    function displaySlotsForDate(date) {
+        if (!calendarInstance) return;
 
-        if (!totalDuration || totalDuration == 0 || service_ids.length === 0) {
-            if(calendarInstance) calendarInstance.destroy();
-            calendarInstance = null;
-            calendarContainer.html('<div class="alert alert-info">لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.</div>');
-            datePickerInput.val('').attr('placeholder', 'لطفاً ابتدا خدمت را انتخاب کنید...');
-            console.warn("هیچ خدمتی انتخاب نشده. تقویم پاک شد.");
-            return;
-        }
+        // دریافت *تمام* اسلات‌هایی که تقوim از سرور گرفته
+        const allEvents = calendarInstance.getEvents();
+        const clickedDateStr = getIsoDate(date);
 
-        calendarContainer.html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
-        datePickerInput.attr('placeholder', 'در حال بارگذاری تقویم...');
-        console.log("۲. در حال بارگذاری... (ارسال درخواست به API)");
+        // فیلتر کردن اسلات‌ها فقط برای روزی که کلیک شده
+        const slotsForDay = allEvents
+            .filter(event => getIsoDate(event.start) === clickedDateStr)
+            .sort((a, b) => a.start - b.start); // مرتب‌سازی بر اساس زمان
 
-        const serviceParams = service_ids.map(id => `service_ids[]=${id}`).join('&');
-        const deviceId = selectedDeviceInput.val() || ''; 
+        slotsContainer.html(''); // پاک کردن اسلات‌های قبلی
+        confirmBtn.prop('disabled', true);
+        selectedSlotInput.val('');
 
-        try {
-            const url = `${GET_MONTH_URL}?year=${year}&month=${month}&total_duration=${totalDuration}&${serviceParams}&device_id=${deviceId}`;
-            const response = await fetch(url);
+        if (slotsForDay.length > 0) {
+            slotsContainer.html('<h5 class="text-muted mb-3">۴. انتخاب ساعت:</h5>');
+            const slotsGrid = $('<div class="d-flex flex-wrap gap-2"></div>');
             
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("خطای سرور در دریافت ماه:", errorText);
-                throw new Error(`خطای سرور: ${response.status}`);
-            }
-            
-            currentMonthData = await response.json(); 
-            console.log("۳. دیتا با موفقیت دریافت و پارس شد:", currentMonthData);
-
-            if (calendarInstance) {
-                calendarInstance.destroy();
-            }
-            
-            calendarContainer.html(''); 
-            console.log("۵. در حال ساخت تقویم جدید flatpickr-jalali-support...");
-        
-            // =================================================================
-            // *** شروع پیاده‌سازی flatpickr-jalali-support ***
-            // =================================================================
-            
-            // تابع کمکی برای تبدیل تاریخ میلادی flatpickr به رشته جلالی
-            // این تابع به persian-date.js که در HTML لود شده، متکی است
-            function getJalaliDateString(dateObj) {
-                const pDate = new persianDate(dateObj);
-                return `${pDate.year()}-${pDate.month()}-${pDate.date()}`;
-            }
-
-            calendarInstance = flatpickr(calendarContainer, {
-                inline: true,
-                // --- فعال‌سازی تقویم جلالی (این کتابخانه fa را می‌شناسد) ---
-                locale: "fa",
+            slotsForDay.forEach(slot => {
+                const startTimeStr = formatTime(slot.start);
+                const button = $(`<button type="button" class="btn btn-outline-primary" data-slot-iso="${slot.start.toISOString()}">${startTimeStr}</button>`);
                 
-                // --- بخش plugins حذف شد، چون پلاگین در خود این کتابخانه ادغام شده ---
+                button.on('click', function() {
+                    slotsContainer.find('button').removeClass('active'); 
+                    $(this).addClass('active');
+                    
+                    // --- اصلاحیه مهم ---
+                    // بک‌اند (views.py) انتظار فرمت 'YYYY-MM-DD HH:MM' را دارد
+                    // ما باید آن را بسازیم.
+                    const isoDate = $(this).data('slot-iso');
+                    const d = new Date(isoDate);
+                    
+                    // فرمت کردن دستی به شکلی که بک‌اند انتظار دارد
+                    // (استفاده از توابع UTC برای جلوگیری از خطای Timezone)
+                    const year = d.getUTCFullYear();
+                    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+                    const day = d.getUTCDate().toString().padStart(2, '0');
+                    const hour = d.getUTCHours().toString().padStart(2, '0');
+                    const minute = d.getUTCMinutes().toString().padStart(2, '0');
+                    const backendFormat = `${year}-${month}-${day} ${hour}:${minute}`;
 
-                // تنظیم ماه و سال پیش‌فرض جلالی
-                defaultDate: new persianDate([year, month, 1]).gregorianDate,
-                
-                onDayCreate: function(dObj, dStr, fp, dayElem) {
-                    // ما به کتابخانه persian-date.js (که جداگانه لود کردیم) تکیه می‌کنیم
-                    // تا تاریخ جلالی را از آبجکت تاریخ میلادی استخراج کنیم.
-                    const pDate = new persianDate(dayElem.dateObj);
-                    const jDateStr = `${pDate.year()}-${pDate.month()}-${pDate.date()}`;
-                    
-                    const status = currentMonthData[jDateStr]; 
-                    
-                    if (status) {
-                        dayElem.classList.add(`day-${status}`);
-                        if (status !== 'available') {
-                            dayElem.classList.add("flatpickr-disabled");
-                        }
-                    } else {
-                        dayElem.classList.add("day-unavailable");
-                        dayElem.classList.add("flatpickr-disabled");
-                    }
-                },
-                
-                onMonthChange: function(selectedDates, dateStr, instance) {
-                    // چون تقویم جلالی است، currentYear و currentMonth جلالی هستند
-                    // (ماه‌های flatpickr از 0 شروع می‌شوند، جلالی از 1)
-                    updateCalendarAvailability(instance.currentYear, instance.currentMonth + 1);
-                },
-                onYearChange: function(selectedDates, dateStr, instance) {
-                     updateCalendarAvailability(instance.currentYear, instance.currentMonth + 1);
-                },
-
-                onChange: function(selectedDates, dateStr, instance) {
-                    if (selectedDates.length === 0) return;
-
-                    const selectedDate = selectedDates[0];
-                    
-                    // 1. ثبت تاریخ میلادی در input مخفی (برای ارسال به سرور)
-                    const selectedGregorianDate = selectedDate.toISOString().split('T')[0];
-                    gregorianDateInput.val(selectedGregorianDate);
-                    
-                    // 2. نمایش تاریخ شمسی با استفاده از فرمت جلالی
-                    const formattedDate = instance.formatDate(selectedDate, "Y/m/d");
-                    datePickerInput.val(formattedDate);
-                    
-                    console.log(`۷. روز ${selectedGregorianDate} (شمسی: ${formattedDate}) انتخاب شد. در حال دریافت اسلات‌ها...`);
-                    fetchAndDisplaySlots(selectedGregorianDate);
-                }
+                    selectedSlotInput.val(backendFormat); 
+                    confirmBtn.prop('disabled', false);
+                });
+                slotsGrid.append(button);
             });
-            // =================================================================
-            // *** پایان پیاده‌سازی flatpickr ***
-            // =================================================================
-            
-            datePickerInput.attr('placeholder', 'یک روز را از تقویم بالا انتخاب کنید');
-            console.log("۶. تقویم flatpickr-jalali-support با موفقیت ساخته شد.");
-
-        } catch (error) {
-            console.error("خطای اساسی در updateCalendarAvailability:", error);
-            calendarContainer.html(`<div class="alert alert-danger">خطا در بارگذاری تقویم: ${error.message}</div>`);
-            datePickerInput.attr('placeholder', 'خطا در بارگذاری تقویم');
+            slotsContainer.append(slotsGrid);
+        } else {
+            // این حالت نباید رخ دهد، چون روز غیرقابل کلیک می‌شد
+            slotsContainer.append('<div class="alert alert-warning">هیچ اسلاتی یافت نشد.</div>');
         }
     }
 
     /**
-     * [بدون تغییر] تابع دریافت و نمایش اسلات‌های خالی (ساعت‌ها)
+     * (جدید) تابع اصلی راه‌اندازی یا به‌روزرسانی تقوim
      */
-    async function fetchAndDisplaySlots(selectedDate) {
-        const totalDuration = totalDurationInput.val();
-        
-        confirmBtn.prop('disabled', true);
+    function _updateCalendar() {
+        // پاک کردن اسلات‌های قبلی
         slotsContainer.html('');
+        confirmBtn.prop('disabled', true);
         selectedSlotInput.val('');
 
+        // اگر قبلاً نمونه‌ای از تقوim ساخته شده، آن را نابود کن
+        if (calendarInstance) {
+            calendarInstance.destroy();
+            calendarInstance = null;
+        }
+
+        // بررسی اینکه آیا خدمات لازم انتخاب شده‌اند یا خیر
         let service_ids = [];
         $('.service-item:checked').each(function() {
             service_ids.push($(this).val());
         });
-
-        if (!totalDuration || !selectedDate || totalDuration == 0 || service_ids.length === 0) return;
-
-        slotsContainer.html('<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
-        
-        const serviceParams = service_ids.map(id => `service_ids[]=${id}`).join('&');
         const deviceId = selectedDeviceInput.val() || '';
+        const hasRequiredDevice = $('#deviceSelect').length > 0;
 
-        try {
-            const url = `${GET_SLOTS_URL}?date=${selectedDate}&total_duration=${totalDuration}&${serviceParams}&device_id=${deviceId}`;
-
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("خطای سرور در دریافت اسلات‌ها:", errorText);
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    if (errorJson.error) {
-                        throw new Error(errorJson.error); 
-                    }
-                } catch(e) {
-                     throw new Error(`خطای سرور: ${response.status}`);
-                }
-            }
-            const data = await response.json();
-            
-            slotsContainer.html('<h5 class="text-muted mb-3">۴. انتخاب ساعت:</h5>');
-            if (data.available_slots && data.available_slots.length > 0) {
-                const slotsGrid = $('<div class="d-flex flex-wrap gap-2"></div>');
-                
-                data.available_slots.forEach(slot => {
-                    const button = $(`<button type="button" class="btn btn-outline-primary" data-slot="${selectedDate} ${slot}">${slot}</button>`);
-                    
-                    button.on('click', function() {
-                        slotsContainer.find('button').removeClass('active'); 
-                        $(this).addClass('active'); 
-                        selectedSlotInput.val($(this).data('slot')); 
-                        confirmBtn.prop('disabled', false);
-                    });
-                    slotsGrid.append(button);
-                });
-                slotsContainer.append(slotsGrid);
-            } else {
-                slotsContainer.append('<div class="alert alert-warning">متاسفانه در این روز با توجه به خدمات انتخابی، زمان خالی وجود ندارد.</div>');
-            }
-        } catch (error) {
-            console.error("Error fetching slots:", error);
-            slotsContainer.html(`<div class="alert alert-danger">خطا در دریافت ساعت‌های موجود: ${error.message}</div>`);
+        if (service_ids.length === 0 || (hasRequiredDevice && !deviceId)) {
+            let msg = service_ids.length === 0 
+                ? 'لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.' 
+                : 'لطفاً دستگاه مورد نظر را انتخاب کنید.';
+            $(calendarContainerEl).html(`<div class="alert alert-info">${msg}</div>`);
+            return;
         }
+
+        // --- اینجا FullCalendar ساخته می‌شود ---
+        calendarInstance = new FullCalendar.Calendar(calendarContainerEl, {
+            // --- ۱. تنظیمات جلالی و فارسی ---
+            locale: 'fa', // فعال‌سازی زبان فارسی
+            // --- *** خطای "Unknown option 'calendarSystem'" از اینجا حذف شد *** ---
+            // calendarSystem: 'jalali', <-- این خط حذف شد
+
+            // --- ۲. ظاهر و هدر (اصلاح شد) ---
+            headerToolbar: {
+                start: 'prev',
+                center: 'title',
+                end: 'next'
+            },
+            themeSystem: 'bootstrap5',
+            height: 'auto', // ارتفاع خودکار بر اساس محتوا
+            
+            views: {
+                dayGridMonth: {
+                    titleFormat: { year: 'numeric', month: 'long', calendar: 'jalali' }, // e.g., "آبان ۱۴۰۴"
+                    fixedWeekCount: false, // جلوگیری از نمایش ۶ هفته ثابت
+                    showNonCurrentDates: false // پنهان کردن روزهای ماه قبل/بعد
+                }
+            },
+            
+            // --- ۳. منبع رویدادها (اتصال به API جدید ما) ---
+            eventSources: [
+                {
+                    url: GET_SLOTS_URL, // API واحد و جدید
+                    method: 'GET',
+                    // پارامترهای اضافه‌ای که باید با هر درخواست ارسال شوند
+                    extraParams: function() {
+                        let service_ids = [];
+                        $('.service-item:checked').each(function() {
+                            service_ids.push($(this).val());
+                        });
+                        
+                        return {
+                            // ارسال آرایه service_ids به فرمتی که Django می‌فهمد
+                            'service_ids[]': service_ids, 
+                            'device_id': selectedDeviceInput.val() || ''
+                        };
+                    },
+                    failure: function() {
+                        alert('خطا در بارگذاری اطلاعات تقوim از سرور.');
+                    }
+                }
+            ],
+            
+            // --- ۴. مدیریت رندر و کلیک ---
+            
+            // نمایش loading...
+            loading: function(isLoading) {
+                if (isLoading) {
+                    $(calendarContainerEl).prepend('<div class="fc-loading"><div class="spinner-border text-primary" role="status"></div></div>');
+                } else {
+                    $(calendarContainerEl).find('.fc-loading').remove();
+                }
+            },
+
+            // تابع برای رنگ‌آمیزی روزهای در دسترس/غیر در دسترس
+            dayCellDidMount: function(info) {
+                // اگر روز در گذشته است، آن را غیرفعال کن
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // نادیده گرفتن ساعت
+                if (info.date < today) {
+                    info.el.classList.add('fc-day-past');
+                    return;
+                }
+
+                // بررسی اینکه آیا اسلاتی برای این روز وجود دارد یا خیر
+                // نکته: getEvents() تمام رویدادهای *بارگذاری شده* را برمی‌گرداند
+                const eventsOnDay = calendarInstance.getEvents().filter(event => 
+                    getIsoDate(event.start) === getIsoDate(info.date)
+                );
+
+                if (eventsOnDay.length > 0) {
+                    info.el.classList.add('fc-day-available');
+                } else {
+                    info.el.classList.add('fc-day-unavailable');
+                }
+            },
+
+            // رویداد کلیک روی یک روز
+            dateClick: function(info) {
+                // اگر روز در گذشته یا غیر در دسترس (خاکستری) بود، نادیده بگیر
+                if (info.dayEl.classList.contains('fc-day-past') || 
+                    info.dayEl.classList.contains('fc-day-unavailable')) {
+                    // پاک کردن اسلات‌ها اگر روز دیگری انتخاب شده بود
+                    slotsContainer.html('');
+                    confirmBtn.prop('disabled', true);
+                    selectedSlotInput.val('');
+                    return; 
+                }
+                
+                // در غیر این صورت (روز سبز و در دسترس است)
+                // اسلات‌های آن روز را از دیتای موجود فیلتر و نمایش بده
+                displaySlotsForDate(info.date);
+            }
+        });
+
+        // رندر کردن تقوim
+        calendarInstance.render();
     }
+
+
+    // ====================================================================
+    // --- ۲. رویدادهای مربوط به فرم (انتخاب خدمت، دستگاه و ...) ---
+    // ====================================================================
 
     // --- رویداد انتخاب گروه خدمت ---
     serviceGroupSelect.on('change', async function() {
@@ -271,12 +292,6 @@ $(document).ready(function() {
         devicesContainer.html('');
         selectedDeviceInput.val(''); 
         slotsContainer.html('');
-        gregorianDateInput.val('');
-        
-        datePickerInput.val('').attr('placeholder', 'لطفاً ابتدا خدمت را انتخاب کنید...');
-        if(calendarInstance) calendarInstance.destroy(); 
-        calendarInstance = null;
-        calendarContainer.html('<div class="alert alert-info">لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.</div>');
         
         selectedSlotInput.val('');
         confirmBtn.prop('disabled', true);
@@ -286,6 +301,13 @@ $(document).ready(function() {
         discountCodeInput.val('');
         discountMessage.text('').removeClass('text-success text-danger');
         updateFinalPrice();
+        
+        // تقوim را هم ریست کن
+        if (calendarInstance) {
+            calendarInstance.destroy();
+            calendarInstance = null;
+        }
+        $(calendarContainerEl).html('<div class="alert alert-info">لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.</div>');
 
         const groupId = $(this).val();
         if (!groupId) return;
@@ -294,17 +316,11 @@ $(document).ready(function() {
 
         try {
             const apiUrl = `${GET_SERVICES_URL}?group_id=${groupId}`;
-            console.log("در حال فراخوانی API خدمات:", apiUrl); 
-            
             const response = await fetch(apiUrl);
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("خطا در بارگذاری خدمات:", errorText);
-                throw new Error(`خطای سرور: ${response.status}`);
-            }
+            if (!response.ok) throw new Error('خطا در بارگذاری خدمات');
+            
             const data = await response.json();
             
-            allowMultipleSelection = data.allow_multiple_selection;
             const hasDevices = data.has_devices;
             const devices = data.devices;
             
@@ -345,8 +361,7 @@ $(document).ready(function() {
                 devicesContainer.html('<div class="alert alert-danger">این گروه خدماتی نیاز به دستگاه دارد، اما هیچ دستگاهی برای آن تنظیم نشده است.</div>');
             }
         } catch (error) {
-            console.error("خطا در بارگذاری خدمات:", error);
-            servicesContainer.html(`<div class="alert alert-danger">خطا در بارگذاری خدمات: ${error.message}</div>`);
+            servicesContainer.html(`<div class="alert alert-danger">${error.message}</div>`);
         }
     });
 
@@ -370,18 +385,9 @@ $(document).ready(function() {
         discountCodeInput.val('');
         discountMessage.text('').removeClass('text-success text-danger');
         updateFinalPrice();
-
-        gregorianDateInput.val('');
-        datePickerInput.val(''); 
-        slotsContainer.html('');
-        confirmBtn.prop('disabled', true);
         
-        console.log("در حال گرفتن تاریخ امروز (شمسی)...");
-        // این بخش به persian-date.js متکی است
-        const today = new persianDate();
-        
-        // فراخوانی با سال و ماه جلالی
-        updateCalendarAvailability(today.year(), today.month());
+        // --- مهم: به جای فراخوانی API، فقط تقوim را رفرش کن ---
+        _updateCalendar();
     });
     
     /**
@@ -391,15 +397,14 @@ $(document).ready(function() {
         selectedDeviceInput.val($(this).val());
         console.log("دستگاه عوض شد.");
 
-        gregorianDateInput.val('');
-        datePickerInput.val(''); 
-        slotsContainer.html('');
-        confirmBtn.prop('disabled', true);
-        
-        const today = new persianDate(); 
-        // فراخوانی با سال و ماه جلالی
-        updateCalendarAvailability(today.year(), today.month());
+        // --- مهم: به جای فراخوانی API، فقط تقوim را رفرش کن ---
+        _updateCalendar();
     });
+
+    // ====================================================================
+    // --- ۳. رویدادهای تخفیف و ثبت نهایی ---
+    // (این بخش‌ها کاملاً بدون تغییر هستند)
+    // ====================================================================
 
     // اعمال/حذف تخفیف امتیاز
     if (applyPointsCheckbox) {
@@ -452,6 +457,7 @@ $(document).ready(function() {
 
     // --- رویدادهای دکمه تایید و مودال ---
     confirmBtn.on('click', function() {
+        // (اعتبارسنجی دستگاه بدون تغییر)
         const deviceSelect = $('#deviceSelect');
         if (deviceSelect.length > 0 && !selectedDeviceInput.val()) {
              alert('لطفا دستگاه مورد نظر را انتخاب کنید.');
@@ -459,6 +465,7 @@ $(document).ready(function() {
              return;
         }
         
+        // (اعتبارسنجی فرم بدون تغییر)
         if (bookingForm[0].checkValidity() && $('.service-item:checked').length > 0 && selectedSlotInput.val()) {
             if ($('#manual_confirm').is(':checked')) {
                 bookingForm.submit();
@@ -486,6 +493,6 @@ $(document).ready(function() {
     
     // --- اجرای اولیه ---
     updateFinalPrice();
-    calendarContainer.html('<div class="alert alert-info">لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.</div>');
-    datePickerInput.attr('placeholder', 'لطفاً ابتدا خدمت را انتخاب کنید...');
+    // (تابع راه‌انداز تقوim در اینجا صدا زده *نمی‌شود*،
+    // چون ابتدا باید خدمت انتخاب شود)
 });

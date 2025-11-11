@@ -5,15 +5,16 @@
 
 {% block title %}رزرو نوبت جدید{% endblock %}
 
-{# --- CSS ها با نسخه flatpickr-jalali-support جایگزین شدند --- #}
+{# --- CSS ها با FullCalendar جایگزین شدند --- #}
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/flatpickr.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/themes/dark.css">
+{# <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/flatpickr.min.css"> #}
+{# <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/themes/dark.css"> #}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css' rel='stylesheet' />
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-lg-8">
         <div class="card p-4 shadow-lg border-0 rounded-4">
             <div class="card-body">
                 <h1 class="mb-4 text-center text-primary">رزرو نوبت</h1>
@@ -25,9 +26,9 @@
                     </div>
                 {% endif %}
                 
+                {# --- آدرس API ها به‌روزرسانی شد --- #}
                 <form method="POST" id="bookingForm"
-                      data-get-slots-url="{% url 'booking:get_available_slots' %}"
-                      data-get-month-availability-url="{% url 'booking:get_month_availability' %}"
+                      data-get-slots-url="{% url 'booking:all_available_slots' %}"
                       data-get-services-url="{% url 'booking:get_services_for_group' %}"
                       data-apply-discount-url="{% url 'booking:apply_discount' %}"
                       data-csrf-token="{{ csrf_token }}"
@@ -35,6 +36,7 @@
                     
                     {% csrf_token %}
                     
+                    {# --- مرحله ۱ و ۲: انتخاب گروه، خدمت و دستگاه (بدون تغییر) --- #}
                     <div class="mb-3">
                         <label for="serviceGroup" class="form-label fs-5">۱. انتخاب گروه خدمت:</label>
                         <select name="service_group" id="serviceGroup" class="form-select form-select-lg" required>
@@ -51,20 +53,28 @@
                     <div id="devicesContainer" class="mb-3">
                         </div>
 
+                    {# --- مرحله ۳: انتخاب تاریخ (ساختار HTML تغییر کرد) --- #}
                     <div class="mb-3">
-                        <label for="datePickerInput" class="form-label fs-5">۳. انتخاب تاریخ:</label>
+                        <label class="form-label fs-5">۳. انتخاب تاریخ:</label>
                         
-                        <input type="text" id="datePickerInput" class="form-control form-control-lg" required autocomplete="off" placeholder="لطفاً ابتدا خدمت را انتخاب کنید..." readonly>
+                        {# --- این input حذف شد --- #}
+                        {# <input type="text" id="datePickerInput" ... > #}
                         
-                        <div id="calendarContainer" class="mt-3"></div>
+                        <div id="calendarContainer" class="mt-3">
+                            <div class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید تا تقوim بارگذاری شود.</div>
+                        </div>
                         
-                        <input type="hidden" name="gregorian_date" id="gregorianDateInput">
+                        {# این فیلد مخفی برای ارسال تاریخ میلادی به سرور استفاده می‌شد،
+                           اما در روش جدید، ما زمان دقیق (اسلات) را ارسال می‌کنیم #}
+                        {# <input type="hidden" name="gregorian_date" id="gregorianDateInput"> #}
                     </div>
 
-
-                    <div id="slotsContainer" class="mb-4">
-                        </div>
+                    {# --- مرحله ۴: انتخاب ساعت (اسلات) --- #}
+                    <div id="slotsContainer" class_mb-4">
+                        {# اسلات‌ها توسط booking.js در اینجا رندر می‌شوند #}
+                    </div>
                     
+                    {# --- بخش تخفیف (بدون تغییر) --- #}
                     <div class="mb-3">
                         <label for="discountCode" class="form-label">کد تخفیف دارید؟</label>
                         <div class="input-group">
@@ -90,6 +100,7 @@
                         <h2 id="finalPrice" class="text-success fw-bold">۰ تومان</h2>
                     </div>
 
+                    {# --- فیلدهای مخفی (بدون تغییر) --- #}
                     <input type="hidden" name="slot" id="selectedSlot">
                     <input type="hidden" id="basePrice" value="0">
                     <input type="hidden" id="totalDuration" value="0">
@@ -113,6 +124,7 @@
     </div>
 </div>
 
+{# --- مودال تایید (بدون تغییر) --- #}
 <div class="modal fade" id="confirmationModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -139,7 +151,7 @@
 </div>
 {% endblock %}
 
-{# --- اسکریپت‌ها با نسخه flatpickr-jalali-support جایگزین شدند --- #}
+{# --- اسکریپت‌ها با FullCalendar جایگزین شدند --- #}
 {% block extra_js %}
 {{ block.super }} 
 
@@ -165,13 +177,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- End Navbar Scroll Behavior ---
 </script>
 
-{# --- persian-date.js برای منطق داخلی booking.js حفظ شده است --- #}
-<script src="https://cdn.jsdelivr.net/npm/persian-date/dist/persian-date.min.js"></script>
+{# --- persian-date.js حذف شد --- #}
+{# <script src="https://cdn.jsdelivr.net/npm/persian-date/dist/persian-date.min.js"></script> #}
 
-{# --- JS اصلی با نسخه flatpickr-jalali-support جایگزین شد --- #}
-<script src="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/flatpickr.min.js"></script>
+{# --- JS اصلی FullCalendar --- #}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+{# --- پلاگین تقوim جلالی برای FullCalendar --- #}
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/jalali@6.1.15/index.global.min.js'></script>
 
-{# --- فایل l10n/fa.js و پلاگین جلالی حذف شدند چون در فایل بالا ادغام شده‌اند --- #}
-
+{# --- فایل JS رزرو ما (که در مرحله بعد بازنویسی خواهد شد) --- #}
 <script src="{% static 'js/booking.js' %}"></script>
 {% endblock %}

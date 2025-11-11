@@ -391,99 +391,70 @@ main.container {
 
 /*
   ========================================
-  *** شروع کدهای اصلاحی نهایی برای flatpickr ***
+  *** شروع کدهای اصلاحی FullCalendar (جایگزین flatpickr) ***
   ========================================
 */
 
-/* استایل‌های سفارشی برای تم دارک flatpickr */
-/* اینها کدهای مربوط به رنگ‌بندی (Theme) هستند */
+/* استایل‌های سفارشی برای FullCalendar */
 
-.flatpickr-calendar.dark {
-    background-color: #343a40;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    /* --- اصلاحیه ۲: تقویم را کشیده‌تر (تمام عرض) می‌کند --- */
-    width: 100%; 
+/* هدر تقوim (دکمه‌های ماه و عنوان) */
+.fc .fc-toolbar-title {
+    font-family: var(--heading-font);
+    color: var(--text-dark);
 }
-.flatpickr-calendar.dark .flatpickr-month,
-.flatpickr-calendar.dark .flatpickr-day,
-.flatpickr-calendar.dark .flatpickr-day:hover {
-    color: #f8f9fa;
+.fc .fc-button-primary {
+    background-color: var(--accent);
+    border-color: var(--accent);
 }
-.flatpickr-calendar.dark .flatpickr-weekday {
-    color: var(--accent);
-
-    /* --- اصلاحیه ۱: چیدمان ایام هفته را درست می‌کند --- */
-    flex: 1; /* به هر روز هفته فضای مساوی می‌دهد */
-    text-align: center;
-    font-size: 0.9rem; 
-    font-weight: bold;
-}
-.flatpickr-calendar.dark .flatpickr-prev-month:hover svg,
-.flatpickr-calendar.dark .flatpickr-next-month:hover svg {
-    fill: var(--accent);
-}
-.flatpickr-calendar.dark .flatpickr-day {
-     /* --- اصلاحیه ۲: ظاهر شیک‌تر با ارتفاع بیشتر --- */
-    line-height: 38px;
+.fc .fc-button-primary:hover {
+    background-color: var(--accent-darker);
+    border-color: var(--accent-darker);
 }
 
+/* کانتینر در حال بارگذاری */
+.fc-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
 
 /* روزهای در دسترس (سبز) */
-.flatpickr-day.day-available {
-    background-color: #d4edda;
-    color: #155724;
-    font-weight: bold;
-    border-color: #c3e6cb;
+.fc-day-available {
+    background-color: #d4edda !important; /* رنگ سبز ملایم */
+    cursor: pointer;
 }
-.flatpickr-day.day-available:hover {
-    background-color: #c3e6cb;
-    color: #155724;
+.fc-day-available:hover {
+    background-color: #c3e6cb !important; /* کمی تیره‌تر */
 }
 
-/* روزهای پُر (قرمز) */
-.flatpickr-day.day-full,
-.flatpickr-day.day-full.flatpickr-disabled {
-    background-color: #f8d7da;
-    color: #721c24;
-    text-decoration: line-through;
+/* روزهای غیرقابل دسترس (خاکستری) */
+.fc-day-unavailable {
+    background-color: #e9ecef !important; /* خاکستری روشن */
+    cursor: not-allowed;
     opacity: 0.7;
 }
-.flatpickr-day.day-full:hover,
-.flatpickr-day.day-full.flatpickr-disabled:hover {
-    background-color: #f5c6cb;
-    color: #721c24;
+
+/* روزهای گذشته (خاکستری و غیرقابل کلیک) */
+.fc-day-past {
+    background-color: #f8f9fa !important;
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-/* روزهای تعطیل (خاکستری) */
-.flatpickr-day.day-unavailable,
-.flatpickr-day.day-past,
-.flatpickr-day.day-unavailable.flatpickr-disabled,
-.flatpickr-day.day-past.flatpickr-disabled {
-    background-color: #495057; /* تیره‌تر برای تم دارک */
-    color: #adb5bd;
-    opacity: 0.6;
-}
-.flatpickr-day.day-unavailable:hover,
-.flatpickr-day.day-past:hover,
-.flatpickr-day.day-unavailable.flatpickr-disabled:hover,
-.flatpickr-day.day-past.flatpickr-disabled:hover {
-    background-color: #5a6268;
-    color: #adb5bd;
-}
-
-/* اطمینان از اینکه روز "امروز" و "انتخاب شده" بر استایل‌های ما اولویت دارند */
-.flatpickr-day.today {
-    border-color: var(--accent, #d4af37) !important;
-}
-.flatpickr-day.selected {
-    background-color: var(--accent, #d4af37) !important;
-    color: white !important;
-    border-color: var(--accent, #d4af37) !important;
+/* پنهان کردن رویدادهای پس‌زمینه (چون ما فقط برای رنگ‌آمیزی استفاده می‌کنیم) */
+.fc .fc-bg-event {
+    display: none;
 }
 
 /*
   ========================================
-  *** پایان کدهای اصلاحی برای flatpickr ***
+  *** پایان کدهای اصلاحی FullCalendar ***
   ========================================
 */
