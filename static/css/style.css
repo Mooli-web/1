@@ -397,7 +397,7 @@ main.container {
 
 /* استایل‌های سفارشی برای FullCalendar */
 
-/* هدر تقوim (دکمه‌های ماه و عنوان) */
+/* هدر تقویم (دکمه‌های ماه و عنوان) */
 .fc .fc-toolbar-title {
     font-family: var(--heading-font);
     color: var(--text-dark);

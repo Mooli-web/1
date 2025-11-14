@@ -1,5 +1,5 @@
 // static/js/booking.js
-// --- نسخه کامل با اصلاحیه FullCalendar (حذف گزینه نامعتبر calendarSystem) ---
+// --- نسخه کامل با اصلاحیه FullCalendar (فعال‌سازی calendarSystem و حذف titleFormat) ---
 
 $(document).ready(function() {
     console.log("booking.js v2.0 (FullCalendar) لود شد.");
@@ -177,10 +177,10 @@ $(document).ready(function() {
 
         // --- اینجا FullCalendar ساخته می‌شود ---
         calendarInstance = new FullCalendar.Calendar(calendarContainerEl, {
-            // --- ۱. تنظیمات جلالی و فارسی ---
+            
+            // --- ۱. تنظیمات جلالی و فارسی (اصلاح‌شده) ---
             locale: 'fa', // فعال‌سازی زبان فارسی
-            // --- *** خطای "Unknown option 'calendarSystem'" از اینجا حذف شد *** ---
-            // calendarSystem: 'jalali', <-- این خط حذف شد
+            calendarSystem: 'jalali', // <-- *** این خط فعال شد ***
 
             // --- ۲. ظاهر و هدر (اصلاح شد) ---
             headerToolbar: {
@@ -193,7 +193,7 @@ $(document).ready(function() {
             
             views: {
                 dayGridMonth: {
-                    titleFormat: { year: 'numeric', month: 'long', calendar: 'jalali' }, // e.g., "آبان ۱۴۰۴"
+                    // titleFormat از اینجا حذف شد. calendarSystem خودش عنوان را درست می‌کند.
                     fixedWeekCount: false, // جلوگیری از نمایش ۶ هفته ثابت
                     showNonCurrentDates: false // پنهان کردن روزهای ماه قبل/بعد
                 }
@@ -217,8 +217,9 @@ $(document).ready(function() {
                             'device_id': selectedDeviceInput.val() || ''
                         };
                     },
+                    // --- غلط املایی اصلاح شد ---
                     failure: function() {
-                        alert('خطا در بارگذاری اطلاعات تقوim از سرور.');
+                        alert('خطا در بارگذاری اطلاعات تقویم از سرور.');
                     }
                 }
             ],
@@ -493,6 +494,6 @@ $(document).ready(function() {
     
     // --- اجرای اولیه ---
     updateFinalPrice();
-    // (تابع راه‌انداز تقوim در اینجا صدا زده *نمی‌شود*،
+    // (تابع راه‌انداز تقویم در اینجا صدا زده *نمی‌شود*،
     // چون ابتدا باید خدمت انتخاب شود)
 });
