@@ -1,8 +1,9 @@
 // static/js/booking.js
-// --- نسخه کامل با اصلاحیه FullCalendar (فعال‌سازی calendarSystem و حذف titleFormat) ---
+// --- اصلاحیه: استفاده از (window).on('load') به جای (document).ready
+// --- این کار تضمین می‌کند که اسکریپت‌های خارجی (پلاگین‌ها) قبل از اجرای این کد، لود شده‌اند.
 
-$(document).ready(function() {
-    console.log("booking.js v2.0 (FullCalendar) لود شد.");
+$(window).on('load', function() {
+    console.log("booking.js v2.0 (FullCalendar) لود شد. (در حالت Window Load)");
 
     // --- خواندن data attributes از فرم ---
     const bookingForm = $('#bookingForm');
@@ -178,6 +179,8 @@ $(document).ready(function() {
         // --- اینجا FullCalendar ساخته می‌شود ---
         calendarInstance = new FullCalendar.Calendar(calendarContainerEl, {
             
+            initialView: 'dayGridMonth', // <-- *** این خط برای حل مشکل تقویم دو-ماهه اضافه شده بود ***
+
             // --- ۱. تنظیمات جلالی و فارسی (اصلاح‌شده) ---
             locale: 'fa', // فعال‌سازی زبان فارسی
             calendarSystem: 'jalali', // <-- *** این خط فعال شد ***
