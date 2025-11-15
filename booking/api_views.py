@@ -1,62 +1,51 @@
 # booking/api_views.py
-# فایل اصلاح‌شده: APIهای قدیمی تقوim حذف و با یک API واحد جایگزین شدند.
+# فایل اصلاح‌شده: API تقوim دیگر به پارامترهای start/end وابسته نیست.
 
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.utils import timezone
-from datetime import datetime, time, timedelta
-import jdatetime
+from datetime import datetime, time, timedelta # <-- timedelta وارد شده است
+# import jdatetime # <-- دیگر نیازی نیست
 
 from clinic.models import Service, DiscountCode, ServiceGroup, Device, WorkHours
 from .models import Appointment
 from users.models import CustomUser
 
-# --- وارد کردن توابع کمکی ---
-# (اینها برای APIهای غیر-تقویمی استفاده می‌شوند)
 from .utils import _get_patient_for_booking 
-# --- وارد کردن «مغز متفکر» جدید تقوim ---
 from .calendar_logic import generate_available_slots_for_range
 
 
 # ***
-# *** API جدید و واحد برای FullCalendar ***
+# *** API جدید و واحد (اصلاح شده) ***
 # ***
 def all_available_slots_api(request):
     """
-    API واحد و جدید که تمام اسلات‌های خالی در یک بازه زمانی را
-    برای FullCalendar برمی‌گرداند.
+    API واحد که تمام اسلات‌های خالی در 30 روز آینده را
+    برمی‌گرداند.
     """
     
     # --- ۱. دریافت پارامترهای ارسالی از کلاینت ---
     
-    # FullCalendar این دو پارامتر را به صورت خودکار ارسال می‌کند
-    start_str = request.GET.get('start', '').split('T')[0]
-    end_str = request.GET.get('end', '').split('T')[0]
+    # --- این بخش حذف شد ---
+    # start_str = request.GET.get('start', '')...
+    # end_str = request.GET.get('end', '')...
 
-    # این پارامترها را ما به صورت دستی از فرم اضافه خواهیم کرد
+    # +++ این بخش اضافه شد +++
+    # همیشه یک بازه 30 روزه از امروز محاسبه کن
+    start_date = timezone.now().date()
+    end_date = start_date + timedelta(days=30)
+    # +++ پایان بخش اضافه شده +++
+
+
     service_ids = request.GET.getlist('service_ids[]')
     device_id = request.GET.get('device_id')
     
-    try:
-        # اگر تاریخ‌ها ارسال نشده بودند، یک بازه پیش‌فرض (مثلاً ۶۰ روز) در نظر بگیر
-        if not start_str or not end_str:
-            start_date = timezone.now().date()
-            end_date = start_date + timedelta(days=60)
-        else:
-            start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
-    except ValueError:
-        return JsonResponse({'error': 'Invalid date format'}, status=400)
-
-    # اگر خدمات یا مدت زمان انتخاب نشده باشد، API نباید خطایی بدهد
-    # بلکه فقط یک لیست خالی برگرداند تا تقوim خالی بماند.
     if not service_ids:
-        return JsonResponse([], safe=False) # FullCalendar انتظار یک لیست را دارد
+        return JsonResponse([], safe=False)
 
-    # --- ۲. تعیین هویت بیمار ---
-    # (کپی شده از API قدیمی - بدون تغییر)
+    # --- ۲. تعیین هویت بیمار (بدون تغییر) ---
     patient_user = request.user
     if request.user.is_staff and request.session.get('reception_acting_as_patient_id'):
         try:
@@ -64,7 +53,7 @@ def all_available_slots_api(request):
         except CustomUser.DoesNotExist:
             return JsonResponse({'error': 'Patient not found'}, status=400)
 
-    # --- ۳. فراخوانی «مغز متفکر» ---
+    # --- ۳. فراخوانی «مغز متفکر» (بدون تغییر) ---
     available_slots = generate_available_slots_for_range(
         start_date=start_date,
         end_date=end_date,
@@ -73,20 +62,10 @@ def all_available_slots_api(request):
         patient_user=patient_user
     )
 
-    # --- ۴. برگرداندن پاسخ JSON ---
-    # FullCalendar انتظار دارد هر اسلات خالی، یک "رویداد" (Event) باشد.
-    # ما فرمت خروجی را کمی تغییر می‌دهیم تا FullCalendar آن را بفهمد.
-    events = []
-    for slot in available_slots:
-        events.append({
-            'id': f"{slot['start']}_{service_ids}", # یک شناسه موقت
-            'start': slot['start'],
-            'end': slot['end'],
-            'title': 'رزرو', # عنوانی که روی اسلات در تقوim (اگر بخواهیم) نمایش داده می‌شود
-            'display': 'background' # اسلات‌ها را به عنوان "پس‌زمینه در دسترس" نشان می‌دهد
-        })
-
-    return JsonResponse(events, safe=False)
+    # --- ۴. برگرداندن پاسخ JSON (بدون تغییر) ---
+    # ما دیگر به فرمت event برای FullCalendar نیازی نداریم،
+    # اما همین فرمت لیست ساده از دیکشنری‌ها برای JS ما عالی است.
+    return JsonResponse(available_slots, safe=False)
 
 
 # --------------------------------------------------------------------

@@ -1,15 +1,13 @@
 {# mooli-web/1/1-108afa36b6d3b8572ca403177904f4e3aab9489b/templates/booking/create_booking.html #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
-{% load static %} {# <-- افزودن لود استاتیک #}
+{% load static %}
 
 {% block title %}رزرو نوبت جدید{% endblock %}
 
-{# --- CSS ها با FullCalendar جایگزین شدند --- #}
+{# --- CSS های FullCalendar از اینجا حذف شدند --- #}
 {% block extra_head %}
-{# <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/flatpickr.min.css"> #}
-{# <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr-jalali-support@1.0.3/dist/themes/dark.css"> #}
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css' rel='stylesheet' />
+{# (این بلاک اکنون خالی است، یا می‌تواند حذف شود) #}
 {% endblock %}
 
 {% block content %}
@@ -26,7 +24,7 @@
                     </div>
                 {% endif %}
                 
-                {# --- آدرس API ها به‌روزرسانی شد --- #}
+                {# --- آدرس API ها (بدون تغییر) --- #}
                 <form method="POST" id="bookingForm"
                       data-get-slots-url="{% url 'booking:all_available_slots' %}"
                       data-get-services-url="{% url 'booking:get_services_for_group' %}"
@@ -36,7 +34,7 @@
                     
                     {% csrf_token %}
                     
-                    {# --- مرحله ۱ و ۲: انتخاب گروه، خدمت و دستگاه (بدون تغییر) --- #}
+                    {# --- مرحله ۱ و ۲: (بدون تغییر) --- #}
                     <div class="mb-3">
                         <label for="serviceGroup" class="form-label fs-5">۱. انتخاب گروه خدمت:</label>
                         <select name="service_group" id="serviceGroup" class="form-select form-select-lg" required>
@@ -55,23 +53,15 @@
 
                     {# --- مرحله ۳: انتخاب تاریخ (ساختار HTML تغییر کرد) --- #}
                     <div class="mb-3">
-                        <label class="form-label fs-5">۳. انتخاب تاریخ:</label>
                         
-                        {# --- این input حذف شد --- #}
-                        {# <input type="text" id="datePickerInput" ... > #}
-                        
-                        <div id="calendarContainer" class="mt-3">
-                            <div class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید تا تقویم بارگذاری شود.</div>
-                        </div>
-                        
-                        {# این فیلد مخفی برای ارسال تاریخ میلادی به سرور استفاده می‌شد،
-                           اما در روش جدید، ما زمان دقیق (اسلات) را ارسال می‌کنیم #}
-                        {# <input type="hidden" name="gregorian_date" id="gregorianDateInput"> #}
+                        {# --- این div حذف شد --- #}
+                        {# <div id="calendarContainer" ...> ... </div> #}
                     </div>
 
                     {# --- مرحله ۴: انتخاب ساعت (اسلات) --- #}
-                    <div id="slotsContainer" class_mb-4">
-                        {# اسلات‌ها توسط booking.js در اینجا رندر می‌شوند #}
+                    {# --- این div اکنون توسط JS پر خواهد شد --- #}
+                    <div id="slotsContainer" class="mb-4">
+                        <div class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید تا زمان‌های موجود نمایش داده شوند.</div>
                     </div>
                     
                     {# --- بخش تخفیف (بدون تغییر) --- #}
@@ -151,12 +141,12 @@
 </div>
 {% endblock %}
 
-{# --- اسکریپت‌ها با FullCalendar جایگزین شدند --- #}
+{# --- اسکریپت‌ها (فقط booking.js باقی می‌ماند) --- #}
 {% block extra_js %}
 {{ block.super }} 
 
 <script>
-// --- Navbar Scroll Behavior (کد مربوط به هدر صفحه اصلی، بدون تغییر) ---
+// --- Navbar Scroll Behavior (بدون تغییر) ---
 document.addEventListener('DOMContentLoaded', function() {
     const navbar = document.querySelector('.navbar.sticky-top');
     if (navbar && navbar.classList.contains('navbar-transparent-on-top')) {
@@ -174,14 +164,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('scroll', handleScroll);
     }
 });
-// --- End Navbar Scroll Behavior ---
 </script>
 
-{# --- persian-date.js حذف شد --- #}
-{# <script src="https://cdn.jsdelivr.net/npm/persian-date/dist/persian-date.min.js"></script> #}
+{# --- اسکریپت‌های FullCalendar حذف شدند --- #}
 
-{# --- اسکریپت‌های FullCalendar به base.html منتقل شدند --- #}
-
-{# --- فایل JS رزرو ما --- #}
+{# --- فایل JS رزرو ما (بدون تغییر) --- #}
 <script src="{% static 'js/booking.js' %}"></script>
 {% endblock %}

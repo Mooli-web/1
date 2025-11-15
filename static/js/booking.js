@@ -1,13 +1,12 @@
 // static/js/booking.js
-// --- اصلاحیه: استفاده از (window).on('load') به جای (document).ready
-// --- این کار تضمین می‌کند که اسکریپت‌های خارجی (پلاگین‌ها) قبل از اجرای این کد، لود شده‌اند.
+// --- بازنویسی کامل برای حذف FullCalendar و نمایش لیست اسلات‌ها ---
 
 $(window).on('load', function() {
-    console.log("booking.js v2.0 (FullCalendar) لود شد. (در حالت Window Load)");
+    console.log("booking.js v3.0 (List View) لود شد.");
 
     // --- خواندن data attributes از فرم ---
     const bookingForm = $('#bookingForm');
-    const GET_SLOTS_URL = bookingForm.attr('data-get-slots-url'); // <-- API جدید
+    const GET_SLOTS_URL = bookingForm.attr('data-get-slots-url'); // API اسلات‌ها
     const GET_SERVICES_URL = bookingForm.attr('data-get-services-url');
     const APPLY_DISCOUNT_URL = bookingForm.attr('data-apply-discount-url');
     const CSRF_TOKEN = bookingForm.attr('data-csrf-token');
@@ -19,29 +18,23 @@ $(window).on('load', function() {
     const devicesContainer = $('#devicesContainer');
     const selectedDeviceInput = $('#selectedDevice');
     
-    // --- سلکتورهای تقوim ---
-    const calendarContainerEl = document.getElementById('calendarContainer');
+    // --- سلکتورهای اسلات ---
     const slotsContainer = $('#slotsContainer');
-    
     const selectedSlotInput = $('#selectedSlot');
     const confirmBtn = $('#confirmBtn');
-    const submitBtn = $('#submitBtn');
     
+    // ... (سایر سلکتورها بدون تغییر) ...
+    const submitBtn = $('#submitBtn');
     const applyPointsCheckbox = $('#apply_points');
     const finalPriceSpan = $('#finalPrice');
-    
     const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
     const infoConfirmationCheck = $('#infoConfirmationCheck');
-
     const discountCodeInput = $('#discountCode');
     const applyDiscountBtn = $('#applyDiscountBtn');
     const discountMessage = $('#discountMessage');
     let codeDiscountAmount = 0; 
-
     const basePriceInput = $('#basePrice');
     const totalDurationInput = $('#totalDuration');
-    
-    let calendarInstance = null; // متغیر برای نگهداری نمونه FullCalendar
 
     // ====================================================================
     // --- ۱. توابع کمکی اصلی (محاسبه قیمت و ...) ---
@@ -69,98 +62,17 @@ $(window).on('load', function() {
             applyPointsCheckbox.next('label').find('strong').last().text(applicableDiscount.toLocaleString('fa-IR') + ' تومان');
         }
     }
-
-    /**
-     * (جدید) تابع کمکی برای فرمت کردن زمان (H:M)
-     */
-    function formatTime(date) {
-        // اطمینان از اینکه زمان به درستی در منطقه زمانی تهران نمایش داده می‌شود
-        return date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Tehran' });
-    }
-
-    /**
-     * (جدید) تابع کمکی برای فرمت کردن تاریخ (YYYY-MM-DD)
-     */
-    function getIsoDate(date) {
-        // تبدیل تاریخ به رشته تاریخ محلی (ISO) بر اساس منطقه زمانی مرورگر
-        let localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-        return localDate.toISOString().split('T')[0];
-    }
     
     /**
-     * (جدید) تابع نمایش اسلات‌ها برای روزی که کلیک شده
+     * (جدید) تابع اصلی برای دریافت و نمایش اسلات‌ها
      */
-    function displaySlotsForDate(date) {
-        if (!calendarInstance) return;
-
-        // دریافت *تمام* اسلات‌هایی که تقوim از سرور گرفته
-        const allEvents = calendarInstance.getEvents();
-        const clickedDateStr = getIsoDate(date);
-
-        // فیلتر کردن اسلات‌ها فقط برای روزی که کلیک شده
-        const slotsForDay = allEvents
-            .filter(event => getIsoDate(event.start) === clickedDateStr)
-            .sort((a, b) => a.start - b.start); // مرتب‌سازی بر اساس زمان
-
-        slotsContainer.html(''); // پاک کردن اسلات‌های قبلی
+    async function fetchAndDisplaySlots() {
+        // ۱. پاک کردن اسلات‌های قبلی
+        slotsContainer.html('<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>در حال جستجوی زمان‌های خالی...</p></div>');
         confirmBtn.prop('disabled', true);
         selectedSlotInput.val('');
 
-        if (slotsForDay.length > 0) {
-            slotsContainer.html('<h5 class="text-muted mb-3">۴. انتخاب ساعت:</h5>');
-            const slotsGrid = $('<div class="d-flex flex-wrap gap-2"></div>');
-            
-            slotsForDay.forEach(slot => {
-                const startTimeStr = formatTime(slot.start);
-                const button = $(`<button type="button" class="btn btn-outline-primary" data-slot-iso="${slot.start.toISOString()}">${startTimeStr}</button>`);
-                
-                button.on('click', function() {
-                    slotsContainer.find('button').removeClass('active'); 
-                    $(this).addClass('active');
-                    
-                    // --- اصلاحیه مهم ---
-                    // بک‌اند (views.py) انتظار فرمت 'YYYY-MM-DD HH:MM' را دارد
-                    // ما باید آن را بسازیم.
-                    const isoDate = $(this).data('slot-iso');
-                    const d = new Date(isoDate);
-                    
-                    // فرمت کردن دستی به شکلی که بک‌اند انتظار دارد
-                    // (استفاده از توابع UTC برای جلوگیری از خطای Timezone)
-                    const year = d.getUTCFullYear();
-                    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-                    const day = d.getUTCDate().toString().padStart(2, '0');
-                    const hour = d.getUTCHours().toString().padStart(2, '0');
-                    const minute = d.getUTCMinutes().toString().padStart(2, '0');
-                    const backendFormat = `${year}-${month}-${day} ${hour}:${minute}`;
-
-                    selectedSlotInput.val(backendFormat); 
-                    confirmBtn.prop('disabled', false);
-                });
-                slotsGrid.append(button);
-            });
-            slotsContainer.append(slotsGrid);
-        } else {
-            // این حالت نباید رخ دهد، چون روز غیرقابل کلیک می‌شد
-            slotsContainer.append('<div class="alert alert-warning">هیچ اسلاتی یافت نشد.</div>');
-        }
-    }
-
-    /**
-     * (جدید) تابع اصلی راه‌اندازی یا به‌روزرسانی تقوim
-     */
-    function _updateCalendar() {
-        // پاک کردن اسلات‌های قبلی
-        slotsContainer.html('');
-        confirmBtn.prop('disabled', true);
-        selectedSlotInput.val('');
-
-        // اگر قبلاً نمونه‌ای از تقوim ساخته شده، آن را نابود کن
-        if (calendarInstance) {
-            calendarInstance.destroy();
-            calendarInstance = null;
-        }
-
-        // بررسی اینکه آیا خدمات لازم انتخاب شده‌اند یا خیر
+        // ۲. جمع‌آوری پارامترها
         let service_ids = [];
         $('.service-item:checked').each(function() {
             service_ids.push($(this).val());
@@ -168,119 +80,111 @@ $(window).on('load', function() {
         const deviceId = selectedDeviceInput.val() || '';
         const hasRequiredDevice = $('#deviceSelect').length > 0;
 
+        // ۳. اعتبارسنجی
         if (service_ids.length === 0 || (hasRequiredDevice && !deviceId)) {
             let msg = service_ids.length === 0 
                 ? 'لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.' 
                 : 'لطفاً دستگاه مورد نظر را انتخاب کنید.';
-            $(calendarContainerEl).html(`<div class="alert alert-info">${msg}</div>`);
+            slotsContainer.html(`<div class="alert alert-info">${msg}</div>`);
             return;
         }
 
-        // --- اینجا FullCalendar ساخته می‌شود ---
-        calendarInstance = new FullCalendar.Calendar(calendarContainerEl, {
+        // ۴. ساخت URL برای API
+        const params = new URLSearchParams();
+        service_ids.forEach(id => params.append('service_ids[]', id));
+        if (deviceId) {
+            params.append('device_id', deviceId);
+        }
+        const apiUrl = `${GET_SLOTS_URL}?${params.toString()}`;
+
+        try {
+            // ۵. فراخوانی API
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error('خطا در دریافت اطلاعات از سرور');
             
-            initialView: 'dayGridMonth', // <-- *** این خط برای حل مشکل تقویم دو-ماهه اضافه شده بود ***
+            const slots = await response.json();
 
-            // --- ۱. تنظیمات جلالی و فارسی (اصلاح‌شده) ---
-            locale: 'fa', // فعال‌سازی زبان فارسی
-            calendarSystem: 'jalali', // <-- *** این خط فعال شد ***
-
-            // --- ۲. ظاهر و هدر (اصلاح شد) ---
-            headerToolbar: {
-                start: 'prev',
-                center: 'title',
-                end: 'next'
-            },
-            themeSystem: 'bootstrap5',
-            height: 'auto', // ارتفاع خودکار بر اساس محتوا
-            
-            views: {
-                dayGridMonth: {
-                    // titleFormat از اینجا حذف شد. calendarSystem خودش عنوان را درست می‌کند.
-                    fixedWeekCount: false, // جلوگیری از نمایش ۶ هفته ثابت
-                    showNonCurrentDates: false // پنهان کردن روزهای ماه قبل/بعد
-                }
-            },
-            
-            // --- ۳. منبع رویدادها (اتصال به API جدید ما) ---
-            eventSources: [
-                {
-                    url: GET_SLOTS_URL, // API واحد و جدید
-                    method: 'GET',
-                    // پارامترهای اضافه‌ای که باید با هر درخواست ارسال شوند
-                    extraParams: function() {
-                        let service_ids = [];
-                        $('.service-item:checked').each(function() {
-                            service_ids.push($(this).val());
-                        });
-                        
-                        return {
-                            // ارسال آرایه service_ids به فرمتی که Django می‌فهمد
-                            'service_ids[]': service_ids, 
-                            'device_id': selectedDeviceInput.val() || ''
-                        };
-                    },
-                    // --- غلط املایی اصلاح شد ---
-                    failure: function() {
-                        alert('خطا در بارگذاری اطلاعات تقویم از سرور.');
-                    }
-                }
-            ],
-            
-            // --- ۴. مدیریت رندر و کلیک ---
-            
-            // نمایش loading...
-            loading: function(isLoading) {
-                if (isLoading) {
-                    $(calendarContainerEl).prepend('<div class="fc-loading"><div class="spinner-border text-primary" role="status"></div></div>');
-                } else {
-                    $(calendarContainerEl).find('.fc-loading').remove();
-                }
-            },
-
-            // تابع برای رنگ‌آمیزی روزهای در دسترس/غیر در دسترس
-            dayCellDidMount: function(info) {
-                // اگر روز در گذشته است، آن را غیرفعال کن
-                const today = new Date();
-                today.setHours(0, 0, 0, 0); // نادیده گرفتن ساعت
-                if (info.date < today) {
-                    info.el.classList.add('fc-day-past');
-                    return;
-                }
-
-                // بررسی اینکه آیا اسلاتی برای این روز وجود دارد یا خیر
-                // نکته: getEvents() تمام رویدادهای *بارگذاری شده* را برمی‌گرداند
-                const eventsOnDay = calendarInstance.getEvents().filter(event => 
-                    getIsoDate(event.start) === getIsoDate(info.date)
-                );
-
-                if (eventsOnDay.length > 0) {
-                    info.el.classList.add('fc-day-available');
-                } else {
-                    info.el.classList.add('fc-day-unavailable');
-                }
-            },
-
-            // رویداد کلیک روی یک روز
-            dateClick: function(info) {
-                // اگر روز در گذشته یا غیر در دسترس (خاکستری) بود، نادیده بگیر
-                if (info.dayEl.classList.contains('fc-day-past') || 
-                    info.dayEl.classList.contains('fc-day-unavailable')) {
-                    // پاک کردن اسلات‌ها اگر روز دیگری انتخاب شده بود
-                    slotsContainer.html('');
-                    confirmBtn.prop('disabled', true);
-                    selectedSlotInput.val('');
-                    return; 
-                }
-                
-                // در غیر این صورت (روز سبز و در دسترس است)
-                // اسلات‌های آن روز را از دیتای موجود فیلتر و نمایش بده
-                displaySlotsForDate(info.date);
+            if (slots.length === 0) {
+                slotsContainer.html('<div class="alert alert-warning">متاسفانه هیچ زمان خالی در ۳۰ روز آینده یافت نشد.</div>');
+                return;
             }
-        });
 
-        // رندر کردن تقوim
-        calendarInstance.render();
+            // ۶. (بخش اصلی) گروه‌بندی اسلات‌ها بر اساس روز
+            const groupedSlots = slots.reduce((acc, slot) => {
+                const slotDate = new Date(slot.start);
+                
+                // ایجاد یک کلید خوانا برای تاریخ (مثل: شنبه، ۲۴ آبان)
+                const dateKey = slotDate.toLocaleDateString('fa-IR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long'
+                });
+
+                if (!acc[dateKey]) {
+                    acc[dateKey] = [];
+                }
+                acc[dateKey].push(slot);
+                return acc;
+            }, {});
+
+            // ۷. رندر کردن HTML
+            slotsContainer.html(''); // پاک کردن spinner
+            
+            for (const dateKey in groupedSlots) {
+                // افزودن هدر روز (مثلاً: <h5>شنبه، ۲۴ آبان</h5>)
+                slotsContainer.append(`<h5 class="text-muted border-bottom pb-2 mt-4">${dateKey}</h5>`);
+                
+                const buttonGroup = $('<div class="d-flex flex-wrap gap-2 mb-3"></div>');
+                
+                groupedSlots[dateKey].forEach(slot => {
+                    const slotDate = new Date(slot.start);
+                    
+                    // فرمت زمان (مثلاً: ۰۹:۳۰)
+                    const timeStr = slotDate.toLocaleTimeString('fa-IR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        hour12: false,
+                        timeZone: 'Asia/Tehran' // نمایش زمان بر اساس تهران
+                    });
+
+                    // --- ایجاد فرمت YYYY-MM-DD HH:MM برای بک‌اند ---
+                    // (کپی شده از کد قدیمی booking.js)
+                    const d = new Date(slot.start); // استفاده از تاریخ ISO
+                    const year = d.getUTCFullYear();
+                    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+                    const day = d.getUTCDate().toString().padStart(2, '0');
+                    const hour = d.getUTCHours().toString().padStart(2, '0');
+                    const minute = d.getUTCMinutes().toString().padStart(2, '0');
+                    const backendFormat = `${year}-${month}-${day} ${hour}:${minute}`;
+                    // --- پایان بخش فرمت بک‌اند ---
+
+                    const button = $(`
+                        <button type="button" 
+                                class="btn btn-outline-primary" 
+                                data-slot-backend-format="${backendFormat}">
+                            ${timeStr}
+                        </button>
+                    `);
+
+                    // افزودن رویداد کلیک برای دکمه
+                    button.on('click', function() {
+                        slotsContainer.find('button').removeClass('active'); 
+                        $(this).addClass('active');
+                        
+                        selectedSlotInput.val($(this).data('slot-backend-format')); 
+                        confirmBtn.prop('disabled', false);
+                    });
+
+                    buttonGroup.append(button);
+                });
+                
+                slotsContainer.append(buttonGroup);
+            }
+
+        } catch (error) {
+            console.error('Error fetching slots:', error);
+            slotsContainer.html(`<div class="alert alert-danger">خطا در بارگذاری زمان‌ها: ${error.message}</div>`);
+        }
     }
 
 
@@ -295,7 +199,7 @@ $(window).on('load', function() {
         servicesContainer.html('');
         devicesContainer.html('');
         selectedDeviceInput.val(''); 
-        slotsContainer.html('');
+        slotsContainer.html('<div class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید.</div>');
         
         selectedSlotInput.val('');
         confirmBtn.prop('disabled', true);
@@ -306,13 +210,6 @@ $(window).on('load', function() {
         discountMessage.text('').removeClass('text-success text-danger');
         updateFinalPrice();
         
-        // تقوim را هم ریست کن
-        if (calendarInstance) {
-            calendarInstance.destroy();
-            calendarInstance = null;
-        }
-        $(calendarContainerEl).html('<div class="alert alert-info">لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.</div>');
-
         const groupId = $(this).val();
         if (!groupId) return;
 
@@ -352,7 +249,7 @@ $(window).on('load', function() {
             
             if (hasDevices && devices && devices.length > 0) {
                 let html = `
-                    <label for="deviceSelect" class="form-label fs-5">انتخاب دستگاه:</label>
+                    <label for="deviceSelect" class="form-label fs-5">۳. انتخاب دستگاه:</label>
                     <select id="deviceSelect" class="form-select form-select-lg" required>
                         <option value="">--- انتخاب کنید ---</option>
                 `;
@@ -361,8 +258,15 @@ $(window).on('load', function() {
                 });
                 html += '</select>';
                 devicesContainer.html(html);
+                
+                // تغییر لیبل اسلات‌ها
+                slotsContainer.before('<label class="form-label fs-5 mt-3">۴. انتخاب زمان:</label>');
+
             } else if (hasDevices) {
                 devicesContainer.html('<div class="alert alert-danger">این گروه خدماتی نیاز به دستگاه دارد، اما هیچ دستگاهی برای آن تنظیم نشده است.</div>');
+            } else {
+                 // اگر دستگاه نیاز نداشت، لیبل اسلات‌ها را عوض کن
+                 slotsContainer.before('<label class="form-label fs-5 mt-3">۳. انتخاب زمان:</label>');
             }
         } catch (error) {
             servicesContainer.html(`<div class="alert alert-danger">${error.message}</div>`);
@@ -390,8 +294,8 @@ $(window).on('load', function() {
         discountMessage.text('').removeClass('text-success text-danger');
         updateFinalPrice();
         
-        // --- مهم: به جای فراخوانی API، فقط تقوim را رفرش کن ---
-        _updateCalendar();
+        // --- مهم: فراخوانی تابع جدید ---
+        fetchAndDisplaySlots();
     });
     
     /**
@@ -401,13 +305,12 @@ $(window).on('load', function() {
         selectedDeviceInput.val($(this).val());
         console.log("دستگاه عوض شد.");
 
-        // --- مهم: به جای فراخوانی API، فقط تقوim را رفرش کن ---
-        _updateCalendar();
+        // --- مهم: فراخوانی تابع جدید ---
+        fetchAndDisplaySlots();
     });
 
     // ====================================================================
-    // --- ۳. رویدادهای تخفیف و ثبت نهایی ---
-    // (این بخش‌ها کاملاً بدون تغییر هستند)
+    // --- ۳. رویدادهای تخفیف و ثبت نهایی (کاملاً بدون تغییر) ---
     // ====================================================================
 
     // اعمال/حذف تخفیف امتیاز
@@ -461,7 +364,6 @@ $(window).on('load', function() {
 
     // --- رویدادهای دکمه تایید و مودال ---
     confirmBtn.on('click', function() {
-        // (اعتبارسنجی دستگاه بدون تغییر)
         const deviceSelect = $('#deviceSelect');
         if (deviceSelect.length > 0 && !selectedDeviceInput.val()) {
              alert('لطفا دستگاه مورد نظر را انتخاب کنید.');
@@ -469,7 +371,6 @@ $(window).on('load', function() {
              return;
         }
         
-        // (اعتبارسنجی فرم بدون تغییر)
         if (bookingForm[0].checkValidity() && $('.service-item:checked').length > 0 && selectedSlotInput.val()) {
             if ($('#manual_confirm').is(':checked')) {
                 bookingForm.submit();
@@ -497,6 +398,4 @@ $(window).on('load', function() {
     
     // --- اجرای اولیه ---
     updateFinalPrice();
-    // (تابع راه‌انداز تقویم در اینجا صدا زده *نمی‌شود*،
-    // چون ابتدا باید خدمت انتخاب شود)
 });
