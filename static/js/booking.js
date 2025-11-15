@@ -1,29 +1,35 @@
 // static/js/booking.js
-// --- بازنویسی کامل برای حذف FullCalendar و نمایش لیست اسلات‌ها ---
+// --- نسخه v5.0 (صفحه‌بندی هفتگی) ---
 
 $(window).on('load', function() {
-    console.log("booking.js v3.0 (List View) لود شد.");
+    console.log("booking.js v5.0 (Weekly Pagination) لود شد.");
 
-    // --- خواندن data attributes از فرم ---
+    // --- سلکتورهای اصلی (بدون تغییر) ---
     const bookingForm = $('#bookingForm');
-    const GET_SLOTS_URL = bookingForm.attr('data-get-slots-url'); // API اسلات‌ها
+    const GET_SLOTS_URL = bookingForm.attr('data-get-slots-url');
     const GET_SERVICES_URL = bookingForm.attr('data-get-services-url');
     const APPLY_DISCOUNT_URL = bookingForm.attr('data-apply-discount-url');
     const CSRF_TOKEN = bookingForm.attr('data-csrf-token');
     const MAX_DISCOUNT = parseFloat(bookingForm.attr('data-max-discount') || 0);
 
-    // --- سلکتورهای اصلی ---
     const serviceGroupSelect = $('#serviceGroup');
     const servicesContainer = $('#servicesContainer');
     const devicesContainer = $('#devicesContainer');
     const selectedDeviceInput = $('#selectedDevice');
     
-    // --- سلکتورهای اسلات ---
+    // --- سلکتورهای اسلات (و صفحه‌بندی) ---
     const slotsContainer = $('#slotsContainer');
+    const daySelectionList = $('#day-selection-list'); // (جدید) محفظه لیست روزها
+    const timeSelectionContainer = $('#time-selection-container'); // (جدید) محفظه لیست ساعت‌ها
+    const paginationContainer = $('#week-pagination-container'); // (جدید)
+    const prevWeekBtn = $('#prevWeekBtn'); // (جدید)
+    const nextWeekBtn = $('#nextWeekBtn'); // (جدید)
+    const weekLabel = $('#week-label'); // (جدید)
+
     const selectedSlotInput = $('#selectedSlot');
     const confirmBtn = $('#confirmBtn');
     
-    // ... (سایر سلکتورها بدون تغییر) ...
+    // --- سایر سلکتورها (بدون تغییر) ---
     const submitBtn = $('#submitBtn');
     const applyPointsCheckbox = $('#apply_points');
     const finalPriceSpan = $('#finalPrice');
@@ -36,26 +42,25 @@ $(window).on('load', function() {
     const basePriceInput = $('#basePrice');
     const totalDurationInput = $('#totalDuration');
 
-    // ====================================================================
-    // --- ۱. توابع کمکی اصلی (محاسبه قیمت و ...) ---
-    // ====================================================================
+    // --- (جدید) متغیرهای سراسری برای صفحه‌بندی ---
+    let allGroupedSlots = {}; // برای نگهداری دیتای کامل ۳۰ روزه
+    let allDateKeys = []; // کلیدهای تاریخ (برای برش زدن)
+    let currentWeek = 0; // هفته جاری (شروع از ۰)
+    const DAYS_PER_WEEK = 7;
 
-    /**
-     * (بدون تغییر) تابع به‌روزرسانی قیمت نهایی
-     */
+    // ====================================================================
+    // --- ۱. توابع کمکی اصلی (محاسبه قیمت و ...) (بدون تغییر) ---
+    // ====================================================================
     function updateFinalPrice() {
         let basePrice = parseFloat(basePriceInput.val() || 0);
         let pointsDiscount = 0;
-
         if (applyPointsCheckbox && applyPointsCheckbox.is(':checked')) {
             let maxPointsDiscount = MAX_DISCOUNT;
             pointsDiscount = Math.min(basePrice, maxPointsDiscount);
         }
-
         let priceAfterDiscounts = basePrice - pointsDiscount - codeDiscountAmount;
         let finalPrice = Math.max(0, priceAfterDiscounts);
         finalPriceSpan.text(finalPrice.toLocaleString('fa-IR') + ' تومان');
-
         if (applyPointsCheckbox.length) {
             let maxPointsDiscount = MAX_DISCOUNT;
             let applicableDiscount = Math.min(basePrice, maxPointsDiscount);
@@ -63,16 +68,82 @@ $(window).on('load', function() {
         }
     }
     
+    // ====================================================================
+    // --- ۲. (جدید) توابع رندر و دریافت اسلات‌ها ---
+    // ====================================================================
+
     /**
-     * (جدید) تابع اصلی برای دریافت و نمایش اسلات‌ها
+     * (جدید) تابع رندر هفته جاری
+     * این تابع دیتای از قبل گرفته شده را فقط نمایش می‌دهد
+     */
+    function renderWeek(weekIndex) {
+        // ۱. پاک کردن محتوای قبلی
+        daySelectionList.html('');
+        timeSelectionContainer.html('').hide();
+        selectedSlotInput.val('');
+        confirmBtn.prop('disabled', true);
+
+        // ۲. محاسبه روزهای این هفته
+        const startIndex = weekIndex * DAYS_PER_WEEK;
+        const endIndex = startIndex + DAYS_PER_WEEK;
+        const keysForThisWeek = allDateKeys.slice(startIndex, endIndex);
+
+        if (keysForThisWeek.length === 0) {
+            daySelectionList.html('<div class="alert alert-secondary">اسلاتی برای این هفته یافت نشد.</div>');
+        }
+
+        // ۳. رندر کردن آیتم‌های روز (منطق هوشمند ازدحام)
+        keysForThisWeek.forEach(dateKey => {
+            const slotsForThisDay = allGroupedSlots[dateKey];
+            const count = slotsForThisDay.length;
+            let badgeHtml = '';
+
+            if (count <= 3) {
+                badgeHtml = `<span class="badge bg-danger ms-2">فقط ${count} اسلات باقی‌مانده</span>`;
+            } else if (count <= 7) {
+                badgeHtml = `<span class="badge bg-warning text-dark ms-2">ظرفیت محدود</span>`;
+            } else {
+                badgeHtml = `<span class="badge bg-success ms-2">ظرفیت موجود</span>`;
+            }
+
+            const dayItem = $(`
+                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center day-select-item">
+                    <strong class="text-primary">${dateKey}</strong>
+                    ${badgeHtml}
+                </a>
+            `);
+            dayItem.data('slots', slotsForThisDay); // ذخیره اسلات‌ها در دکمه
+            daySelectionList.append(dayItem);
+        });
+
+        // ۴. به‌روزرسانی دکمه‌های صفحه‌بندی
+        prevWeekBtn.prop('disabled', weekIndex === 0);
+        nextWeekBtn.prop('disabled', endIndex >= allDateKeys.length);
+        
+        // ۵. به‌روزرسانی لیبل هفته
+        const totalWeeks = Math.ceil(allDateKeys.length / DAYS_PER_WEEK);
+        if (totalWeeks > 1) {
+             weekLabel.text(`هفته ${weekIndex + 1} از ${totalWeeks}`);
+             paginationContainer.show();
+        } else {
+            paginationContainer.hide();
+        }
+    }
+
+    /**
+     * (اصلاح‌شده) تابع اصلی برای دریافت همه اسلات‌ها
+     * این تابع API را کال می‌کند و دیتای ۳۰ روزه را در متغیرهای سراسری می‌ریزد
      */
     async function fetchAndDisplaySlots() {
-        // ۱. پاک کردن اسلات‌های قبلی
-        slotsContainer.html('<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>در حال جستجوی زمان‌های خالی...</p></div>');
+        // ۱. نمایش لودینگ
+        daySelectionList.html('<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p>در حال جستجوی زمان‌های خالی...</p></div>');
+        timeSelectionContainer.html('').hide();
+        paginationContainer.hide();
         confirmBtn.prop('disabled', true);
         selectedSlotInput.val('');
+        $('label[for="slotsContainer"]').remove(); // حذف لیبل قدیمی
 
-        // ۲. جمع‌آوری پارامترها
+        // ۲. جمع‌آوری پارامترها (بدون تغییر)
         let service_ids = [];
         $('.service-item:checked').each(function() {
             service_ids.push($(this).val());
@@ -80,16 +151,16 @@ $(window).on('load', function() {
         const deviceId = selectedDeviceInput.val() || '';
         const hasRequiredDevice = $('#deviceSelect').length > 0;
 
-        // ۳. اعتبارسنجی
+        // ۳. اعتبارسنجی (بدون تغییر)
         if (service_ids.length === 0 || (hasRequiredDevice && !deviceId)) {
             let msg = service_ids.length === 0 
                 ? 'لطفاً ابتدا حداقل یک خدمت را انتخاب کنید.' 
                 : 'لطفاً دستگاه مورد نظر را انتخاب کنید.';
-            slotsContainer.html(`<div class="alert alert-info">${msg}</div>`);
+            daySelectionList.html(`<div class="alert alert-info">${msg}</div>`);
             return;
         }
 
-        // ۴. ساخت URL برای API
+        // ۴. ساخت URL و فراخوانی API (بدون تغییر)
         const params = new URLSearchParams();
         service_ids.forEach(id => params.append('service_ids[]', id));
         if (deviceId) {
@@ -98,98 +169,46 @@ $(window).on('load', function() {
         const apiUrl = `${GET_SLOTS_URL}?${params.toString()}`;
 
         try {
-            // ۵. فراخوانی API
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error('خطا در دریافت اطلاعات از سرور');
-            
             const slots = await response.json();
 
             if (slots.length === 0) {
-                slotsContainer.html('<div class="alert alert-warning">متاسفانه هیچ زمان خالی در ۳۰ روز آینده یافت نشد.</div>');
+                daySelectionList.html('<div class="alert alert-warning">متاسفانه هیچ زمان خالی در ۳۰ روز آینده یافت نشد.</div>');
                 return;
             }
 
-            // ۶. (بخش اصلی) گروه‌بندی اسلات‌ها بر اساس روز
-            const groupedSlots = slots.reduce((acc, slot) => {
+            // ۵. (اصلاح‌شده) گروه‌بندی اسلات‌ها و ذخیره در متغیر سراسری
+            allGroupedSlots = slots.reduce((acc, slot) => {
                 const slotDate = new Date(slot.start);
-                
-                // ایجاد یک کلید خوانا برای تاریخ (مثل: شنبه، ۲۴ آبان)
                 const dateKey = slotDate.toLocaleDateString('fa-IR', {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long'
                 });
-
-                if (!acc[dateKey]) {
-                    acc[dateKey] = [];
-                }
+                if (!acc[dateKey]) acc[dateKey] = [];
                 acc[dateKey].push(slot);
                 return acc;
             }, {});
 
-            // ۷. رندر کردن HTML
-            slotsContainer.html(''); // پاک کردن spinner
-            
-            for (const dateKey in groupedSlots) {
-                // افزودن هدر روز (مثلاً: <h5>شنبه، ۲۴ آبان</h5>)
-                slotsContainer.append(`<h5 class="text-muted border-bottom pb-2 mt-4">${dateKey}</h5>`);
-                
-                const buttonGroup = $('<div class="d-flex flex-wrap gap-2 mb-3"></div>');
-                
-                groupedSlots[dateKey].forEach(slot => {
-                    const slotDate = new Date(slot.start);
-                    
-                    // فرمت زمان (مثلاً: ۰۹:۳۰)
-                    const timeStr = slotDate.toLocaleTimeString('fa-IR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        hour12: false,
-                        timeZone: 'Asia/Tehran' // نمایش زمان بر اساس تهران
-                    });
+            allDateKeys = Object.keys(allGroupedSlots); // ذخیره کلیدها
+            currentWeek = 0; // ریست کردن هفته
 
-                    // --- ایجاد فرمت YYYY-MM-DD HH:MM برای بک‌اند ---
-                    // (کپی شده از کد قدیمی booking.js)
-                    const d = new Date(slot.start); // استفاده از تاریخ ISO
-                    const year = d.getUTCFullYear();
-                    const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-                    const day = d.getUTCDate().toString().padStart(2, '0');
-                    const hour = d.getUTCHours().toString().padStart(2, '0');
-                    const minute = d.getUTCMinutes().toString().padStart(2, '0');
-                    const backendFormat = `${year}-${month}-${day} ${hour}:${minute}`;
-                    // --- پایان بخش فرمت بک‌اند ---
+            // ۶. (جدید) افزودن لیبل اصلی (مرحله ۳: انتخاب روز)
+            const stepLabel = devicesContainer.is(':empty') ? '۳' : '۴';
+            slotsContainer.prepend(`<label class_form-label fs-5 mb-3" for="slotsContainer">${stepLabel}. انتخاب روز:</label>`);
 
-                    const button = $(`
-                        <button type="button" 
-                                class="btn btn-outline-primary" 
-                                data-slot-backend-format="${backendFormat}">
-                            ${timeStr}
-                        </button>
-                    `);
-
-                    // افزودن رویداد کلیک برای دکمه
-                    button.on('click', function() {
-                        slotsContainer.find('button').removeClass('active'); 
-                        $(this).addClass('active');
-                        
-                        selectedSlotInput.val($(this).data('slot-backend-format')); 
-                        confirmBtn.prop('disabled', false);
-                    });
-
-                    buttonGroup.append(button);
-                });
-                
-                slotsContainer.append(buttonGroup);
-            }
+            // ۷. (جدید) رندر کردن هفته اول
+            renderWeek(currentWeek);
 
         } catch (error) {
             console.error('Error fetching slots:', error);
-            slotsContainer.html(`<div class="alert alert-danger">خطا در بارگذاری زمان‌ها: ${error.message}</div>`);
+            daySelectionList.html(`<div class="alert alert-danger">خطا در بارگذاری زمان‌ها: ${error.message}</div>`);
         }
     }
 
-
     // ====================================================================
-    // --- ۲. رویدادهای مربوط به فرم (انتخاب خدمت، دستگاه و ...) ---
+    // --- ۳. رویدادهای مربوط به فرم (انتخاب خدمت، دستگاه و ...) ---
     // ====================================================================
 
     // --- رویداد انتخاب گروه خدمت ---
@@ -199,7 +218,11 @@ $(window).on('load', function() {
         servicesContainer.html('');
         devicesContainer.html('');
         selectedDeviceInput.val(''); 
-        slotsContainer.html('<div class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید.</div>');
+        
+        $('label[for="slotsContainer"]').remove(); // حذف لیبل
+        daySelectionList.html('<div class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید.</div>');
+        timeSelectionContainer.html('').hide();
+        paginationContainer.hide();
         
         selectedSlotInput.val('');
         confirmBtn.prop('disabled', true);
@@ -210,21 +233,24 @@ $(window).on('load', function() {
         discountMessage.text('').removeClass('text-success text-danger');
         updateFinalPrice();
         
+        // ریست متغیرهای سراسری
+        allGroupedSlots = {};
+        allDateKeys = [];
+        currentWeek = 0;
+        
         const groupId = $(this).val();
         if (!groupId) return;
 
         servicesContainer.html('<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>');
 
         try {
+            // (منطق دریافت خدمات بدون تغییر)
             const apiUrl = `${GET_SERVICES_URL}?group_id=${groupId}`;
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error('خطا در بارگذاری خدمات');
-            
             const data = await response.json();
-            
             const hasDevices = data.has_devices;
             const devices = data.devices;
-            
             if (data.services && data.services.length > 0) {
                 let html = '<label class="form-label fs-5">۲. انتخاب خدمات:</label><div class="list-group">';
                 const inputType = data.allow_multiple_selection ? 'checkbox' : 'radio';
@@ -246,10 +272,9 @@ $(window).on('load', function() {
             } else {
                 servicesContainer.html('<div class="alert alert-warning">خدمتی (زیرگروهی) برای این گروه یافت نشد.</div>');
             }
-            
             if (hasDevices && devices && devices.length > 0) {
                 let html = `
-                    <label for="deviceSelect" class="form-label fs-5">۳. انتخاب دستگاه:</label>
+                    <label for="deviceSelect" class="form-label fs-5 mt-3">۳. انتخاب دستگاه:</label>
                     <select id="deviceSelect" class="form-select form-select-lg" required>
                         <option value="">--- انتخاب کنید ---</option>
                 `;
@@ -258,15 +283,8 @@ $(window).on('load', function() {
                 });
                 html += '</select>';
                 devicesContainer.html(html);
-                
-                // تغییر لیبل اسلات‌ها
-                slotsContainer.before('<label class="form-label fs-5 mt-3">۴. انتخاب زمان:</label>');
-
             } else if (hasDevices) {
                 devicesContainer.html('<div class="alert alert-danger">این گروه خدماتی نیاز به دستگاه دارد، اما هیچ دستگاهی برای آن تنظیم نشده است.</div>');
-            } else {
-                 // اگر دستگاه نیاز نداشت، لیبل اسلات‌ها را عوض کن
-                 slotsContainer.before('<label class="form-label fs-5 mt-3">۳. انتخاب زمان:</label>');
             }
         } catch (error) {
             servicesContainer.html(`<div class="alert alert-danger">${error.message}</div>`);
@@ -280,22 +298,17 @@ $(window).on('load', function() {
         console.log("خدمت عوض شد.");
         let currentBasePrice = 0;
         let currentTotalDuration = 0;
-
         $('.service-item:checked').each(function() {
             currentBasePrice += parseFloat($(this).data('price'));
             currentTotalDuration += parseFloat($(this).data('duration'));
         });
-
         basePriceInput.val(currentBasePrice);
         totalDurationInput.val(currentTotalDuration);
-
         codeDiscountAmount = 0;
         discountCodeInput.val('');
         discountMessage.text('').removeClass('text-success text-danger');
         updateFinalPrice();
-        
-        // --- مهم: فراخوانی تابع جدید ---
-        fetchAndDisplaySlots();
+        fetchAndDisplaySlots(); // فراخوانی تابع اصلی
     });
     
     /**
@@ -304,40 +317,109 @@ $(window).on('load', function() {
     $(document).on('change', '#deviceSelect', function() {
         selectedDeviceInput.val($(this).val());
         console.log("دستگاه عوض شد.");
-
-        // --- مهم: فراخوانی تابع جدید ---
-        fetchAndDisplaySlots();
+        fetchAndDisplaySlots(); // فراخوانی تابع اصلی
     });
 
     // ====================================================================
-    // --- ۳. رویدادهای تخفیف و ثبت نهایی (کاملاً بدون تغییر) ---
+    // --- ۴. رویدادهای کلیک دو مرحله‌ای و صفحه‌بندی ---
     // ====================================================================
 
-    // اعمال/حذف تخفیف امتیاز
+    /**
+     * (جدید) رویداد کلیک دکمه‌های صفحه‌بندی
+     */
+    nextWeekBtn.on('click', function() {
+        const totalWeeks = Math.ceil(allDateKeys.length / DAYS_PER_WEEK);
+        if (currentWeek < totalWeeks - 1) {
+            currentWeek++;
+            renderWeek(currentWeek);
+        }
+    });
+
+    prevWeekBtn.on('click', function() {
+        if (currentWeek > 0) {
+            currentWeek--;
+            renderWeek(currentWeek);
+        }
+    });
+
+    /**
+     * رویداد کلیک روی یک روز در لیست روزها
+     */
+    $(document).on('click', '.day-select-item', function(e) {
+        e.preventDefault();
+        
+        // (منطق این بخش بدون تغییر است)
+        $('.day-select-item').removeClass('active');
+        $(this).addClass('active');
+        selectedSlotInput.val('');
+        confirmBtn.prop('disabled', true);
+
+        const slotsForDay = $(this).data('slots');
+        
+        // (جدید) لیبل مرحله انتخاب ساعت
+        const stepLabel = devicesContainer.is(':empty') ? '۴' : '۵';
+        timeSelectionContainer.html(`<label class="form-label fs-5">${stepLabel}. انتخاب ساعت:</label>`);
+        
+        const buttonGroup = $('<div class="d-flex flex-wrap gap-2 mb-3"></div>');
+        slotsForDay.forEach(slot => {
+            const slotDate = new Date(slot.start);
+            const timeStr = slotDate.toLocaleTimeString('fa-IR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false,
+                timeZone: 'Asia/Tehran'
+            });
+            const d = new Date(slot.start);
+            const year = d.getUTCFullYear();
+            const month = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+            const day = d.getUTCDate().toString().padStart(2, '0');
+            const hour = d.getUTCHours().toString().padStart(2, '0');
+            const minute = d.getUTCMinutes().toString().padStart(2, '0');
+            const backendFormat = `${year}-${month}-${day} ${hour}:${minute}`;
+            const button = $(`
+                <button type="button" 
+                        class="btn btn-outline-primary time-select-item" 
+                        data-slot-backend-format="${backendFormat}">
+                    ${timeStr}
+                </button>
+            `);
+            buttonGroup.append(button);
+        });
+
+        timeSelectionContainer.append(buttonGroup);
+        timeSelectionContainer.show();
+    });
+
+    /**
+     * رویداد کلیک روی دکمه ساعت
+     */
+    $(document).on('click', '.time-select-item', function() {
+        $('.time-select-item').removeClass('active');
+        $(this).addClass('active');
+        selectedSlotInput.val($(this).data('slot-backend-format'));
+        confirmBtn.prop('disabled', false);
+    });
+
+    // ====================================================================
+    // --- ۵. رویدادهای تخفیف و ثبت نهایی (کاملاً بدون تغییر) ---
+    // ====================================================================
+
     if (applyPointsCheckbox) {
         applyPointsCheckbox.on('change', updateFinalPrice);
     }
-
-    // دکمه "اعمال کد" تخفیف
     applyDiscountBtn.on('click', async function() {
         const code = discountCodeInput.val();
         const currentBasePrice = parseFloat(basePriceInput.val() || 0);
-
         if (!code || currentBasePrice === 0) {
             discountMessage.text('لطفاً ابتدا خدمت و کد را وارد کنید.').removeClass('text-success').addClass('text-danger');
             return;
         }
-        
         const formData = new FormData();
         formData.append('code', code);
         formData.append('total_price', currentBasePrice);
         formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
-
         try {
-            const response = await fetch(APPLY_DISCOUNT_URL, {
-                method: 'POST',
-                body: formData,
-            });
+            const response = await fetch(APPLY_DISCOUNT_URL, { method: 'POST', body: formData });
             if (!response.ok) {
                 if (response.status === 400 || response.status === 404) {
                     const data = await response.json();
@@ -346,14 +428,11 @@ $(window).on('load', function() {
                     throw new Error(`خطای سرور: ${response.status}`);
                 }
             }
-            
             const data = await response.json();
-            
             if (data.discount_amount !== undefined) {
                 codeDiscountAmount = parseFloat(data.discount_amount);
                 discountMessage.text(`تخفیف ${parseInt(data.discount_amount).toLocaleString('fa-IR')} تومانی اعمال شد.`).removeClass('text-danger').addClass('text-success');
             }
-            
         } catch (error) {
             console.error("Error applying discount:", error);
             codeDiscountAmount = 0; 
@@ -361,8 +440,6 @@ $(window).on('load', function() {
         }
         updateFinalPrice();
     });
-
-    // --- رویدادهای دکمه تایید و مودال ---
     confirmBtn.on('click', function() {
         const deviceSelect = $('#deviceSelect');
         if (deviceSelect.length > 0 && !selectedDeviceInput.val()) {
@@ -370,7 +447,6 @@ $(window).on('load', function() {
              deviceSelect.focus();
              return;
         }
-        
         if (bookingForm[0].checkValidity() && $('.service-item:checked').length > 0 && selectedSlotInput.val()) {
             if ($('#manual_confirm').is(':checked')) {
                 bookingForm.submit();
@@ -387,11 +463,9 @@ $(window).on('load', function() {
             }
         }
     });
-
     infoConfirmationCheck.on('change', function() {
         submitBtn.prop('disabled', !this.checked);
     });
-
     submitBtn.on('click', function() {
         bookingForm.submit();
     });
