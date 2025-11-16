@@ -110,6 +110,13 @@
             
             const firstSlot = slots[0];
             
+            // ==========================================================
+            // --- DEBUG 3 ---
+            // بیایید ببینیم اولین اسلاتی که از بک‌اند آمده چیست
+            // اینجا باید رشته فارسی «آبان» را ببینیم
+            console.log("DEBUG (booking-api.js): اولین اسلات دریافتی از سرور:", firstSlot);
+            // ==========================================================
+
             // --- *** شروع اصلاحیه (مشکل شماره ۱) *** ---
             // دیگر نیازی به فرمت کردن با moment نیست
             // رشته‌ی آماده را مستقیماً از API می‌خوانیم
@@ -135,6 +142,15 @@
 
             state.currentCalendarMoment = state.todayMoment.clone().startOf('jMonth'); // <-- *** اصلاح شد ***
             
+            // ==========================================================
+            // --- DEBUG 4 ---
+            // اینجا متغیری است که به تقویم ارسال می‌شود تا ماه را رندر کند
+            // این باید «آبان» باشد، اما در سیستم شما «بهمن» است
+            console.log("DEBUG (booking-api.js): متغیر 'state.currentCalendarMoment' (برای رندر تقویم) تنظیم شد:");
+            console.log("DEBUG: فرمت میلادی:", state.currentCalendarMoment.format('YYYY-MM-DD'));
+            console.log("DEBUG: فرمت شمسی:", state.currentCalendarMoment.format('jYYYY-jMM-jDD'));
+            // ==========================================================
+
             // فراخوانی buildCalendar (بدون تغییر)
             buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); // <-- *** اصلاح شد ***
             

@@ -72,9 +72,20 @@
         // (BUG FIX P2) تنظیم "امروز" بر اساس تاریخ سرور
         if (!state.TODAY_DATE_SERVER) {
             console.error("خطای حیاتی: data-today-date یافت نشد. تقویم ممکن است اشتباه باشد.");
-            state.todayMoment = moment().startOf('day'); // <-- *** اصلاح شد *** (Fallback)
+            state.todayMoment = moment().startOf('day'); // (Fallback)
         } else {
-            state.todayMoment = moment(state.TODAY_DATE_SERVER, 'YYYY-MM-DD').startOf('day'); // <-- *** اصلاح شد ***
+            // ==========================================================
+            // --- اصلاحیه نهایی و قطعی (روش Native Date) ---
+            // 1. رشته تاریخ میلادی را به آرایه تبدیل می‌کنیم
+            const dateParts = state.TODAY_DATE_SERVER.split('-'); // e.g., ["2025", "11", "16"]
+            
+            // 2. یک آبجکت Date نیتیو جاوا اسکریپت می‌سازیم (که همیشه میلادی است)
+            // (توجه: ماه در Date() جاوا اسکریپت 0-indexed است، پس '1' کم می‌کنیم)
+            const gregorianDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            
+            // 3. آبجکت Date نیتیو را به moment() پاس می‌دهیم تا از پارس رشته‌ای جلوگیری شود
+            state.todayMoment = moment(gregorianDate).startOf('day');
+            // ==========================================================
         }
 
         // --- ۴. اتصال Event Handlers ---

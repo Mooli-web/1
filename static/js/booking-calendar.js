@@ -21,10 +21,17 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
     jMoment.locale('fa');
     
     // --- *** اصلاحیه کلیدی: استفاده از 'jMMMM jYYYY' *** ---
-    // این خط باید از سال شمسی (jYYYY) استفاده کند نه سال میلادی (YYYY)
     const monthName = jMoment.format('jMMMM jYYYY');
-    BookingApp.ui.calendarMonthLabel.text(monthName); 
-    // --- *** پایان اصلاحیه *** ---
+    
+    // ==========================================================
+    // --- اصلاحیه نهایی: فارسی سازی اعداد سال ---
+    // یک تابع کمکی کوچک برای تبدیل اعداد انگلیسی به فارسی
+    const toFarsiDigits = (s) => s.toString().replace(/\d/g, x => ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'][x]);
+    
+    // ما خروجی را (مثلاً "آبان 1404") گرفته و اعداد آن را فارسی می‌کنیم
+    BookingApp.ui.calendarMonthLabel.text(toFarsiDigits(monthName));
+    // ==========================================================
+
 
     const firstDayOfMonth = jMoment.clone().startOf('jMonth');
     const firstDayWeekday = (firstDayOfMonth.day() + 1) % 7;
