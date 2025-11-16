@@ -15,6 +15,7 @@ from django.conf import settings
 from django.db import transaction  # برای قفل کردن دیتابیس هنگام بررسی تداخل
 from django.utils import timezone
 from datetime import datetime, timedelta
+import jdatetime # <-- *** اطمینان از ایمپورت ***
 
 from clinic.models import Service, ServiceGroup, Device, Testimonial
 from .models import Appointment
@@ -197,11 +198,19 @@ def create_booking_view(request):
 
     # --- منطق GET: نمایش فرم اولیه ---
     groups = ServiceGroup.objects.all()
+    
+    # --- *** اصلاحیه P2 (منطقه زمانی) *** ---
+    # تاریخ "امروز" را بر اساس منطقه زمانی سرور (Asia/Tehran) بگیر
+    # و به فرمت ISO (YYYY-MM-DD) به تمپلیت ارسال کن.
+    today_server_gregorian = timezone.now().date()
+    # --- *** پایان اصلاحیه P2 *** ---
+    
     context = {
         'groups': groups,
         'user_points': initial_user_points,
         'max_discount': initial_max_discount,
         'patient_user_for_template': patient_user_for_template, # برای نمایش نام بیمار در فرم
+        'today_date_server': today_server_gregorian.isoformat(), # <-- *** این خط باید وجود داشته باشد ***
     }
     return render(request, 'booking/create_booking.html', context)
 

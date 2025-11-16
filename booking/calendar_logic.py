@@ -13,11 +13,44 @@
 from django.utils import timezone
 from django.db.models import Q
 from datetime import datetime, time, timedelta
+import jdatetime  # <-- ایمپورت کتابخانه جلالی
 
 # ایمپورت‌های ضروری از اپ‌های دیگر
 from clinic.models import Service, WorkHours
 from .models import Appointment  # مدل Appointment از همین اپ (booking)
 from users.models import CustomUser
+
+# --- *** شروع اصلاحیه: تعریف دیکشنری‌های فارسی *** ---
+
+# دیکشنری روزهای هفته (شنبه = 0)
+PERSIAN_WEEKDAYS = {
+    0: "شنبه",
+    1: "یکشنبه",
+    2: "دوشنبه",
+    3: "سه‌شنبه",
+    4: "چهارشنبه",
+    5: "پنجشنبه",
+    6: "جمعه",
+}
+
+# لیست ماه‌های شمسی (فروردین = ایندکس 0)
+PERSIAN_MONTHS = [
+    "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", 
+    "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+]
+
+# دیکشنری تبدیل اعداد
+PERSIAN_DIGITS = {
+    '0': '۰', '1': '۱', '2': '۲', '3': '۳', '4': '۴',
+    '5': '۵', '6': '۶', '7': '۷', '8': '۸', '9': '۹',
+}
+
+def localize_digits(text):
+    """یک رشته (مانند '16:00' یا '25') را می‌گیرد و اعداد آن را فارسی می‌کند."""
+    return "".join(PERSIAN_DIGITS.get(char, char) for char in str(text))
+
+# --- *** پایان اصلاحیه *** ---
+
 
 def generate_available_slots_for_range(start_date: datetime.date, 
                                      end_date: datetime.date, 
@@ -30,8 +63,8 @@ def generate_available_slots_for_range(start_date: datetime.date,
     تمام اسلات‌های خالی موجود در یک بازه زمانی (start_date تا end_date)
     را بر اساس خدمات، دستگاه و جنسیت بیمار محاسبه می‌کند.
     
-    خروجی: لیستی از دیکشنری‌ها، هر کدام شامل 'start' و 'end' به فرمت ISO.
-    [{"start": "...", "end": "..."}, ...]
+    خروجی: لیستی از دیکشنری‌ها، هر کدام شامل 'start', 'end' و 'readable_start'
+    [{"start": "...", "end": "...", "readable_start": "..."}, ...]
     """
     
     # --- ۱. اعتبارسنجی ورودی و آماده‌سازی ---
@@ -181,10 +214,31 @@ def generate_available_slots_for_range(start_date: datetime.date,
                         break  # این اسلات تداخل دارد، از حلقه تداخل خارج شو
                         
                 if not is_overlapping:
+                    # --- *** شروع اصلاحیه: ساخت رشته کاملاً فارسی در پایتون *** ---
+                    aware_start_dt = current_slot_start_aware
+                    
+                    # تبدیل به زمان شمسی
+                    j_start = jdatetime.datetime.fromgregorian(datetime=aware_start_dt)
+                    
+                    # استخراج نام روز هفته (شنبه=0)
+                    weekday_name = PERSIAN_WEEKDAYS[j_start.weekday()]
+                    
+                    # استخراج نام ماه (ماه 1-based است، ایندکس 0-based)
+                    month_name = PERSIAN_MONTHS[j_start.month - 1]
+                    
+                    # تبدیل روز و ساعت به فارسی
+                    day_farsi = localize_digits(j_start.day)
+                    time_farsi = localize_digits(j_start.strftime('%H:%M'))
+                    
+                    # ساخت رشته نهایی
+                    readable_string = f"{weekday_name} {day_farsi} {month_name}، ساعت {time_farsi}"
+                    # --- *** پایان اصلاحیه *** ---
+
                     # این یک اسلات خالی و معتبر است
                     all_available_slots.append({
-                        "start": current_slot_start_aware.isoformat(),
-                        "end": potential_end_aware.isoformat()
+                        "start": aware_start_dt.isoformat(),
+                        "end": potential_end_aware.isoformat(),
+                        "readable_start": readable_string  # <-- کلید حاوی رشته فارسی آماده
                     })
                     
                 # به اندازه مدت زمان سرویس به جلو برو تا اسلات بعدی را چک کنی

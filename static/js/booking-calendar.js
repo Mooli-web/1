@@ -1,7 +1,7 @@
 // static/js/booking-calendar.js
-// --- نسخه v6.2 (کلید ماشینی) ---
+// --- نسخه v6.3 (Refactor Fix) ---
 // این فایل "کتابخانه" رندر کننده تقویم شمسی سفارشی است.
-// این فایل به کتابخانه jalali-moment نیاز دارد.
+// این فایل به کتابخانه jalali-moment و Namespace سراسری BookingApp نیاز دارد.
 
 /**
  * (حل باگ تاریخ شمسی + کلید ماشینی)
@@ -11,21 +11,24 @@
  * @param {object} todayJalali - آبجکت jalaliMoment برای "امروز"
  */
 function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
-    const calendarGridBody = $('#calendar-grid-body');
-    calendarGridBody.html(''); // پاک کردن گرید قبلی
-    timeSelectionContainer.html('').hide(); // مخفی کردن ساعت‌ها
-    fomoTimerMessage.hide(); // مخفی کردن تایمر
+    
+    // --- خواندن متغیرها از Namespace (اصلاح شده در ماموریت قبل) ---
+    const calendarGridBody = BookingApp.ui.calendarGridBody;
+    calendarGridBody.html('');
+    BookingApp.ui.timeSelectionContainer.html('').hide();
+    BookingApp.ui.fomoTimerMessage.hide();
 
-    // تنظیم زبان "فارسی" برای اطمینان
     jMoment.locale('fa');
     
+    // --- *** شروع اصلاحیه (مشکل شماره ۲) *** ---
     // نام ماه شمسی (e.g., "آبان ۱۴۰۴")
+    // از توکن‌های شمسی jMMMM و jYYYY استفاده شد
     const monthName = jMoment.format('jMMMM jYYYY');
-    $('#calendar-month-label').text(monthName);
+    BookingApp.ui.calendarMonthLabel.text(monthName); // <-- اصلاح شد
+    // --- *** پایان اصلاحیه (مشکل شماره ۲) *** ---
 
-    // یافتن روز هفته برای روز اول ماه (0=شنبه، 6=جمعه)
     const firstDayOfMonth = jMoment.clone().startOf('jMonth');
-    const firstDayWeekday = firstDayOfMonth.day(); // 0-6
+    const firstDayWeekday = (firstDayOfMonth.day() + 1) % 7;
     const daysInMonth = jMoment.jDaysInMonth();
 
     // ۱. اضافه کردن خانه‌های خالی (padding) قبل از شروع ماه
@@ -45,8 +48,6 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
             continue;
         }
 
-        // ۴. (اصلاحیه حیاتی) استفاده از کلید ماشینی (jYYYY-jMM-jDD)
-        // این کلید به زبان (locale) یا ویرگول وابسته نیست.
         const dateKey = currentDayMoment.format('jYYYY-jMM-jDD');
         
         if (allGroupedSlots[dateKey]) {
@@ -55,7 +56,8 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
 
             dayCell.addClass('available');
             
-            // منطق رنگ‌بندی (نقشه حرارتی)
+            // --- (مورد ۳) منطق نقشه حرارتی (Heatmap) ---
+            // این کد اکنون باید به درستی اجرا شود
             if (count <= 3) {
                 dayCell.addClass('available-low'); // قرمز
             } else if (count <= 7) {
@@ -64,9 +66,7 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
                 dayCell.addClass('available-high'); // سبز
             }
             
-            // ضمیمه کردن دیتای اسلات‌ها به خود دکمه روز
             dayCell.data('slots', slotsForThisDay);
-            // ضمیمه کردن فرمت تاریخ (برای ایده ۳)
             dayCell.data('date-object', currentDayMoment.toDate());
         }
         
@@ -74,5 +74,5 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
     }
 
     // ۳. مدیریت دکمه‌های ماه قبل/بعد
-    $('#calendar-prev-month').prop('disabled', jMoment.isSame(todayJalali, 'jMonth'));
+    BookingApp.ui.prevMonthBtn.prop('disabled', jMoment.isSame(todayJalali, 'jMonth'));
 }

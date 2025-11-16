@@ -156,25 +156,13 @@
 {# ۱. بارگذاری کتابخانه jalali-moment #}
 <script src="{% static 'js/jalali-moment.browser.js' %}"></script>
 <script>
-    // --- تست ۱: (اصلاح شد) ---
-    // (کتابخانه jalali-moment وقتی در مرورگر اجرا می‌شود،
-    // متغیر 'moment' را تغییر می‌دهد و 'jalaliMoment' را به آن اضافه می‌کند)
-    
-    // --- شروع کد اجباری (Forced Definition) ---
-    if (typeof jalaliMoment === 'undefined' && typeof moment !== 'undefined' && typeof moment.fn.jYear !== 'undefined') {
-        console.warn("تست ۱: 'jalaliMoment' تعریف نشده بود، اما 'moment' وجود داشت.");
-        console.warn(">>> در حال اجرای راه‌حل اجباری (Assigning window.jalaliMoment = moment)...");
-        window.jalaliMoment = moment;
-    }
-    // --- پایان کد اجباری ---
-
-    console.log("تست ۱: آیا 'jalaliMoment' تعریف شده است؟", typeof jalaliMoment);
-    if (typeof jalaliMoment === 'undefined') {
+    // --- (بلوک اسکریپت معیوب حذف شد) ---
+    // --- تست ۱: بررسی می‌کنیم که کتابخانه moment.js را به درستی وصله (patch) زده باشد ---
+    console.log("تست ۱: آیا 'moment' تعریف شده است؟", typeof moment);
+    if (typeof moment === 'undefined' || typeof moment.fn.jYear === 'undefined') {
         console.error(">>> خطای تست ۱: فایل jalali-moment.browser.js بارگذاری نشده یا به درستی اجرا نشده است!");
-        console.warn(">>> راه‌حل: لطفاً سرور جنگو (runserver) را ری‌استارت کنید.");
-        console.warn(">>> راه‌حل: مطمئن شوید فایل در 'static/js/jalali-moment.browser.js' وجود دارد.");
     } else {
-        console.log("تست ۱: OK - کتابخانه jalali-moment با موفقیت بارگذاری شد.");
+        console.log("تست ۱: OK - کتابخانه jalali-moment با موفقیت بارگذاری شد و moment.js را وصله زد.");
     }
 </script>
 
