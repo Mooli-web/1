@@ -1,16 +1,22 @@
 # booking/calendar_logic.py
-# فایل اصلاح‌شده: خطای ایمپورت Appointment برطرف شد.
+"""
+این فایل، هسته اصلی و "مغز متفکر" محاسبات تقویم (Calendar Logic) است.
+
+وظیفه اصلی این فایل، تولید لیست دقیق اسلات‌های زمانی در دسترس
+بر اساس مجموعه‌ای از قوانین پیچیده شامل:
+- ساعات کاری کلینیک (عمومی گروه یا اختصاصی خدمت)
+- نوبت‌های قبلی رزرو شده
+- دستگاه‌های مورد نیاز
+- جنسیت بیمار
+"""
 
 from django.utils import timezone
 from django.db.models import Q
 from datetime import datetime, time, timedelta
 
-# --- این بخش اصلاح شد ---
+# ایمپورت‌های ضروری از اپ‌های دیگر
 from clinic.models import Service, WorkHours
-# مدل Appointment از clinic.models وارد نمی‌شد، بلکه باید از .models (همین پوشه) وارد شود
-from .models import Appointment
-# --- پایان اصلاح ---
-
+from .models import Appointment  # مدل Appointment از همین اپ (booking)
 from users.models import CustomUser
 
 def generate_available_slots_for_range(start_date: datetime.date, 
@@ -19,21 +25,27 @@ def generate_available_slots_for_range(start_date: datetime.date,
                                      device_id: int, 
                                      patient_user: CustomUser) -> list:
     """
-    هسته اصلی محاسبات تقوim.
+    تابع اصلی محاسبه‌گر اسلات‌های خالی.
+    
     تمام اسلات‌های خالی موجود در یک بازه زمانی (start_date تا end_date)
     را بر اساس خدمات، دستگاه و جنسیت بیمار محاسبه می‌کند.
+    
+    خروجی: لیستی از دیکشنری‌ها، هر کدام شامل 'start' و 'end' به فرمت ISO.
+    [{"start": "...", "end": "..."}, ...]
     """
     
     # --- ۱. اعتبارسنجی ورودی و آماده‌سازی ---
     try:
+        # واکشی خدمات انتخاب شده و محاسبه مدت زمان کل
         services = Service.objects.select_related('group').filter(id__in=service_ids)
         if not services.exists():
-            return []  # اگر خدمتی انتخاب نشده باشد، هیچ اسلاتی وجود ندارد
+            return []  # اگر خدمتی انتخاب نشده باشد
 
         total_duration = sum(s.duration for s in services)
         if total_duration == 0:
-            return []  # اگر خدمات مدت زمان صفر داشته باشند
+            return []  # خدمات بدون مدت زمان
 
+        # تمام خدمات باید از یک گروه باشند
         service = services.first()
         service_group = service.group
 
@@ -42,44 +54,48 @@ def generate_available_slots_for_range(start_date: datetime.date,
             return []
             
     except Exception:
-        return [] # در صورت خطای ورودی
+        return []  # در صورت خطای ورودی یا عدم وجود سرویس
 
     # --- ۲. فیلتر جنسیت بر اساس بیمار ---
     user_gender = patient_user.gender
+    gender_filter = Q(gender_specific='ALL') # پیش‌فرض
     if user_gender:
+        # اگر کاربر جنسیت دارد، ساعت‌های "همه" یا "مخصوص جنسیت او" را نشان بده
         gender_filter = Q(gender_specific=user_gender) | Q(gender_specific='ALL')
-    else:
-        # اگر کاربر جنسیتی انتخاب نکرده، فقط ساعت‌های "همه" را نشان بده
-        gender_filter = Q(gender_specific='ALL')
+    
+    # (اگر کاربر جنسیت نداLE، فقط ساعت‌های "همه" نمایش داده می‌شود)
 
     # --- ۳. بهینه‌سازی: واکشی تمام ساعات کاری و نوبت‌ها (خارج از حلقه) ---
 
-    # روزهای هفته در بازه زمانی (شنبه=۰، یکشنبه=۱ ...)
-    # (day.weekday() + 2) % 7
+    # ابتدا تمام روزهای هفته در بازه درخواستی را پیدا می‌کنیم (شنبه=۰، ...)
+    # (day.weekday() + 2) % 7 فرمول تبدیل شنبه به ۰ است
     weekday_range = list(set([(d.weekday() + 2) % 7 for d in (start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1))]))
 
-    # ابتدا ساعات کاری مخصوص خود خدمت را پیدا کن
+    # کوئری برای یافتن ساعات کاری مرتبط
+    # اولویت با ساعات کاری "اختصاصی خود خدمت"
     work_hours_qs = service.work_hours.filter(
         day_of_week__in=weekday_range
     ).filter(gender_filter)
     
-    # اگر ساعت مخصوص نداشت، ساعات کاری گروه را چک کن
+    # اگر خدمت ساعت اختصاصی نداشت، ساعات کاری "گروه" را چک کن
     if not work_hours_qs.exists():
         work_hours_qs = service.group.work_hours.filter(
             day_of_week__in=weekday_range
         ).filter(gender_filter)
 
-    # تبدیل QuerySet به یک دیکشنری برای دسترسی سریع (Map)
+    # تبدیل QuerySet به یک دیکشنری (Map) برای دسترسی سریع در حلقه
     # {0: [WorkHours(9-12), WorkHours(14-17)], 1: [...]}
     work_hours_map = {}
     for wh in work_hours_qs:
         work_hours_map.setdefault(wh.day_of_week, []).append(wh)
 
-    # واکشی *تمام* نوبت‌های رزرو شده در بازه زمانی درخواستی
+    # --- واکشی نوبت‌های رزرو شده ---
+    
+    # ساخت بازه زمانی آگاه (aware) برای کوئری دیتابیس
     aware_start_dt = timezone.make_aware(datetime.combine(start_date, time.min))
     aware_end_dt = timezone.make_aware(datetime.combine(end_date, time.max))
 
-    # اینجا دیگر خطا نمی‌دهد، چون Appointment به درستی ایمپورت شده است
+    # واکشی *تمام* نوبت‌های رزرو شده (تایید شده یا در انتظار پرداخت)
     booked_appts_query = Appointment.objects.filter(
         start_time__range=(aware_start_dt, aware_end_dt),
         status__in=['CONFIRMED', 'PENDING']
@@ -87,12 +103,16 @@ def generate_available_slots_for_range(start_date: datetime.date,
     
     # فیلتر کردن نوبت‌ها بر اساس دستگاه (منطق کلیدی)
     if service_group.has_devices:
+        # اگر سرویس ما نیاز به دستگاه دارد، فقط با نوبت‌هایی تداخل دارد
+        # که "دقیقا همین دستگاه" را رزرو کرده‌اند.
         booked_appts_query = booked_appts_query.filter(selected_device_id=device_id)
     else:
+        # اگر سرویس ما نیاز به دستگاه ندارد، فقط با نوبت‌هایی تداخل دارد
+        # که "بدون دستگاه" رزرو شده‌اند.
         booked_appts_query = booked_appts_query.filter(selected_device__isnull=True)
             
-    # تبدیل نوبت‌های رزرو شده به یک دیکشنری برای دسترسی سریع
-    # { '2025-11-10': {(aware_start, aware_end)}, '2025-11-11': ...}
+    # تبدیل نوبت‌های رزرو شده به یک دیکشنری (Map) برای دسترسی سریع
+    # { '2025-11-10': {(aware_start1, aware_end1)}, '2025-11-11': ...}
     booked_intervals_map = {}
     current_tz = timezone.get_current_timezone()
     for app in booked_appts_query:
@@ -110,7 +130,7 @@ def generate_available_slots_for_range(start_date: datetime.date,
     current_date = start_date
     while current_date <= end_date:
         
-        # از روزهای گذشته عبور کن
+        # از روزهای گذشته عبور کن (مگر اینکه امروز باشد)
         if current_date < today:
             current_date += timedelta(days=1)
             continue
@@ -118,43 +138,47 @@ def generate_available_slots_for_range(start_date: datetime.date,
         # روز هفته (شنبه=۰)
         our_day_of_week = (current_date.weekday() + 2) % 7
         
-        # ساعات کاری این روز
+        # ساعات کاری این روز از روی Map
         daily_work_hours = work_hours_map.get(our_day_of_week, [])
         if not daily_work_hours:
             current_date += timedelta(days=1)
-            continue # کلینیک در این روز تعطیل است
+            continue # کلینیک در این روز تعطیل است (یا با فیلتر جنسیت، تعطیل است)
             
-        # نوبت‌های رزرو شده این روز
+        # نوبت‌های رزرو شده این روز از روی Map
         booked_intervals = booked_intervals_map.get(current_date, set())
         
         # بررسی هر بازه کاری (مثلاً شیفت صبح، شیفت عصر)
         for work_period in daily_work_hours:
             
+            # نقطه شروع اسلات‌ها = شروع بازه کاری
             current_slot_start_dt = datetime.combine(current_date, work_period.start_time)
+            # نقطه پایان بازه کاری
             work_period_end_dt = datetime.combine(current_date, work_period.end_time)
             
             current_slot_start_aware = timezone.make_aware(current_slot_start_dt)
             
-            # شروع تولید اسلات‌ها در این بازه کاری
+            # شروع تولید اسلات‌ها در این بازه کاری (مثلاً شیفت صبح)
             while True:
+                # محاسبه زمان پایان اسلات بالقوه
                 potential_end_aware = current_slot_start_aware + timedelta(minutes=total_duration)
 
-                # ۱. اگر اسلات در گذشته است، برو سراغ بعدی
+                # شرط ۱: اگر اسلات در گذشته است، برو سراغ بعدی
+                # (این شرط برای اسلات‌های "امروز" مهم است)
                 if potential_end_aware <= timezone.now():
                     current_slot_start_aware += timedelta(minutes=total_duration)
                     continue
                 
-                # ۲. اگر انتهای اسلات از انتهای بازه کاری رد شد، این بازه تمام است
+                # شرط ۲: اگر انتهای اسلات از انتهای بازه کاری رد شد، این بازه تمام است
                 if potential_end_aware.time() > work_period.end_time:
                     break
                     
-                # ۳. بررسی تداخل با نوبت‌های رزرو شده
+                # شرط ۳: بررسی تداخل با نوبت‌های رزرو شده
                 is_overlapping = False
                 for (booked_start, booked_end) in booked_intervals:
                     # (StartA < EndB) and (EndA > StartB)
                     if (current_slot_start_aware < booked_end and potential_end_aware > booked_start):
                         is_overlapping = True
-                        break
+                        break  # این اسلات تداخل دارد، از حلقه تداخل خارج شو
                         
                 if not is_overlapping:
                     # این یک اسلات خالی و معتبر است
@@ -163,7 +187,7 @@ def generate_available_slots_for_range(start_date: datetime.date,
                         "end": potential_end_aware.isoformat()
                     })
                     
-                # به اندازه مدت زمان سرویس به جلو برو
+                # به اندازه مدت زمان سرویس به جلو برو تا اسلات بعدی را چک کنی
                 current_slot_start_aware += timedelta(minutes=total_duration)
 
         # برو به روز بعد

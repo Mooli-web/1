@@ -1,12 +1,18 @@
 # booking/views.py
-# فایل اصلاح‌شده: منطق ریدایرکت منشی اصلاح شد.
+"""
+این فایل شامل ویوهای اصلی اپلیکیشن booking است که توسط
+کاربر نهایی (بیمار) یا (پذیرش در حال شبیه‌سازی بیمار) استفاده می‌شود.
+
+- create_booking_view: ویو اصلی ایجاد نوبت (هم GET و هم POST).
+- rate_appointment_view: ویو ثبت نظر (امتیازدهی) برای نوبت‌های انجام شده.
+"""
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib import messages
 from django.conf import settings
-from django.db import transaction
+from django.db import transaction  # برای قفل کردن دیتابیس هنگام بررسی تداخل
 from django.utils import timezone
 from datetime import datetime, timedelta
 
@@ -16,38 +22,53 @@ from .forms import RatingForm
 from users.models import CustomUser
 from reception_panel.models import Notification
 
-# توابع کمکی را از utils.py وارد می‌کنیم
+# توابع کمکی (Helpers) از utils.py وارد می‌شوند
 from .utils import _get_patient_for_booking, _calculate_discounts
 
 
 @login_required
 def create_booking_view(request):
+    """
+    ویو اصلی و محوری برای ایجاد رزرو جدید.
+    این ویو منطق پیچیده‌ای دارد:
+    1. (GET): نمایش فرم انتخاب گروه خدمت.
+    2. (GET/POST): تشخیص می‌دهد که آیا "پذیرش" در حال رزرو برای "بیمار" است یا خیر.
+    3. (POST): اعتبارسنجی تمام داده‌های فرم (خدمات، دستگاه، زمان، تخفیف).
+    4. (POST): بررسی تداخل زمانی (Overlapping) با استفاده از transaction.atomic.
+    5. (POST): ایجاد نوبت (Appointment) و هدایت به صفحه پرداخت یا داشبورد پذیرش.
+    """
     
+    # --- تشخیص هویت رزرو کننده ---
+    # تابع کمکی _get_patient_for_booking مشخص می‌کند چه کسی در حال رزرو است
     patient_user, is_reception_booking, patient_user_for_template = _get_patient_for_booking(request)
     
     if patient_user is None: 
+        # اگر پذیرش بیماری را انتخاب کرده بود اما بیمار یافت نشد
         messages.error(request, "بیمار انتخاب شده یافت نشد.")
         if 'reception_acting_as_patient_id' in request.session:
             del request.session['reception_acting_as_patient_id']
         return redirect('reception_panel:dashboard')
     
+    # واکشی اطلاعات اولیه بیمار (برای نمایش امتیاز و تخفیف)
     initial_user_points = patient_user.profile.points
     initial_max_discount = initial_user_points * settings.POINTS_TO_TOMAN_RATE
 
     if request.method == 'POST':
-        # --- 1. Get data from POST ---
+        # --- منطق POST: پردازش فرم رزرو ---
+        
+        # --- ۱. خواندن داده‌ها از فرم POST ---
         service_ids = request.POST.getlist('services[]') 
         start_time_str = request.POST.get('slot')
         apply_points_str = request.POST.get('apply_points')
         discount_code_str = request.POST.get('discount_code', '').strip()
         device_id = request.POST.get('device_id')
-        manual_confirm_str = request.POST.get('manual_confirm')
+        manual_confirm_str = request.POST.get('manual_confirm') # مخصوص پذیرش
 
         if not all([service_ids, start_time_str]):
             messages.error(request, 'اطلاعات ارسالی ناقص است. (خدمت یا زمان انتخاب نشده)')
             return redirect('booking:create_booking')
         
-        # --- 2. Validate Services and Device ---
+        # --- ۲. اعتبارسنجی خدمات و دستگاه ---
         selected_services = Service.objects.filter(id__in=service_ids)
         if not selected_services.exists():
             messages.error(request, 'خدمات انتخاب شده نامعتبر هستند.')
@@ -61,6 +82,7 @@ def create_booking_view(request):
                 messages.error(request, 'لطفاً دستگاه مورد نظر را انتخاب کنید.')
                 return redirect('booking:create_booking')
             try:
+                # اطمینان از اینکه دستگاه انتخاب شده جزو دستگاه‌های مجاز گروه است
                 selected_device = service_group.available_devices.get(id=device_id)
             except Device.DoesNotExist:
                 messages.error(request, 'دستگاه انتخاب شده نامعتبر است.')
@@ -69,20 +91,19 @@ def create_booking_view(request):
         total_price = sum(s.price for s in selected_services)
         total_duration = sum(s.duration for s in selected_services)
 
-        # --- 3. REFACTOR: Use helper to calculate discounts ---
+        # --- ۳. محاسبه تخفیف‌ها (با تابع کمکی) ---
         points_discount, points_to_use, code_discount, discount_code_obj, error_message = _calculate_discounts(
             patient_user, total_price, apply_points_str, discount_code_str
         )
         
         if error_message:
             messages.error(request, error_message)
-
+        # مبلغ نهایی تخفیف نمی‌تواند از قیمت کل بیشتر باشد
         total_discount = min(points_discount + code_discount, total_price)
 
-        # --- 4. Validate Time and Check Overlap ---
+        # --- ۴. اعتبارسنجی زمان و بررسی تداخل ---
         try:
-            # --- اصلاحیه: فرمت ISO (که FullCalendar ارسال می‌کند) را پشتیبانی نمی‌کند ---
-            # --- ما در booking.js فرمت را به 'Y-m-d H:M' تبدیل کردیم، پس این کد باید درست کار کند ---
+            # فرمت ارسالی از JS ما 'Y-m-d H:M' است
             naive_start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
             aware_start_time = timezone.make_aware(naive_start_time)
             aware_end_time = aware_start_time + timedelta(minutes=total_duration)
@@ -91,31 +112,36 @@ def create_booking_view(request):
             return redirect('booking:create_booking')
 
         try:
+            # استفاده از transaction.atomic و select_for_update برای جلوگیری از
+            # رزرو همزمان (Race Condition)
             with transaction.atomic():
-                # *** راه‌حل مشکل اصلی (منطق بک‌اند): اصلاح منطق بررسی تداخل ***
+                # --- منطق حیاتی بررسی تداخل ---
+                # تمام نوبت‌هایی که با بازه زمانی ما (شروع تا پایان) تداخل دارند
+                # و در وضعیت "قطعی" (تایید شده یا در انتظار پرداخت) هستند را قفل کن.
                 appointments_query = Appointment.objects.select_for_update().filter(
-                    start_time__lt=aware_end_time,
-                    end_time__gt=aware_start_time,
+                    start_time__lt=aware_end_time,  # شروعش قبل از پایان ما باشد
+                    end_time__gt=aware_start_time,  # پایانش بعد از شروع ما باشد
                     status__in=['PENDING', 'CONFIRMED']
                 )
 
+                # بررسی تداخل بر اساس دستگاه
                 if service_group.has_devices:
-                    # اگر این گروه دستگاه دارد، فقط نوبت‌هایی که *همین دستگاه* را رزرو کرده‌اند بررسی کن
+                    # اگر سرویس ما دستگاهی است، فقط با نوبت‌های "همین دستگاه" تداخل دارد
                     overlapping_appointments = appointments_query.filter(selected_device=selected_device).exists()
                 else:
-                    # اگر این گروه دستگاه ندارد، فقط نوبت‌هایی که *بدون دستگاه* رزرو شده‌اند بررسی کن
+                    # اگر سرویس ما دستگاهی نیست، فقط با نوبت‌های "بدون دستگاه" تداخل دارد
                     overlapping_appointments = appointments_query.filter(selected_device__isnull=True).exists()
-                # *** پایان اصلاحیه ***
-
+                
                 if overlapping_appointments:
-                    messages.error(request, 'متاسفانه این بازه زمانی با نوبت دیگری تداخل دارد.')
+                    messages.error(request, 'متاسفانه این بازه زمانی لحظاتی پیش توسط شخص دیگری رزرو شد.')
                     return redirect('booking:create_booking')
 
-                status = 'PENDING'
+                # --- ۵. تعیین وضعیت نهایی نوبت ---
+                status = 'PENDING'  # پیش‌فرض: در انتظار پرداخت
                 if is_reception_booking and manual_confirm_str:
-                    status = 'CONFIRMED'
+                    status = 'CONFIRMED'  # اگر پذیرش دستی تایید کند
 
-                # --- 6. Create Appointment ---
+                # --- ۶. ایجاد نوبت (Appointment) ---
                 new_appointment = Appointment.objects.create(
                     patient=patient_user,
                     start_time=aware_start_time,
@@ -127,20 +153,17 @@ def create_booking_view(request):
                     code_discount_amount=code_discount,
                     selected_device=selected_device,
                 )
-                
                 new_appointment.services.set(selected_services)
             
-            # --- 7. Redirect based on flow ---
+            # --- ۷. هدایت (Redirect) نهایی ---
             
-            # --- *** شروع اصلاحیه *** ---
             if is_reception_booking:
-                # سشن منشی را پاک کن
+                # اگر پذیرش در حال رزرو بود، سشن او را پاک کن
                 if 'reception_acting_as_patient_id' in request.session:
                     del request.session['reception_acting_as_patient_id']
                 
-                if status == 'CONFIRMED': # Manually confirmed
+                if status == 'CONFIRMED': # تایید دستی
                     messages.success(request, f"نوبت برای {patient_user.username} با موفقیت (به صورت دستی) ثبت شد.")
-                    
                     # به سایر کارمندان اطلاع بده
                     staff_users = CustomUser.objects.filter(is_staff=True)
                     notification_link = request.build_absolute_uri(reverse('reception_panel:appointment_list'))
@@ -153,7 +176,6 @@ def create_booking_view(request):
                 
                 else: # status == 'PENDING'
                     messages.success(request, f"نوبت برای {patient_user.username} ایجاد شد و در 'انتظار پرداخت' است.")
-                    
                     # به بیمار اطلاع بده که نوبتی در انتظار پرداخت دارد
                     notification_link = request.build_absolute_uri(reverse('users:dashboard'))
                     Notification.objects.create(
@@ -162,39 +184,42 @@ def create_booking_view(request):
                         link=notification_link
                     )
 
-                # در هر صورت (چه تایید دستی و چه در انتظار پرداخت)، منشی باید به پنل خود بازگردد
+                # در هر صورت، پذیرش به داشبورد پنل خود بازمی‌گردد
                 return redirect('reception_panel:dashboard')
-            # --- *** پایان اصلاحیه *** ---
 
-            # اگر کاربر عادی بود (نه منشی)، او را به صفحه پرداخت بفرست
+            # اگر کاربر عادی بود، او را به صفحه پرداخت بفرست
             return redirect(reverse('payment:start_payment', args=[new_appointment.id]))
 
         except Exception as e:
+            # مدیریت خطاهای پیش‌بینی نشده در طول تراکنش
             messages.error(request, f'خطایی در فرآیند رزرو رخ داد: {e}')
-            pass 
+            pass  # فرم دوباره نمایش داده می‌شود
 
-    # --- GET Request ---
+    # --- منطق GET: نمایش فرم اولیه ---
     groups = ServiceGroup.objects.all()
     context = {
         'groups': groups,
         'user_points': initial_user_points,
         'max_discount': initial_max_discount,
-        'patient_user_for_template': patient_user_for_template,
+        'patient_user_for_template': patient_user_for_template, # برای نمایش نام بیمار در فرم
     }
     return render(request, 'booking/create_booking.html', context)
 
 
 @login_required
 def rate_appointment_view(request, appointment_id):
-    # (این تابع بدون تغییر است)
+    """
+    ویو برای ثبت نظر (Testimonial) برای یک نوبت "انجام شده".
+    """
     appointment = get_object_or_404(
         Appointment,
         id=appointment_id,
-        patient=request.user,
-        status='DONE',
-        is_rated=False
+        patient=request.user,  # کاربر فقط می‌تواند نوبت خود را امتیاز دهد
+        status='DONE',         # فقط نوبت‌های "انجام شده"
+        is_rated=False         # فقط نوبت‌هایی که قبلاً امتیاز نداده
     )
     
+    # نظر به اولین سرویس نوبت لینک می‌شود
     first_service = appointment.services.first()
     if not first_service:
         messages.error(request, "نوبت مورد نظر خدمتی برای امتیازدهی ندارد.")
@@ -209,6 +234,7 @@ def rate_appointment_view(request, appointment_id):
                 testimonial.service = first_service 
                 testimonial.save()
                 
+                # --- اطلاع‌رسانی به کارمندان ---
                 staff_users = CustomUser.objects.filter(is_staff=True)
                 notification_link = request.build_absolute_uri(
                     reverse('reception_panel:dashboard') 
@@ -219,7 +245,8 @@ def rate_appointment_view(request, appointment_id):
                         message=f"نظر جدیدی توسط {request.user.username} برای نوبت {appointment.id} ثبت شد.",
                         link=notification_link
                     )
-
+                
+                # نوبت را به "امتیازدهی شده" تغییر بده
                 appointment.is_rated = True
                 appointment.save()
             

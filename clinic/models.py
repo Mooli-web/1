@@ -1,11 +1,22 @@
-# a_copy/clinic/models.py
+# clinic/models.py
+"""
+مدل‌های داده (Data Models) اصلی برای اپلیکیشن clinic.
+این مدل‌ها ساختار اطلاعاتی کلینیک، خدمات، دستگاه‌ها،
+و ساعات کاری را تعریف می‌کنند.
+"""
 
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
-# --- TASK 1: New model for WorkHours ---
+
 class WorkHours(models.Model):
+    """
+    مدل "ساعات کاری".
+    این مدل به صورت انعطاف‌پذیر، ساعات کاری را هم برای
+    "گروه‌های خدماتی" (عمومی) و هم برای "خدمات خاص" (اختصاصی)
+    تعریف می‌کند.
+    """
     DAY_CHOICES = [
         (0, 'شنبه'),
         (1, 'یکشنبه'),
@@ -16,8 +27,11 @@ class WorkHours(models.Model):
         (6, 'جمعه'),
     ]
     
-    # --- TASK 9: Add GenderSpecific choices ---
     class GenderSpecific(models.TextChoices):
+        """
+        تعیین می‌کند که آیا این ساعت کاری مخصوص جنسیت خاصی است یا خیر.
+        (برای فیلتر کردن در تقویم رزرو)
+        """
         ALL = 'ALL', 'همه'
         MALE = 'MALE', 'فقط آقایان'
         FEMALE = 'FEMALE', 'فقط بانوان'
@@ -29,6 +43,8 @@ class WorkHours(models.Model):
     start_time = models.TimeField(verbose_name="ساعت شروع")
     end_time = models.TimeField(verbose_name="ساعت پایان")
 
+    # --- اتصال انعطاف‌پذیر ---
+    # یک ساعت کاری یا به "گروه" متصل است (عمومی)
     service_group = models.ForeignKey(
         'ServiceGroup', 
         on_delete=models.CASCADE, 
@@ -36,6 +52,7 @@ class WorkHours(models.Model):
         null=True, blank=True,
         verbose_name="گروه خدماتی (ساعت کاری عمومی)"
     )
+    # یا به "خدمت" متصل است (اختصاصی)
     service = models.ForeignKey(
         'Service', 
         on_delete=models.CASCADE, 
@@ -44,7 +61,6 @@ class WorkHours(models.Model):
         verbose_name="خدمت (ساعت کاری اختصاصی)"
     )
     
-    # --- TASK 9: Add gender_specific field ---
     gender_specific = models.CharField(
         max_length=10, 
         choices=GenderSpecific.choices, 
@@ -73,10 +89,11 @@ class WorkHours(models.Model):
         return f"{self.get_day_of_week_display()}: {self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')}"
 
 
-# --- TASK 1: ClinicWorkHours model REMOVED ---
-
-# --- TASK 4: New model for Device ---
 class Device(models.Model):
+    """
+    مدل "دستگاه".
+    (مثلاً: دستگاه لیزر کندلا، دستگاه هایفو)
+    """
     name = models.CharField(max_length=200, verbose_name="نام دستگاه")
     description = models.TextField(blank=True, verbose_name="توضیحات")
 
@@ -88,10 +105,14 @@ class Device(models.Model):
         return self.name
 
 class ServiceGroup(models.Model):
+    """
+    مدل "گروه خدماتی".
+    (مثلاً: خدمات لیزر، خدمات جوانسازی پوست)
+    این مدل به عنوان والد برای "خدمات" (زیرگروه‌ها) عمل می‌کند.
+    """
     name = models.CharField(max_length=200, verbose_name="نام گروه خدمت")
     description = models.TextField(blank=True, verbose_name="توضیحات")
     
-    # --- ADDED: Image field for the home page ---
     home_page_image = models.ImageField(
         upload_to='service_groups/', 
         blank=True, 
@@ -99,18 +120,17 @@ class ServiceGroup(models.Model):
         verbose_name="تصویر صفحه اصلی",
         help_text="عکسی که در صفحه اصلی برای این گروه نمایش داده می‌شود."
     )
-    # --- END ADDED ---
 
     allow_multiple_selection = models.BooleanField(
         default=False,
         verbose_name="اجازه انتخاب همزمان چند زیرگروه",
-        help_text="اگر فعaال باشد، کاربر می‌تواند چند خدمت از این گروه را همزمان انتخاب کند (مثلاً لیزر نواحی مختلف)"
+        help_text="اگر فعال باشد، کاربر می‌تواند چند خدمت از این گروه را همزمان انتخاب کند (مثلاً لیزر نواحی مختلف)"
     )
     
-    # --- TASK 2: Add has_devices and M2M to Device ---
     has_devices = models.BooleanField(
         default=False, 
-        verbose_name="نیاز به انتخاب دستگاه دارد؟"
+        verbose_name="نیاز به انتخاب دستگاه دارد؟",
+        help_text="آیا برای رزرو خدمات این گروه، انتخاب دستگاه الزامی است؟"
     )
     available_devices = models.ManyToManyField(
         Device,
@@ -126,6 +146,11 @@ class ServiceGroup(models.Model):
         return self.name
 
 class Service(models.Model):
+    """
+    مدل "خدمت" (زیرگروه).
+    (مثلاً: لیزر فول بادی، تزریق بوتاکس پیشانی)
+    هر خدمت باید به یک "گروه خدماتی" تعلق داشته باشد.
+    """
     group = models.ForeignKey(
         ServiceGroup,
         on_delete=models.CASCADE,
@@ -134,12 +159,16 @@ class Service(models.Model):
     )
     name = models.CharField(max_length=200, verbose_name="نام خدمت (زیرگروه)")
     description = models.TextField(verbose_name="توضیحات")
-    duration = models.PositiveIntegerField(help_text="مدت زمان خدمت به دقیقه", verbose_name="مدت زمان (دقیقه)")
-    price = models.DecimalField(max_digits=10, decimal_places=0, verbose_name="قیمت")
+    duration = models.PositiveIntegerField(
+        help_text="مدت زمان خدمت به دقیقه", 
+        verbose_name="مدت زمان (دقیقه)"
+    )
+    price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=0, 
+        verbose_name="قیمت"
+    )
     
-    # --- TASK 2: Remove M2M to Device ---
-    # available_devices = models.ManyToManyField(...) # <-- REMOVED
-
     class Meta:
         verbose_name = "خدمت (زیرگروه)"
         verbose_name_plural = "خدمات (زیرگروه‌ها)"
@@ -148,7 +177,17 @@ class Service(models.Model):
         return f"{self.group.name} - {self.name}"
 
 class PortfolioItem(models.Model):
-    service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True, related_name='portfolio_items', verbose_name="خدمت مرتبط")
+    """
+    مدل "نمونه کار" (گالری قبل و بعد).
+    """
+    service = models.ForeignKey(
+        Service, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='portfolio_items', 
+        verbose_name="خدمت مرتبط"
+    )
     title = models.CharField(max_length=200, verbose_name="عنوان نمونه کار")
     description = models.TextField(blank=True, verbose_name="توضیحات")
     before_image = models.ImageField(upload_to='portfolio/before/', verbose_name="تصویر قبل")
@@ -163,6 +202,9 @@ class PortfolioItem(models.Model):
         return self.title
 
 class FAQ(models.Model):
+    """
+    مدل "سوالات متداول".
+    """
     question = models.CharField(max_length=255, verbose_name="سوال")
     answer = models.TextField(verbose_name="پاسخ")
     is_active = models.BooleanField(default=True, verbose_name="فعال")
@@ -175,10 +217,21 @@ class FAQ(models.Model):
         return self.question
 
 class Testimonial(models.Model):
+    """
+    مدل "نظر مشتری".
+    این مدل توسط بیمار پس از "انجام شدن" نوبت (از طریق فرم امتیازدهی) پر می‌شود.
+    """
     patient_name = models.CharField(max_length=100, verbose_name="نام بیمار")
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name="خدمت دریافت شده")
+    service = models.ForeignKey(
+        Service, 
+        on_delete=models.CASCADE, 
+        verbose_name="خدمت دریافت شده"
+    )
     comment = models.TextField(verbose_name="نظر")
-    rating = models.PositiveIntegerField(choices=[(i, str(i)) for i in range(1, 6)], verbose_name="امتیاز")
+    rating = models.PositiveIntegerField(
+        choices=[(i, str(i)) for i in range(1, 6)], 
+        verbose_name="امتیاز"
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ثبت")
     
     class Meta:
@@ -190,17 +243,28 @@ class Testimonial(models.Model):
 
 
 class DiscountCode(models.Model):
+    """
+    مدل "کد تخفیف".
+    """
     class DiscountType(models.TextChoices):
         PERCENTAGE = 'PERCENTAGE', 'درصدی'
         FIXED_AMOUNT = 'FIXED_AMOUNT', 'مبلغ ثابت'
 
     code = models.CharField(max_length=50, unique=True, verbose_name="کد تخفیف")
-    discount_type = models.CharField(max_length=20, choices=DiscountType.choices, verbose_name="نوع تخفیف")
-    value = models.PositiveIntegerField(verbose_name="مقدار") # Either percentage or amount
+    discount_type = models.CharField(
+        max_length=20, 
+        choices=DiscountType.choices, 
+        verbose_name="نوع تخفیف"
+    )
+    value = models.PositiveIntegerField(
+        verbose_name="مقدار",
+        help_text="اگر نوع 'درصدی' است عدد درصد (مثلا 20)، اگر 'مبلغ ثابت' است مبلغ به تومان (مثلا 50000)"
+    )
     start_date = models.DateTimeField(default=timezone.now, verbose_name="تاریخ شروع")
     end_date = models.DateTimeField(verbose_name="تاریخ انقضا")
     is_active = models.BooleanField(default=True, verbose_name="فعال")
 
+    # --- محدودیت‌های استفاده ---
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -209,8 +273,16 @@ class DiscountCode(models.Model):
         verbose_name="کاربر مخصوص (اختیاری)",
         help_text="اگر کاربری انتخاب شود، این کد فقط برای او قابل استفاده است."
     )
-    is_one_time = models.BooleanField(default=False, verbose_name="یکبار مصرف")
-    is_used = models.BooleanField(default=False, verbose_name="استفاده شده")
+    is_one_time = models.BooleanField(
+        default=False, 
+        verbose_name="یکبار مصرف",
+        help_text="آیا این کد فقط یکبار قابل استفاده است؟ (در کل سیستم)"
+    )
+    is_used = models.BooleanField(
+        default=False, 
+        verbose_name="استفاده شده",
+        help_text="اگر کد یکبار مصرف باشد، آیا قبلا استفاده شده است؟"
+    )
     
     class Meta:
         verbose_name = "کد تخفیف"
@@ -220,13 +292,18 @@ class DiscountCode(models.Model):
         return self.code
 
     def is_valid(self):
-        """Checks if the discount code is currently active and valid."""
+        """
+        متد کمکی برای بررسی اعتبار کد تخفیف در "لحظه کنونی".
+        (این متد در API اعمال تخفیف استفاده می‌شود)
+        """
         now = timezone.now()
+        # شرط پایه: فعال باشد و در بازه زمانی معتبر باشد
         basic_valid = self.is_active and self.start_date <= now <= self.end_date
         
         if not basic_valid:
             return False
             
+        # شرط ثانویه: اگر یکبار مصرف بود، نباید قبلا استفاده شده باشد
         if self.is_one_time and self.is_used:
             return False
             

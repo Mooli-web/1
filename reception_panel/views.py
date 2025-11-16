@@ -1,5 +1,10 @@
 # reception_panel/views.py
-# فایل اصلاح‌شده: فقط شامل ویوهای اصلی پنل (لاگین، داشبورد) و API اعلان‌ها است.
+"""
+این فایل شامل ویوهای اصلی و مرکزی پنل پذیرش است:
+- لاگین کارمندان
+- داشبورد اصلی (مرکز فرماندهی)
+- API مربوط به خواندن اعلان‌ها
+"""
 
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
@@ -19,8 +24,9 @@ from .models import Notification
 
 def reception_login_view(request):
     """
-    Login view for staff members.
+    ویو مربوط به لاگین کارمندان (کاربرانی که is_staff=True هستند).
     """
+    # اگر کاربر از قبل لاگین کرده و کارمند است، او را به داشبورد هدایت کن
     if request.user.is_authenticated and request.user.is_staff:
         return redirect('reception_panel:dashboard')
 
@@ -30,55 +36,68 @@ def reception_login_view(request):
         password = form.cleaned_data.get('password')
         user = authenticate(request, username=username, password=password)
         
-        # Check if user is authenticated AND is a staff member
+        # بررسی حیاتی: کاربر باید هم احراز هویت شود و هم 'کارمند' باشد
         if user is not None and user.is_staff:
             login(request, user)
+            # ریدایرکت به داشبورد پس از لاگین موفق
             return redirect('reception_panel:dashboard')
         else:
             messages.error(request, 'نام کاربری یا رمز عبور اشتباه است یا شما دسترسی "کارمند" را ندارید.')
     
     return render(request, 'reception_panel/reception_login.html', {'form': form})
 
-# --- REWRITTEN: Dashboard View ---
+# --- داشبورد (بازنویسی شده) ---
 @staff_required
 def dashboard_view(request):
     """
-    Main dashboard for the reception panel (Command Center).
+    داشبورد اصلی پنل پذیرش (مرکز فرماندهی).
+    اطلاعات کلیدی و دسترسی‌های سریع را نمایش می‌دهد.
     """
     today = timezone.now().date()
+    # تعریف ابتدا و انتهای امروز برای فیلتر زمانی دقیق
     start_of_day = timezone.make_aware(datetime.combine(today, time.min))
     end_of_day = timezone.make_aware(datetime.combine(today, time.max))
 
-    # Get today's confirmed appointments
+    # --- کوئری‌های داشبورد ---
+
+    # ۱. نوبت‌های تایید شده امروز (برای نمایش در لیست "امروز")
     appointments_today = Appointment.objects.filter(
         start_time__range=(start_of_day, end_of_day),
         status='CONFIRMED'
     ).select_related('patient').prefetch_related('services').order_by('start_time')
 
-    # Get pending payments
+    # ۲. نوبت‌های در انتظار پرداخت (برای اطلاع‌رسانی)
     pending_appointments = Appointment.objects.filter(
         status='PENDING'
     ).select_related('patient').prefetch_related('services').order_by('created_at')
 
-    # Get pending consultations
+    # ۳. مشاوره‌های در انتظار پاسخ
     pending_consultations = ConsultationRequest.objects.filter(
         status='PENDING'
     ).select_related('patient').order_by('created_at')
+    
+    # ۴. آمار کلی
+    patient_count = CustomUser.objects.filter(role=CustomUser.Role.PATIENT).count()
+    today_appointments_count = appointments_today.count()
 
     context = {
         'appointments_today': appointments_today,
         'pending_appointments': pending_appointments,
         'pending_consultations': pending_consultations,
-        'patient_count': CustomUser.objects.filter(role=CustomUser.Role.PATIENT).count(),
-        'today_appointments_count': appointments_today.count(),
+        'patient_count': patient_count,
+        'today_appointments_count': today_appointments_count,
     }
     return render(request, 'reception_panel/reception_dashboard.html', context)
 
 
-# --- API View (Unchanged) ---
+# --- API (بدون تغییر) ---
 @require_POST
 @staff_required
 def mark_notifications_as_read_api(request):
+    """
+    API داخلی برای علامت‌گذاری تمام اعلان‌های خوانده نشده
+    کاربر فعلی (کارمند) به عنوان "خوانده شده".
+    """
     try:
         Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
         return JsonResponse({'status': 'success'})

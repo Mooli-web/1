@@ -1,4 +1,7 @@
-# a_copy/users/admin.py
+# users/admin.py
+"""
+تنظیمات پنل ادمین جنگو برای مدل‌های اپلیکیشن users.
+"""
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -6,23 +9,45 @@ from .models import CustomUser, Profile
 from django.utils.translation import gettext_lazy as _
 
 class CustomUserAdmin(UserAdmin):
-    # --- MODIFIED: Added 'gender' to list_display ---
-    list_display = ('username', 'email', 'phone_number', 'first_name', 'last_name', 'gender', 'is_staff')
+    """
+    سفارشی‌سازی نمایش CustomUser در پنل ادمین.
+    فیلدهای سفارشی (role, phone_number, gender) را به پنل ادمین
+    اضافه می‌کند.
+    """
+    
+    list_display = (
+        'username', 
+        'email', 
+        'phone_number', 
+        'first_name', 
+        'last_name', 
+        'gender',  # فیلد سفارشی
+        'is_staff'
+    )
+    
+    # فیلدهایی که در صفحه "ویرایش" کاربر در ادمین نمایش داده می‌شوند
     fieldsets = UserAdmin.fieldsets + (
-        # --- MODIFIED: Added 'gender' to fieldsets (for editing in admin) ---
         (_('فیلدهای سفارشی'), {'fields': ('role', 'phone_number', 'gender')}),
     )
+    
+    # فیلدهایی که در صفحه "ایجاد" کاربر جدید در ادمین نمایش داده می‌شوند
     add_fieldsets = UserAdmin.add_fieldsets + (
-        # --- MODIFIED: Added 'gender' to add_fieldsets ---
         (_('فیلدهای سفارشی'), {'fields': ('role', 'phone_number', 'first_name', 'last_name', 'email', 'gender')}),
     )
+    
     search_fields = ('username', 'first_name', 'last_name', 'phone_number', 'email')
-    list_filter = ('role', 'is_staff', 'is_superuser', 'is_active', 'gender') # --- ADDED: 'gender' to filter
+    list_filter = ('role', 'is_staff', 'is_superuser', 'is_active', 'gender')
 
+# ثبت مدل CustomUser با کلاس ادمین سفارشی
 admin.site.register(CustomUser, CustomUserAdmin)
+
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
+    """
+    تنظیمات نمایش Profile در پنل ادمین.
+    """
     list_display = ('user', 'points')
     search_fields = ('user__username',)
+    # استفاده از raw_id_fields برای جستجوی آسان کاربر (به جای dropdown)
     raw_id_fields = ('user',)

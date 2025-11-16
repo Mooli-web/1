@@ -1,5 +1,9 @@
+# site_settings/apps.py
+"""
+تنظیمات اپلیکیشن (AppConfig) برای site_settings.
+"""
+
 from django.apps import AppConfig
-# --- ADDED: Import specific errors ---
 from django.db.utils import OperationalError
 from django.core.exceptions import AppRegistryNotReady
 
@@ -10,20 +14,24 @@ class SiteSettingsConfig(AppConfig):
 
     def ready(self):
         """
-        Ensures the SiteSettings singleton instance exists when the app is ready.
-        Catches OperationalError which occurs if this runs during the very first
-        migration before the site_settings table is created.
+        این متد زمانی اجرا می‌شود که جنگو آماده راه‌اندازی است.
+        وظیفه اصلی آن، اطمینان از "ایجاد شدن" آبجکت Singleton
+        تنظیمات (SiteSettings) در دیتابیس در همان ابتدای
+        راه‌اندازی سرور است.
         """
         try:
-            # Import model locally to avoid circular imports
+            # Import مدل باید "در داخل" متد ready انجام شود
             SiteSettings = self.get_model('SiteSettings')
-            # Use .load() which calls get_or_create
+            
+            # فراخوانی متد load() که get_or_create را اجرا می‌کند
             SiteSettings.load()
+            
         except (OperationalError, AppRegistryNotReady) as e:
-            # این اتفاق در اولین اجرای 'migrate' طبیعی است،
-            # چون هنوز جدولی ساخته نشده است.
-            # می‌توانیم با خیال راحت از آن بگذریم.
+            # این خطاها در زمان اجرای اولین 'migrate' (زمانی که
+            # هنوز جدول site_settings_sitesettings ساخته نشده)
+            # کاملاً طبیعی هستند.
+            # ما این خطاها را نادیده می‌گیریم تا فرآیند migrate متوقف نشود.
             print(f"Skipping SiteSettings singleton check (normal during migrations): {e}")
         except Exception as e:
-            # Handle other potential exceptions
+            # مدیریت خطاهای پیش‌بینی نشده دیگر
             print(f"Could not load/create SiteSettings singleton: {e}")

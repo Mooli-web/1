@@ -1,37 +1,45 @@
-# a_copy/booking/admin.py
+# booking/admin.py
+"""
+تنظیمات پنل ادمین جنگو برای مدل‌های اپلیکیشن booking.
+"""
 
 from django.contrib import admin
-# --- REMOVED: settings import ---
 from .models import Appointment
-# --- ADDED: Import for Jalali Admin ---
-from jalali_date.admin import ModelAdminJalaliMixin
-# --- TASK 2: Import SiteSettings ---
-from site_settings.models import SiteSettings
+from jalali_date.admin import ModelAdminJalaliMixin  # برای نمایش تقویم شمسی
+from site_settings.models import SiteSettings  # برای دسترسی به تنظیمات امتیازدهی
 
 
+# --- تعریف Action سفارشی برای ادمین ---
+
+@admin.action(description="علامت‌گذاری به عنوان 'انجام شده' و اعطای امتیاز")
 def mark_as_done_and_award_points(modeladmin, request, queryset):
-    # --- TASK 2: Get rate from SiteSettings ---
+    """
+    یک Action سفارشی در پنل ادمین که:
+    1. وضعیت نوبت‌های انتخاب شده را به 'DONE' تغییر می‌دهد.
+    2. بر اساس مبلغ پرداخت شده در تراکنش، به بیمار امتیاز می‌دهد.
+    """
     try:
-        # get_or_create ensures it exists, [0] gets the object
-        rate = SiteSettings.objects.get_or_create(pk=1)[0].price_to_points_rate
+        # واکشی تنظیمات نرخ امتیاز از مدل SiteSettings
+        rate = SiteSettings.load().price_to_points_rate
     except Exception:
-        rate = 0 # Fail safe, no points awarded if setting fails
+        rate = 0  # اگر تنظیمات موجود نباشد، امتیازی داده نمی‌شود
+
+    # فقط نوبت‌هایی که "تایید شده" هستند و "هنوز امتیاز نگرفته‌اند"
+    valid_appointments = queryset.filter(status='CONFIRMED', points_awarded=False)
     
-    # --- TASK 2: Filter for correct status and points_awarded=False ---
-    for appointment in queryset.filter(status='CONFIRMED', points_awarded=False):
-        # --- TASK 2: Set flag ---
+    for appointment in valid_appointments:
         appointment.status = 'DONE'
-        appointment.points_awarded = True 
+        appointment.points_awarded = True  # علامت‌گذاری جهت جلوگیری از امتیازدهی مجدد
         appointment.save()
         
-        # --- BUG 2 FIX: Calculate points based on paid amount ---
+        # --- منطق اعطای امتیاز ---
         try:
-            # Check if transaction exists, was successful, and has a valid rate
+            # بررسی اینکه آیا نرخ معتبر است و آیا نوبت تراکنش موفق داشته است
             if rate > 0 and hasattr(appointment, 'transaction') and \
                appointment.transaction.status == 'SUCCESS' and \
                appointment.transaction.amount > 0:
                 
-                # Calculate points based on the actual amount paid
+                # محاسبه امتیاز بر اساس "مبلغ واقعی پرداخت شده"
                 points_to_award = int(appointment.transaction.amount / rate)
                 
                 if points_to_award > 0:
@@ -39,28 +47,40 @@ def mark_as_done_and_award_points(modeladmin, request, queryset):
                     appointment.patient.profile.save()
                     
         except Exception: 
-            # If transaction doesn't exist or any other error, just skip points
+            # اگر تراکنش وجود نداشته باشد یا خطای دیگری رخ دهد،
+            # فقط وضعیت نوبت تغییر می‌کند و امتیازی داده نمی‌شود.
             pass 
-        # --- END BUG 2 FIX ---
 
-# --- TASK 3: Translate short_description ---
-mark_as_done_and_award_points.short_description = "علامت‌گذاری به عنوان 'انجام شده' و اعطای امتیاز"
+# --- ثبت مدل Appointment در ادمین ---
 
-# --- MODIFIED: Added ModelAdminJalaliMixin ---
 @admin.register(Appointment)
 class AppointmentAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
-    # --- TASK 3: Translate fields ---
-    list_display = ('patient', 'get_services_display', 'start_time', 'status', 'selected_device', 'points_awarded') # TASK 2: Added 'points_awarded'
-    list_filter = ('status', 'start_time', 'selected_device', 'points_awarded') # TASK 2: Added 'points_awarded'
-    search_fields = ('patient__username', 'services__name')
-    actions = [mark_as_done_and_award_points]
+    """
+    کلاس مدیریتی برای نمایش مدل Appointment در پنل ادمین.
+    - از ModelAdminJalaliMixin برای تقویم شمسی استفاده می‌کند.
+    """
     
-    # --- TASK 3: Translate readonly_fields ---
+    list_display = (
+        'patient', 
+        'get_services_display',  # متد سفارشی مدل
+        'start_time', 
+        'status', 
+        'selected_device', 
+        'points_awarded'  # نمایش وضعیت اعطای امتیاز
+    )
+    list_filter = ('status', 'start_time', 'selected_device', 'points_awarded')
+    search_fields = ('patient__username', 'services__name')
+    actions = [mark_as_done_and_award_points]  # افزودن اکشن سفارشی
+    
     readonly_fields = ('get_services_display',)
     list_per_page = 20
+    
+    # استفاده از raw_id_fields برای جستجوی آسان بیمار، کد و دستگاه
     raw_id_fields = ('patient', 'discount_code', 'selected_device')
 
-    # Override get_services_display to work in readonly_fields
     def get_services_display(self, obj):
+        """
+        فراخوانی متد مدل برای نمایش در list_display و readonly_fields.
+        """
         return obj.get_services_display()
     get_services_display.short_description = "خدمات"

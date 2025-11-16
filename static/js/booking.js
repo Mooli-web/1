@@ -124,9 +124,9 @@ $(window).on('load', function() {
         const totalWeeks = Math.ceil(allDateKeys.length / DAYS_PER_WEEK);
         if (totalWeeks > 1) {
              weekLabel.text(`هفته ${weekIndex + 1} از ${totalWeeks}`);
-             paginationContainer.show();
+             paginationContainer.removeClass('d-none');
         } else {
-            paginationContainer.hide();
+            paginationContainer.addClass('d-none');
         }
     }
 

@@ -1,17 +1,26 @@
+# clinic/views.py
+"""
+این فایل شامل ویوهای عمومی و صفحات اصلی سایت است که
+محتوای "ایستا" (Static Pages) یا نمایش عمومی اطلاعات
+کلینیک را بر عهده دارند.
+"""
+
 from django.shortcuts import render, get_object_or_404
-# --- TASK 4: Import ServiceGroup ---
 from .models import Service, PortfolioItem, FAQ, Testimonial, ServiceGroup
 
 def home_view(request):
-    # --- TASK 4: Change query to ServiceGroup ---
+    """
+    ویو صفحه اصلی (Home Page).
+    - گروه‌های خدماتی (برای نمایش در صفحه)
+    - نظرات مشتریان (Testimonials)
+    را واکشی کرده و به تمپلیت ارسال می‌کند.
+    """
+    # واکشی ۶ گروه خدماتی اول (برای نمایش در بلوک‌های صفحه اصلی)
     service_groups = ServiceGroup.objects.all()[:6]
     
-    # --- OPTIMIZED: Added select_related for service name in testimonials ---
+    # واکشی ۳ نظر آخر مشتریان (بهینه‌سازی شده با select_related)
     testimonials = Testimonial.objects.select_related('service').all()[:3]
     
-    # --- TASK 5: Specialist query removed (already done in provided file) ---
-    
-    # --- TASK 4: Update context ---
     context = {
         'service_groups': service_groups, 
         'testimonials': testimonials
@@ -19,15 +28,29 @@ def home_view(request):
     return render(request, 'clinic/home.html', context)
 
 def service_list_view(request):
+    """
+    ویو صفحه "لیست خدمات".
+    (توجه: بر اساس تمپلیت clinic/service_list.html، این ویو
+    در حال حاضر تمام "خدمات" (Services) را لیست می‌کند، نه "گروه‌های خدماتی")
+    """
     services = Service.objects.all()
     return render(request, 'clinic/service_list.html', {'services': services})
 
 def portfolio_gallery_view(request):
+    """
+    ویو صفحه "گالری نمونه کارها" (Portfolio).
+    """
     portfolio_items = PortfolioItem.objects.all()
     return render(request, 'clinic/portfolio_gallery.html', {'portfolio_items': portfolio_items})
 
 def faq_view(request):
+    """
+    ویو صفحه "سوالات متداول" (FAQ).
+    فقط سوالات "فعال" (is_active=True) نمایش داده می‌شوند.
+    """
     faqs = FAQ.objects.filter(is_active=True)
     return render(request, 'clinic/faq.html', {'faqs': faqs})
 
-# --- TASK 5: specialist_list_view and specialist_detail_view REMOVED (already done) ---
+# --- ویوهای مربوط به specialist_list و specialist_detail ---
+# --- به دلیل حذف مفهوم "متخصص" (Specialist) از پروژه، ---
+# --- این ویوها به طور کامل حذف شدند. ---

@@ -1,10 +1,16 @@
-# a_copy/beautyshop_blog/models.py
+# beautyshop_blog/models.py
+"""
+مدل‌های داده (Data Models) برای اپلیکیشن وبلاگ (beautyshop_blog).
+"""
 
 from django.db import models
 from django.conf import settings
 from django.urls import reverse
 
 class Category(models.Model):
+    """
+    مدل "دسته‌بندی" مطالب وبلاگ.
+    """
     name = models.CharField(max_length=100, verbose_name="نام دسته")
     slug = models.SlugField(max_length=100, unique=True, verbose_name="اسلاگ (نامک)")
     
@@ -16,6 +22,9 @@ class Category(models.Model):
         return self.name
 
 class Post(models.Model):
+    """
+    مدل "پست" (مقاله) وبلاگ.
+    """
     title = models.CharField(max_length=200, verbose_name="عنوان")
     slug = models.SlugField(max_length=200, unique=True, verbose_name="اسلاگ (نامک)")
     author = models.ForeignKey(
@@ -37,21 +46,24 @@ class Post(models.Model):
     )
     is_published = models.BooleanField(default=True, verbose_name="منتشر شده")
     
-    # --- TASK 3: Add stats fields ---
-    view_count = models.PositiveIntegerField(default=0, verbose_name="تعداد بازدید")
+    # --- فیلدهای آمار ---
+    view_count = models.PositiveIntegerField(
+        default=0, 
+        verbose_name="تعداد بازدید (واقعی)"
+    )
     
     likes = models.ManyToManyField(
         settings.AUTH_USER_MODEL, 
         related_name='blog_likes', 
         blank=True, 
-        verbose_name="لایک‌ها (واقعی)"
+        verbose_name="لایک‌ها (واقعی)",
+        help_text="کاربرانی که واقعاً این پست را لایک کرده‌اند."
     )
     
-    # --- ADDED: Field for manual admin likes ---
     fake_like_count = models.PositiveIntegerField(
         default=0, 
         verbose_name="تعداد لایک دستی (ادمین)",
-        help_text="این عدد با لایک‌های واقعی کاربران جمع می‌شود."
+        help_text="این عدد با لایک‌های واقعی کاربران (در 'total_likes') جمع می‌شود."
     )
     
     class Meta:
@@ -63,10 +75,17 @@ class Post(models.Model):
         return self.title
         
     def get_absolute_url(self):
+        """
+        URL منحصر به فرد این پست را برمی‌گرداند.
+        (مورد استفاده در تمپلیت‌ها و ادمین)
+        """
         return reverse('beautyshop_blog:post_detail', args=[self.slug])
     
     @property
     def total_likes(self):
-        # --- UPDATED: Combine real and fake likes ---
+        """
+        محاسبه مجموع لایک‌ها (واقعی + دستی).
+        این property در ادمین و تمپلیت‌ها استفاده می‌شود.
+        """
         real_likes = self.likes.count()
         return real_likes + self.fake_like_count

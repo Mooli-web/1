@@ -1,13 +1,18 @@
 # reception_panel/urls.py
-# فایل اصلاح‌شده: برای وارد کردن ویو از 5 فایل مجزا.
+"""
+نقشه‌برداری URLها (URLconf) برای اپلیکیشن reception_panel.
+این فایل از ساختار تقسیم‌بندی شده (Split Views) استفاده می‌کند
+و ویوها را از فایل‌های مجزا (views_patient, views_appointment, ...)
+وارد می‌کند.
+"""
 
 from django.urls import path
 # --- وارد کردن تمام فایل‌های ویو ---
-from . import views
-from . import views_patient
-from . import views_appointment
-from . import views_consultation
-from . import views_clinic
+from . import views  # ویوهای اصلی (لاگین، داشبورد، API اعلان)
+from . import views_patient  # ویوهای مدیریت بیمار
+from . import views_appointment  # ویوهای مدیریت نوبت
+from . import views_consultation  # ویوهای مدیریت مشاوره
+from . import views_clinic  # ویوهای مدیریت کلینیک (خدمات، ساعات)
 
 app_name = 'reception_panel'
 
