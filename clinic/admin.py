@@ -9,7 +9,7 @@ from .models import (
     Service, PortfolioItem, FAQ, Testimonial, 
     DiscountCode, ServiceGroup, Device, WorkHours
 )
-from jalali_date.admin import ModelAdminJaliMixin  # برای تقویم شمسی
+from jalali_date.admin import ModelAdminJalaliMixin  # برای تقویم شمسی
 
 
 class WorkHoursInline(admin.TabularInline):
@@ -102,9 +102,9 @@ class TestimonialAdmin(admin.ModelAdmin):
     raw_id_fields = ('service',)  # جستجوی خدمت به جای دراپ‌داون
 
 @admin.register(DiscountCode)
-class DiscountCodeAdmin(ModelAdminJaliMixin, admin.ModelAdmin):
+class DiscountCodeAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
     """
-    استفاده از ModelAdminJaliMixin برای نمایش تقویم شمسی
+    استفاده از ModelAdminJalaliMixin برای نمایش تقویم شمسی
     در فیلدهای تاریخ شروع و انقضا.
     """
     list_display = ('code', 'discount_type', 'value', 'start_date', 'end_date', 'is_active', 'user', 'is_one_time', 'is_used')

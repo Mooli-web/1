@@ -1,10 +1,15 @@
-{# mooli-web/1/1-108afa36b6d3b8572ca403177904f4e3aab9489b/templates/booking/create_booking.html #}
+{# mooli-web/templates/booking/create_booking.html #}
+{# نسخه v6.2 (با کدهای عیب‌یابی) #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
 {% block title %}رزرو نوبت جدید{% endblock %}
-{% block extra_head %}{% endblock %}
+
+{# --- بارگذاری CSS سفارشی تقویم (بدون تغییر) --- #}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/booking-calendar.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -29,7 +34,7 @@
                     
                     {% csrf_token %}
                     
-                    {# --- مرحله ۱ و ۲: (بدون تغییر) --- #}
+                    {# --- مرحله ۱ و ۲: انتخاب گروه و خدمت (بدون تغییر) --- #}
                     <div class="mb-3">
                         <label for="serviceGroup" class="form-label fs-5">۱. انتخاب گروه خدمت:</label>
                         <select name="service_group" id="serviceGroup" class="form-select form-select-lg" required>
@@ -42,28 +47,47 @@
                     <div id="servicesContainer" class="mb-3"></div>
                     <div id="devicesContainer" class="mb-3"></div>
 
-                    {# --- مرحله ۳ و ۴: (ساختار HTML اصلاح شد) --- #}
-                    <div id="slotsContainer" class="mb-4">
+                    {# --- مرحله ۳ و ۴: تقویم حرارتی (بدون تغییر) --- #}
+                    <div id="slotsContainer" class="mb-4" style="display: none;">
                         
-                        {# ۱. لیبل اصلی (توسط JS اضافه می‌شود) #}
-
-                        {# ۲. لیست روزها (توسط JS پر می‌شود) #}
-                        <div id="day-selection-list" class="list-group">
-                            {# پیام اولیه #}
-                            <div class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید تا زمان‌های موجود نمایش داده شوند.</div>
-                        </div>
-
-                       {# ۳. (جدید) دکمه‌های صفحه‌بندی هفتگی #}
-                        <div id="week-pagination-container" class="d-flex justify-content-between align-items-center mt-3 d-none">
-                            <button type="button" class="btn btn-outline-secondary" id="prevWeekBtn" disabled>&laquo; هفته قبل</button>
-                            <span id="week-label" class="text-muted fw-bold"></span>
-                            <button type="button" class="btn btn-outline-secondary" id="nextWeekBtn">هفته بعد &raquo;</button>
+                        {# --- ایده ۲: دکمه اولین نوبت موجود --- #}
+                        <div id="first-available-slot-container" class="alert alert-info d-none" role="alert">
+                            ⚡️ اولین نوبت موجود: <strong id="first-slot-label"></strong>
+                            <button type="button" class="btn btn-primary btn-sm ms-3" id="book-first-slot-btn">رزرو فوری این زمان</button>
                         </div>
                         
-                        {# ۴. لیست ساعت‌ها (توسط JS پر می‌شود) #}
-                        <div id="time-selection-container" class="mt-4" style="display: none;"></div>
+                        <label class="form-label fs-5 mb-2" id="calendar-step-label"></label>
+
+                        {# --- ایده ۱: ساختار تقویم حرارتی --- #}
+                        <div id="booking-calendar-wrapper">
+                            <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
+                                <button type="button" class="btn btn-outline-secondary" id="calendar-prev-month" disabled>« ماه قبل</button>
+                                <h5 id="calendar-month-label" class="fw-bold m-0"></h5>
+                                <button type="button" class="btn btn-outline-secondary" id="calendar-next-month">ماه بعد »</button>
+                            </div>
+                            <div class="calendar-grid-header">
+                                <div>ش</div><div>ی</div><div>د</div><div>س</div><div>چ</div><div>پ</div><div>ج</div>
+                            </div>
+                            <div id="calendar-grid-body" class="calendar-grid-body">
+                                </div>
+                        </div>
+                        
+                        {# محفظه لودینگ (مشترک) #}
+                        <div id="slots-loader" class="text-center p-4" style="display: none;">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-2">در حال جستجوی زمان‌های خالی...</p>
+                        </div>
+                        {# پیام اولیه (قبل از انتخاب خدمت) #}
+                        <div id="slots-initial-message" class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید تا زمان‌های موجود نمایش داده شوند.</div>
                     </div>
                     
+                    {# --- مرحله ۵: انتخاب ساعت (جایگاه) --- #}
+                    <div id="time-selection-container" class="mt-4" style="display: none;">
+                        </div>
+                    
+                    {# --- ایده ۴: تایمر رزرو موقت (جایگاه) --- #}
+                    <div id="fomo-timer-message" class="text-center text-danger fw-bold mt-3" style="display: none;"></div>
+
                     {# --- بخش تخفیف و ادامه (بدون تغییر) --- #}
                     <div class="mb-3">
                         <label for="discountCode" class="form-label">کد تخفیف دارید؟</label>
@@ -95,6 +119,7 @@
                     <input type="hidden" id="totalDuration" value="0">
                     <input type="hidden" name="device_id" id="selectedDevice">
                     
+                    {# --- رزرو دستی توسط پذیرش (بدون تغییر) --- #}
                     {% if request.user.is_staff and patient_user_for_template %}
                     <div class="form-check fs-5 my-3 alert alert-warning">
                         <input class="form-check-input" type="checkbox" name="manual_confirm" id="manual_confirm">
@@ -115,38 +140,50 @@
 
 {# --- مودال تایید (بدون تغییر) --- #}
 <div class="modal fade" id="confirmationModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">تایید نهایی اطلاعات</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p>لطفاً توجه داشته باشید که تمام اطلاع‌رسانی‌ها از طریق **شماره تلفن و ایمیل ثبت‌شده** در پروفایل شما انجام خواهد شد.</p>
-        <p class="fw-bold text-danger">مسئولیت صحت اطلاعات وارد شده بر عهده شماست.</p>
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="infoConfirmationCheck">
-          <label class="form-check-label" for="infoConfirmationCheck">
-            اطلاعات تماس خود را بررسی کرده‌ام و صحت آن را تایید می‌کنم.
-          </label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بازگشت</button>
-        <button type="button" id="submitBtn" class="btn btn-primary" disabled>تایید و رفتن به صفحه پرداخت</button>
-      </div>
-    </div>
   </div>
-</div>
 {% endblock %}
 
-{# --- اسکریپت‌ها (بدون تغییر) --- #}
+{# =================================================================== #}
+{# --- شروع بلوک عیب‌یابی (ماموریت ۶) --- #}
+{# =================================================================== #}
 {% block extra_js %}
 {{ block.super }} 
+
 <script>
-// --- Navbar Scroll Behavior (بدون تغییر) ---
+    console.log("--- شروع عیب‌یابی بارگذاری اسکریپت‌ها (نسخه ۸) ---");
+</script>
+
+{# ۱. بارگذاری کتابخانه jalali-moment #}
+<script src="{% static 'js/jalali-moment.browser.js' %}"></script>
+<script>
+    // --- تست ۱: (اصلاح شد) ---
+    // (کتابخانه jalali-moment وقتی در مرورگر اجرا می‌شود،
+    // متغیر 'moment' را تغییر می‌دهد و 'jalaliMoment' را به آن اضافه می‌کند)
+    
+    // --- شروع کد اجباری (Forced Definition) ---
+    if (typeof jalaliMoment === 'undefined' && typeof moment !== 'undefined' && typeof moment.fn.jYear !== 'undefined') {
+        console.warn("تست ۱: 'jalaliMoment' تعریف نشده بود، اما 'moment' وجود داشت.");
+        console.warn(">>> در حال اجرای راه‌حل اجباری (Assigning window.jalaliMoment = moment)...");
+        window.jalaliMoment = moment;
+    }
+    // --- پایان کد اجباری ---
+
+    console.log("تست ۱: آیا 'jalaliMoment' تعریف شده است؟", typeof jalaliMoment);
+    if (typeof jalaliMoment === 'undefined') {
+        console.error(">>> خطای تست ۱: فایل jalali-moment.browser.js بارگذاری نشده یا به درستی اجرا نشده است!");
+        console.warn(">>> راه‌حل: لطفاً سرور جنگو (runserver) را ری‌استارت کنید.");
+        console.warn(">>> راه‌حل: مطمئن شوید فایل در 'static/js/jalali-moment.browser.js' وجود دارد.");
+    } else {
+        console.log("تست ۱: OK - کتابخانه jalali-moment با موفقیت بارگذاری شد.");
+    }
+</script>
+
+
+{# (اسکریپت Navbar Scroll - بدون تغییر) #}
+<script>
 document.addEventListener('DOMContentLoaded', function() {
     const navbar = document.querySelector('.navbar.sticky-top');
+    // ... (کد اسکرول navbar بدون تغییر) ...
     if (navbar && navbar.classList.contains('navbar-transparent-on-top')) {
         const scrollTrigger = 50; 
         const handleScroll = () => {
@@ -163,5 +200,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-<script src="{% static 'js/booking.js' %}"></script>
+
+{# ۲. بارگذاری کتابخانه رندر کننده تقویم #}
+<script src="{% static 'js/booking-calendar.js' %}"></script>
+<script>
+    // --- تست ۲: (بدون تغییر) ---
+    console.log("تست ۲: آیا 'buildCalendar' تعریف شده است؟", typeof buildCalendar);
+    if (typeof buildCalendar === 'undefined') {
+        console.error(">>> خطای تست ۲: فایل booking-calendar.js بارگذاری نشده است!");
+    } else {
+        console.log("تست ۲: OK - کتابخانه تقویم (booking-calendar) بارگذاری شد.");
+    }
+</script>
+
+
+{# ۳. بارگذاری کنترلر اصلی #}
+<script src="{% static 'js/booking-main.js' %}"></script>
+<script>
+    // --- تست ۳: (بدون تغییر) ---
+    console.log("تست ۳: در حال اجرای booking-main.js (این فایل باید آخرین فایل باشد)");
+</script>
+
 {% endblock %}

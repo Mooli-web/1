@@ -1,0 +1,89 @@
+/*
+  ========================================
+  --- Booking Calendar v6.0 (Heatmap) ---
+  ========================================
+*/
+
+/* --- ایده ۱: ساختار تقویم حرارتی --- */
+.calendar-grid-header, .calendar-grid-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px; /* فاصله بین دایره‌ها */
+    text-align: center;
+}
+
+.calendar-grid-header div {
+    font-weight: bold;
+    color: var(--text-light);
+    padding-bottom: 10px;
+}
+
+.calendar-grid-body .calendar-day {
+    padding: 10px 5px;
+    border-radius: 50%; /* ایجاد دایره (ایده شما) */
+    cursor: not-allowed;
+    background-color: #f8f9fa; /* رنگ روزهای غیرفعال/گذشته */
+    color: #adb5bd;
+    opacity: 0.7;
+    transition: all 0.2s ease-in-out;
+    border: 2px solid transparent;
+}
+
+/* روز خالی در گرید (قبل از شروع ماه) */
+.calendar-grid-body .calendar-day-empty {
+    background-color: transparent;
+    opacity: 1;
+    cursor: default;
+}
+
+.calendar-day.available {
+    cursor: pointer;
+    font-weight: bold;
+    opacity: 1;
+}
+.calendar-day.available:hover {
+    transform: scale(1.05);
+}
+
+/* --- ایده ۱: تکنیک بازاریابی: نقشه حرارتی --- */
+
+/* سبز: ظرفیت زیاد (بیش از 7 اسلات) */
+.calendar-day.available-high { 
+    background-color: #d4edda;
+    color: #155724;
+}
+
+/* زرد: ظرفیت محدود (3 تا 7 اسلات) */
+.calendar-day.available-medium { 
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* قرمز: در حال اتمام (1 تا 3 اسلات) */
+.calendar-day.available-low { 
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* آبی: روز انتخاب شده */
+.calendar-day.selected { 
+    background-color: #0d6efd;
+    color: white;
+    transform: scale(1.1);
+    border: 2px solid #0056b3;
+}
+
+/* --- ایده ۳: برچسب محبوب --- */
+.popular-tag {
+    font-size: 0.75em;
+    font-weight: bold;
+    color: #ff6a00; /* رنگ نارنجی آتشین */
+    margin-right: 5px;
+}
+
+/* --- ایده ۲: دکمه اولین نوبت --- */
+#first-available-slot-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
