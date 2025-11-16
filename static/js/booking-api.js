@@ -111,7 +111,7 @@
             const firstSlot = slots[0];
             
             // --- *** شروع اصلاحیه (مشکل شماره ۱) *** ---
-            // دیگر نیازی به فرمت کردن با jalaliMoment نیست
+            // دیگر نیازی به فرمت کردن با moment نیست
             // رشته‌ی آماده را مستقیماً از API می‌خوانیم
             const readableTime = firstSlot.readable_start;
             // --- *** پایان اصلاحیه (مشکل شماره ۱) *** ---
@@ -122,7 +122,7 @@
             ui.firstAvailableContainer.removeClass('d-none');
 
             state.allGroupedSlots = slots.reduce((acc, slot) => {
-                const jDate = jalaliMoment.parseZone(slot.start);
+                const jDate = moment.parseZone(slot.start); // <-- *** اصلاح شد ***
                 // کلید ماشینی (jYYYY-jMM-jDD) همچنان برای رندر تقویم استفاده می‌شود
                 const dateKey = jDate.format('jYYYY-jMM-jDD'); 
                 if (!acc[dateKey]) acc[dateKey] = [];
@@ -133,10 +133,10 @@
             const stepLabel = ui.devicesContainer.is(':empty') ? '۳' : '۴';
             ui.calendarStepLabel.text(`${stepLabel}. انتخاب روز و ساعت:`);
 
-            state.currentCalendarMoment = state.todayJalali.clone().startOf('jMonth');
+            state.currentCalendarMoment = state.todayMoment.clone().startOf('jMonth'); // <-- *** اصلاح شد ***
             
             // فراخوانی buildCalendar (بدون تغییر)
-            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayJalali);
+            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); // <-- *** اصلاح شد ***
             
             ui.calendarWrapper.show();
 

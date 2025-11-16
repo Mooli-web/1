@@ -20,12 +20,11 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
 
     jMoment.locale('fa');
     
-    // --- *** شروع اصلاحیه (مشکل شماره ۲) *** ---
-    // نام ماه شمسی (e.g., "آبان ۱۴۰۴")
-    // از توکن‌های شمسی jMMMM و jYYYY استفاده شد
+    // --- *** اصلاحیه کلیدی: استفاده از 'jMMMM jYYYY' *** ---
+    // این خط باید از سال شمسی (jYYYY) استفاده کند نه سال میلادی (YYYY)
     const monthName = jMoment.format('jMMMM jYYYY');
-    BookingApp.ui.calendarMonthLabel.text(monthName); // <-- اصلاح شد
-    // --- *** پایان اصلاحیه (مشکل شماره ۲) *** ---
+    BookingApp.ui.calendarMonthLabel.text(monthName); 
+    // --- *** پایان اصلاحیه *** ---
 
     const firstDayOfMonth = jMoment.clone().startOf('jMonth');
     const firstDayWeekday = (firstDayOfMonth.day() + 1) % 7;

@@ -15,8 +15,9 @@
     $(document).ready(function() {
         
         // --- ۱. بررسی کتابخانه‌های ضروری ---
-        if (typeof jalaliMoment === 'undefined') {
-            console.error("خطای حیاتی: کتابخانه jalali-moment بارگذاری نشده است.");
+        // *** اصلاح شد: چک کردن 'moment' به جای 'jalaliMoment' ***
+        if (typeof moment === 'undefined' || typeof moment.fn.jYear === 'undefined') {
+            console.error("خطای حیاتی: کتابخانه jalali-moment (moment.js) بارگذاری نشده است.");
             alert("خطا در بارگذاری تقویم. لطفاً صفحه را رفرش کنید.");
             return;
         }
@@ -24,7 +25,7 @@
             console.error("خطای حیاتی: کتابخانه booking-calendar.js بارگذاری نشده است.");
             return;
         }
-        jalaliMoment.locale('fa'); // تنظیم سراسری زبان
+        moment.locale('fa'); // <-- *** اصلاح شد *** (تنظیم سراسری زبان)
         console.log("BookingApp v1.0 (Refactored) لود شد.");
 
         // --- ۲. مقداردهی سلکتورهای UI ---
@@ -71,9 +72,9 @@
         // (BUG FIX P2) تنظیم "امروز" بر اساس تاریخ سرور
         if (!state.TODAY_DATE_SERVER) {
             console.error("خطای حیاتی: data-today-date یافت نشد. تقویم ممکن است اشتباه باشد.");
-            state.todayJalali = jalaliMoment().startOf('day'); // Fallback
+            state.todayMoment = moment().startOf('day'); // <-- *** اصلاح شد *** (Fallback)
         } else {
-            state.todayJalali = jalaliMoment(state.TODAY_DATE_SERVER, 'YYYY-MM-DD').startOf('day');
+            state.todayMoment = moment(state.TODAY_DATE_SERVER, 'YYYY-MM-DD').startOf('day'); // <-- *** اصلاح شد ***
         }
 
         // --- ۴. اتصال Event Handlers ---
@@ -109,11 +110,11 @@
         // --- رویدادهای تقویم ---
         ui.nextMonthBtn.on('click', function() {
             state.currentCalendarMoment.add(1, 'jMonth');
-            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayJalali);
+            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); // <-- *** اصلاح شد ***
         });
         ui.prevMonthBtn.on('click', function() {
             state.currentCalendarMoment.subtract(1, 'jMonth');
-            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayJalali);
+            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); // <-- *** اصلاح شد ***
         });
         $(document).on('click', '.calendar-day.available', function(e) {
             e.preventDefault();

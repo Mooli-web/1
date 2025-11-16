@@ -16,7 +16,7 @@ window.BookingApp = {
         // متغیرهای داخلی
         codeDiscountAmount: 0,
         allGroupedSlots: {},
-        todayJalali: null,
+        todayMoment: null, // <--*** اصلاح شد: نام متغیر تغییر کرد ***
         currentCalendarMoment: null,
         
         // تایمر FOMO

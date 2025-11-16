@@ -84,7 +84,7 @@
         const buttonGroup = $('<div class="d-flex flex-wrap gap-2 mb-3"></div>');
         
         slotsForDay.forEach(slot => {
-            const slotMoment = jalaliMoment.parseZone(slot.start);
+            const slotMoment = moment.parseZone(slot.start); // <-- *** اصلاح شد ***
             const timeStr = slotMoment.format('HH:mm');
             const backendFormat = slot.start;
             let popularTag = '';

@@ -30,7 +30,8 @@
                       data-get-services-url="{% url 'booking:get_services_for_group' %}"
                       data-apply-discount-url="{% url 'booking:apply_discount' %}"
                       data-csrf-token="{{ csrf_token }}"
-                      data-max-discount="{{ max_discount|default:0 }}">
+                      data-max-discount="{{ max_discount|default:0 }}"
+                      data-today-date="{{ today_date_server }}"> {# <-- *** اصلاحیه ۱: این خط اضافه شد *** #}
                     
                     {% csrf_token %}
                     
@@ -144,34 +145,31 @@
 {% endblock %}
 
 {# =================================================================== #}
-{# --- شروع بلوک عیب‌یابی (ماموریت ۶) --- #}
+{# --- *** اصلاحیه ۲: بازنویسی کامل بلوک جاوا اسکریپت *** --- #}
 {# =================================================================== #}
 {% block extra_js %}
 {{ block.super }} 
 
-<script>
-    console.log("--- شروع عیب‌یابی بارگذاری اسکریپت‌ها (نسخه ۸) ---");
-</script>
-
-{# ۱. بارگذاری کتابخانه jalali-moment #}
+{# ۱. بارگذاری کتابخانه جلالی (بدون تغییر) #}
 <script src="{% static 'js/jalali-moment.browser.js' %}"></script>
-<script>
-    // --- (بلوک اسکریپت معیوب حذف شد) ---
-    // --- تست ۱: بررسی می‌کنیم که کتابخانه moment.js را به درستی وصله (patch) زده باشد ---
-    console.log("تست ۱: آیا 'moment' تعریف شده است؟", typeof moment);
-    if (typeof moment === 'undefined' || typeof moment.fn.jYear === 'undefined') {
-        console.error(">>> خطای تست ۱: فایل jalali-moment.browser.js بارگذاری نشده یا به درستی اجرا نشده است!");
-    } else {
-        console.log("تست ۱: OK - کتابخانه jalali-moment با موفقیت بارگذاری شد و moment.js را وصله زد.");
-    }
-</script>
 
+{# ۲. بارگذاری ماژول تعریف State (باید قبل از calendar.js باشد) #}
+<script src="{% static 'js/booking-state.js' %}"></script>
+
+{# ۳. بارگذاری کتابخانه رندر کننده تقویم (بدون تغییر) #}
+<script src="{% static 'js/booking-calendar.js' %}"></script>
+
+{# ۴. بارگذاری ماژول‌های کمکی UI و API #}
+<script src="{% static 'js/booking-ui.js' %}"></script>
+<script src="{% static 'js/booking-api.js' %}"></script>
+
+{# ۵. بارگذاری اسکریپت راه‌انداز (Init) (باید آخرین فایل باشد) #}
+<script src="{% static 'js/booking-init.js' %}"></script>
 
 {# (اسکریپت Navbar Scroll - بدون تغییر) #}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const navbar = document.querySelector('.navbar.sticky-top');
-    // ... (کد اسکرول navbar بدون تغییر) ...
     if (navbar && navbar.classList.contains('navbar-transparent-on-top')) {
         const scrollTrigger = 50; 
         const handleScroll = () => {
@@ -188,25 +186,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-{# ۲. بارگذاری کتابخانه رندر کننده تقویم #}
-<script src="{% static 'js/booking-calendar.js' %}"></script>
-<script>
-    // --- تست ۲: (بدون تغییر) ---
-    console.log("تست ۲: آیا 'buildCalendar' تعریف شده است؟", typeof buildCalendar);
-    if (typeof buildCalendar === 'undefined') {
-        console.error(">>> خطای تست ۲: فایل booking-calendar.js بارگذاری نشده است!");
-    } else {
-        console.log("تست ۲: OK - کتابخانه تقویم (booking-calendar) بارگذاری شد.");
-    }
-</script>
-
-
-{# ۳. بارگذاری کنترلر اصلی #}
-<script src="{% static 'js/booking-main.js' %}"></script>
-<script>
-    // --- تست ۳: (بدون تغییر) ---
-    console.log("تست ۳: در حال اجرای booking-main.js (این فایل باید آخرین فایل باشد)");
-</script>
-
 {% endblock %}
