@@ -3,6 +3,11 @@
 این فایل شامل تمام Endpoints (نقاط پایانی) API است که
 توسط جاوا اسکریپت فرانت‌اند (booking.js) برای ایجاد یک
 فرم رزرو پویا فراخوانی می‌شوند.
+
+--- نسخه v2.0 (Smart Backend Refactor) ---
+- ویو all_available_slots_api اکنون یک دیکشنری گروه‌بندی شده
+  (ساخته شده توسط calendar_logic.py) را برمی‌گرداند.
+- safe=False به safe=True (پیش‌فرض) تغییر کرد.
 """
 
 from django.http import JsonResponse
@@ -16,19 +21,17 @@ from users.models import CustomUser
 
 # توابع کمکی
 from .utils import _get_patient_for_booking 
-# "مغز متفکر" تقویم
+# "مغز متفکر" تقویم (که اکنون هوشمند شده)
 from .calendar_logic import generate_available_slots_for_range
 
 
 def all_available_slots_api(request):
     """
     API اصلی برای دریافت اسلات‌های خالی.
-    این API از JS فراخوانی می‌شود و یک بازه 30 روزه از "امروز" را محاسبه
-    و در قالب JSON برمی‌گرداند.
+    این API اکنون یک آبجکت JSON گروه‌بندی شده بر اساس کلید تاریخ شمسی برمی‌گرداند.
     """
     
     # --- ۱. محاسبه بازه زمانی ---
-    # این API همیشه یک بازه 30 روزه از امروز را محاسبه می‌کند
     start_date = timezone.now().date()
     end_date = start_date + timedelta(days=30)
 
@@ -37,34 +40,21 @@ def all_available_slots_api(request):
     device_id = request.GET.get('device_id')
     
     if not service_ids:
-        # اگر هیچ خدمتی انتخاب نشده، لیست خالی برگردان
-        return JsonResponse([], safe=False)
+        # اگر هیچ خدمتی انتخاب نشده، دیکشنری خالی برگردان
+        return JsonResponse({}, safe=True)
 
     # --- ۳. تعیین هویت بیمار ---
-    # (تشخیص اینکه آیا پذیرش در حال رزرو است یا خود بیمار)
     patient_user, _, _ = _get_patient_for_booking(request)
     if patient_user is None or not patient_user.is_authenticated:
-        # (توجه: اگر بیمار لاگین نباشد، فیلتر جنسیت کار نمی‌کند
-        # اما _get_patient_for_booking کاربر request.user را برمی‌گرداند
-        # که اگر لاگین نباشد، AnonymousUser است و patient_user.gender
-        # به سادگی None می‌شود و فیلتر جنسیت فقط 'ALL' را برمی‌گرداند)
-        
-        # اگر بخواهیم رزرو فقط برای کاربران لاگین شده باشد، باید اینجا
-        # return JsonResponse({'error': 'Authentication required'}, status=401)
-        # قرار دهیم. اما بر اساس کد موجود، به نظر می‌رسد رزرو
-        # برای کاربر Anonymous (که بعداً لاگین می‌کند) مجاز است.
-        # *اصلاح*: ویو create_booking نیاز به @login_required دارد،
-        # پس patient_user همیشه Anonymous نیست، مگر اینکه دکوریتور
-        # از روی all_available_slots_api حذف شده باشد (که شده).
-        # با این حال، _get_patient_for_booking این را مدیریت می‌کند.
-        pass # اجازه می‌دهیم ادامه یابد
-
-    if not patient_user.is_authenticated:
          return JsonResponse({'error': 'Patient not found or not authenticated'}, status=400)
 
 
     # --- ۴. فراخوانی "مغز متفکر" ---
-    available_slots = generate_available_slots_for_range(
+    # ====================================================================
+    # --- *** شروع تغییر (فاز ۱) *** ---
+    #
+    # نام متغیر برای خوانایی بهتر تغییر کرد
+    grouped_slots = generate_available_slots_for_range(
         start_date=start_date,
         end_date=end_date,
         service_ids=service_ids,
@@ -73,20 +63,21 @@ def all_available_slots_api(request):
     )
 
     # --- ۵. برگرداندن پاسخ JSON ---
-    # خروجی یک لیست ساده از دیکشنری‌ها است که JS آن را مدیریت می‌کند
-    return JsonResponse(available_slots, safe=False)
+    # اکنون یک دیکشنری برمی‌گردانیم، پس safe=True (پیش‌فرض) است
+    return JsonResponse(grouped_slots, safe=True)
+    #
+    # --- *** پایان تغییر (فاز ۱) *** ---
+    # ====================================================================
 
 
 # --------------------------------------------------------------------
-# --- APIهای کمکی فرم ---
+# --- APIهای کمکی فرم (بدون تغییر) ---
 # --------------------------------------------------------------------
 
 def get_services_for_group_api(request):
     """
     API کمکی (AJAX).
-    وقتی کاربر "گروه خدمت" را انتخاب می‌کند، این API فراخوانی می‌شود
-    تا لیست "خدمات" (زیرگروه‌ها) و "دستگاه‌ها"ی آن گروه را
-    دریافت کند و فرم را به صورت پویا پر کند.
+    (بدون تغییر)
     """
     group_id = request.GET.get('group_id')
     if not group_id:
@@ -122,8 +113,7 @@ def get_services_for_group_api(request):
 def apply_discount_api(request):
     """
     API کمکی (AJAX).
-    برای اعتبارسنجی "کد تخفیف" و محاسبه مبلغ تخفیف قبل از
-    ثبت نهایی فرم استفاده می‌شود.
+    (بدون تغییر)
     """
     code = request.POST.get('code', '').strip()
     total_price_str = request.POST.get('total_price', '0')
@@ -164,4 +154,4 @@ def apply_discount_api(request):
         return JsonResponse({'status': 'success', 'discount_amount': discount_amount})
 
     except DiscountCode.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'کد تخفیFف یافت نشد.'}, status=404)
+        return JsonResponse({'status': 'error', 'message': 'کد تخفیف یافت نشد.'}, status=404)

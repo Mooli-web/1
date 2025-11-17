@@ -1,5 +1,5 @@
 // static/js/booking-init.js
-// --- نسخه v6.7 (Fix: Correct Gregorian Date Parsing) ---
+// --- نسخه v6.9 (Fix: Typo in nextMonthBtn handler) ---
 // وظیفه: فایل راه‌انداز (Initializer) برنامه.
 
 (function(App, $) {
@@ -22,7 +22,6 @@
             console.error("خطای حیاتی: کتابخانه booking-calendar.js بارگذاری نشده است.");
             return;
         }
-        moment.locale('fa'); 
         console.log("BookingApp v1.0 (Refactored) لود شد.");
 
         // --- ۲. مقداردهی سلکتورهای UI (بدون تغییر) ---
@@ -71,21 +70,14 @@
             console.error("خطای حیاتی: data-today-date یافت نشد. تقویم ممکن است اشتباه باشد.");
             state.todayMoment = moment().startOf('day'); // (Fallback)
         } else {
-            // ==========================================================
-            // --- *** اصلاحیه کلیدی (رفع باگ پارس تاریخ) *** ---
-            //
-            // مشکل: moment.locale('fa') باعث می‌شد که `moment("2025-11-17")`
-            // این تاریخ میلادی را به عنوان تاریخ "شمسی" پارس کند و خراب شود.
-            // 
-            // راه‌حل: ما به moment صریحاً می‌گوییم که تاریخ سرور
-            // (state.TODAY_DATE_SERVER) یک تاریخ میلادی (Gregorian) است
-            // و باید بر اساس فرمت 'YYYY-MM-DD' پارس شود.
-            
+            // (اصلاحیه قبلی - صحیح است)
             state.todayMoment = moment(state.TODAY_DATE_SERVER, 'YYYY-MM-DD').startOf('day');
-            // ==========================================================
         }
 
-        // --- ۴. اتصال Event Handlers (کدهای این بخش بدون تغییر هستند) ---
+        // (اصلاحیه قبلی - صحیح است)
+        moment.locale('fa'); 
+
+        // --- ۴. اتصال Event Handlers ---
 
         ui.serviceGroupSelect.on('change', api.fetchServicesForGroup);
 
@@ -112,10 +104,18 @@
 
         ui.nextMonthBtn.on('click', function() {
             state.currentCalendarMoment.add(1, 'jMonth');
-            buildCalendar(state.currentCalendarMoment, state.allGroupDlots, state.todayMoment); 
+            
+            // ==========================================================
+            // --- *** شروع اصلاحیه (Fix v6.9) *** ---
+            //
+            // مشکل: اشتباه تایپی (allGroupDlots) باعث ارسال undefined می‌شد.
+            //
+            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); 
+            // ==========================================================
         });
         ui.prevMonthBtn.on('click', function() {
             state.currentCalendarMoment.subtract(1, 'jMonth');
+            // (این خط از قبل درست بود)
             buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); 
         });
         $(document).on('click', '.calendar-day.available', function(e) {

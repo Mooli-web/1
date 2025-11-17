@@ -1,5 +1,7 @@
 // static/js/booking-api.js
+// --- نسخه v7.1 (Refactor Complete: Dumb Frontend) ---
 // وظیفه: شامل تمام توابع مربوط به ارتباط با سرور (Fetch/AJAX).
+// (این فایل دیگر هیچ پردازش تاریخی انجام نمی‌دهد)
 
 (function(App) {
     // ماژول API
@@ -10,6 +12,7 @@
 
     /**
      * دریافت خدمات و دستگاه‌ها بر اساس گروه خدماتی
+     * (بدون تغییر)
      */
     api.fetchServicesForGroup = async function() {
         console.log("گروه خدمت عوض شد.");
@@ -26,9 +29,6 @@
             if (!response.ok) throw new Error('خطا در بارگذاری خدمات');
             
             const data = await response.json();
-            
-            // --- *** اصلاحیه (مرحله ۱): این خط حذف شد *** ---
-            // ui.slotsContainer.show(); // <-- این خط باعث باگ بود و حذف شد
             
             // رندر کردن خدمات
             if (data.services && data.services.length > 0) {
@@ -76,14 +76,12 @@
 
     /**
      * تابع اصلی دریافت اسلات‌ها و نمایش تقویم
+     * (بازسازی شده برای معماری Smart Backend)
      */
     api.fetchAndDisplaySlots = async function() {
         console.log("خدمت یا دستگاه عوض شد.");
         
-        // --- *** اصلاحیه (مرحله ۲): این خط اضافه شد *** ---
-        // در اینجا محفظه تقویم را نمایش می‌دهیم (که لودر را نشان می‌دهد)
         ui.slotsContainer.show();
-        
         uiHelpers.showSlotsLoading();
 
         let service_ids = [];
@@ -106,71 +104,40 @@
         try {
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error('خطا در دریافت اطلاعات از سرور');
-            const slots = await response.json();
+            
+            // 'groupedSlots' آبجکت آماده‌ای است که مستقیم از پایتون می‌آید
+            // (مثال: {'1404-08-26': [...], '1404-08-27': [...]})
+            const groupedSlots = await response.json();
 
             ui.slotsLoader.hide();
 
-            if (slots.length === 0) {
+            // بررسی اینکه آیا آبجکت دریافتی خالی است یا خیر
+            if (Object.keys(groupedSlots).length === 0) {
                 ui.slotsInitialMessage.text('متاسفانه هیچ زمان خالی در ۳۰ روز آینده یافت نشد.').show();
                 return;
             }
             
-            const firstSlot = slots[0];
+            // --- منطق جدید برای یافتن اولین اسلات ---
+            const firstDateKey = Object.keys(groupedSlots)[0];
+            const firstSlot = groupedSlots[firstDateKey][0];
             
-            // ==========================================================
-            // --- DEBUG 3 ---
-            // بیایید ببینیم اولین اسلاتی که از بک‌اند آمده چیست
-            // اینجا باید رشته فارسی «آبان» را ببینیم
-            console.log("DEBUG (booking-api.js): اولین اسلات دریافتی از سرور:", firstSlot);
-            // ==========================================================
-
-            // --- *** شروع اصلاحیه (مشکل شماره ۱) *** ---
-            // دیگر نیازی به فرمت کردن با moment نیست
-            // رشته‌ی آماده را مستقیماً از API می‌خوانیم
             const readableTime = firstSlot.readable_start;
-            // --- *** پایان اصلاحیه (مشکل شماره ۱) *** ---
 
             ui.firstSlotLabel.text(readableTime);
             ui.bookFirstSlotBtn.data('slot-backend-format', firstSlot.start);
             ui.bookFirstSlotBtn.data('slot-readable', readableTime);
             ui.firstAvailableContainer.removeClass('d-none');
 
-            state.allGroupedSlots = slots.reduce((acc, slot) => {
-                // ==========================================================
-                // --- *** اصلاحیه نهایی (Fix v3.1) *** ---
-                //
-                // مشکل: moment.parseZone(slot.start) تحت تاثیر locale('fa') 
-                // رشته ISO میلادی را اشتباه پارس می‌کرد.
-                //
-                // راه‌حل: از moment(slot.start) استفاده می‌کنیم که پارسر 
-                // استاندارد ISO را فراخوانی می‌کند و تاریخ را صحیح می‌سازد.
-                const jDate = moment(slot.start);
-                // ==========================================================
-
-                // کلید ماشینی (jYYYY-jMM-jDD) همچنان برای رندر تقویم استفاده می‌شود
-                const dateKey = jDate.format('jYYYY-jMM-jDD'); 
-                if (!acc[dateKey]) acc[dateKey] = [];
-                acc[dateKey].push(slot);
-                return acc;
-            }, {});
-
+            // ما آبجکت آماده بک‌اند را مستقیماً به state می‌دهیم.
+            state.allGroupedSlots = groupedSlots;
+            
             const stepLabel = ui.devicesContainer.is(':empty') ? '۳' : '۴';
             ui.calendarStepLabel.text(`${stepLabel}. انتخاب روز و ساعت:`);
 
-            // state.todayMoment اکنون به درستی در init.js ساخته شده است
             state.currentCalendarMoment = state.todayMoment.clone().startOf('jMonth');
             
-            // ==========================================================
-            // --- DEBUG 4 ---
-            // اینجا متغیری است که به تقویم ارسال می‌شود تا ماه را رندر کند
-            console.log("DEBUG (booking-api.js): متغیر 'state.currentCalendarMoment' (برای رندر تقویم) تنظیم شد:");
-            // این لاگ همچنان ممکن است 1404-08-01 را نشان دهد (به دلیل باگ لایبرری)
-            // اما مهم این است که آبجکت moment داخلی صحیح است.
-            console.log("DEBUG: فرمت میلادی:", state.currentCalendarMoment.format('YYYY-MM-DD'));
-            console.log("DEBUG: فرمت شمسی:", state.currentCalendarMoment.format('jYYYY-jMM-jDD'));
-            // ==========================================================
-
-            // فراخوانی buildCalendar (بدون تغییر)
+            // فراخوانی buildCalendar
+            // اکنون 'state.allGroupedSlots' دقیقاً فرمتی را دارد که 'buildCalendar' انتظار دارد.
             buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment);
             
             ui.calendarWrapper.show();
@@ -183,6 +150,7 @@
 
     /**
      * اعتبارسنجی و اعمال کد تخفیف
+     * (بدون تغییر)
      */
     api.applyDiscount = async function() {
         const code = ui.discountCodeInput.val();

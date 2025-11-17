@@ -1,5 +1,5 @@
 // static/js/booking-calendar.js
-// --- نسخه v6.4 (Fix: Calendar Rendering Logic) ---
+// --- نسخه v7.1 (Refactor Complete: Cleaned) ---
 // این فایل "کتابخانه" رندر کننده تقویم شمسی سفارشی است.
 // این فایل به کتابخانه jalali-moment و Namespace سراسری BookingApp نیاز دارد.
 
@@ -7,12 +7,14 @@
  * (حل باگ تاریخ شمسی + کلید ماشینی)
  * موتور رندر تقویم شمسی (Heatmap).
  * @param {object} jMoment - آبجکت jalaliMoment برای ماه جاری
- * @param {object} allGroupedSlots - دیتای اسلات‌ها از API
+ * @param {object} allGroupedSlots - دیتای اسلات‌ها از API (آماده شده توسط بک‌اند)
  * @param {object} todayJalali - آبجکت jalaliMoment برای "امروز"
  */
 function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
     
-    // --- خواندن متغیرها از Namespace (اصلاح شده در ماموریت قبل) ---
+    // (کدهای دیباگ حذف شدند)
+
+    // --- خواندن متغیرها از Namespace ---
     const calendarGridBody = BookingApp.ui.calendarGridBody;
     calendarGridBody.html('');
     BookingApp.ui.timeSelectionContainer.html('').hide();
@@ -20,21 +22,17 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
 
     jMoment.locale('fa');
     
-    // --- *** اصلاحیه کلیدی: استفاده از 'jMMMM jYYYY' *** ---
     const monthName = jMoment.format('jMMMM jYYYY');
     
     // ==========================================================
-    // --- اصلاحیه نهایی: فارسی سازی اعداد سال ---
-    // یک تابع کمکی کوچک برای تبدیل اعداد انگلیسی به فارسی
+    // --- فارسی سازی اعداد سال ---
     const toFarsiDigits = (s) => s.toString().replace(/\d/g, x => ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'][x]);
-    
-    // ما خروجی را (مثلاً "آبان 1404") گرفته و اعداد آن را فارسی می‌کنیم
     BookingApp.ui.calendarMonthLabel.text(toFarsiDigits(monthName));
     // ==========================================================
 
 
     const firstDayOfMonth = jMoment.clone().startOf('jMonth');
-    const firstDayWeekday = (firstDayOfMonth.day() + 1) % 7;
+    const firstDayWeekday = (firstDayOfMonth.day() + 1) % 7; // (شنبه = 0)
     const daysInMonth = jMoment.jDaysInMonth();
 
     // ۱. اضافه کردن خانه‌های خالی (padding) قبل از شروع ماه
@@ -43,7 +41,7 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
     }
 
     // ==========================================================
-    // --- *** شروع اصلاحیه: بازنویسی منطق رندر روزها *** ---
+    // --- منطق رندر روزها ---
     // ==========================================================
     for (let day = 1; day <= daysInMonth; day++) {
         
@@ -53,19 +51,22 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
 
         // ۲. بررسی کن آیا روز در گذشته است یا امروز/آینده
         if (currentDayMoment.isBefore(todayJalali, 'day')) {
-            // اگر در گذشته بود، کلاس 'past-day' (که استایل پیش‌فرض .calendar-day است)
-            // اعمال می‌شود و هیچ کار دیگری لازم نیست.
-            // dayCell.addClass('past-day'); // این خط اضافی است چون CSS پیش‌فرض همین است
+            // روز گذشته است (استایل پیش‌فرض خاکستری اعمال می‌شود)
         } else {
             // اگر امروز یا در آینده بود، بررسی کن اسلات خالی دارد یا نه
+            
+            // این کلید مصرفی (مثلاً '1404-08-26') است
             const dateKey = currentDayMoment.format('jYYYY-jMM-jDD');
             
-            if (allGroupedSlots[dateKey]) {
+            // (کد دیباگ حذف شد)
+
+            // allGroupedSlots اکنون آبجکت آماده از بک‌اند است
+            if (allGroupedSlots && allGroupedSlots[dateKey]) { 
                 // اگر اسلات داشت، آن را "available" کن
                 const slotsForThisDay = allGroupedSlots[dateKey];
                 const count = slotsForThisDay.length;
 
-                dayCell.addClass('available'); // این کلاس استایل خاکستری پیش‌فرض را لغو می‌کند
+                dayCell.addClass('available');
                 
                 // --- منطق نقشه حرارتی (Heatmap) ---
                 if (count <= 3) {
@@ -80,16 +81,12 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
                 dayCell.data('slots', slotsForThisDay);
                 dayCell.data('date-object', currentDayMoment.toDate());
             }
-            // اگر اسلات نداشت (else)، هیچ کلاسی اضافه نمی‌شود
-            // و سلول با استایل پیش‌فرض (خاکستری) رندر می‌شود
+            // اگر اسلات نداشت (else)، با استایل پیش‌فرض (خاکستری) رندر می‌شود
         }
         
-        // ۳. در هر صورت (چه گذشته، چه آینده، چه با اسلات، چه بی اسلات)
-        // سلول را به تقویم اضافه کن.
+        // ۳. سلول را به تقویم اضافه کن
         calendarGridBody.append(dayCell);
     }
-    // ==========================================================
-    // --- *** پایان اصلاحیه *** ---
     // ==========================================================
 
     // ۳. مدیریت دکمه‌های ماه قبل/بعد
