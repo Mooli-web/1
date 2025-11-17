@@ -26,7 +26,9 @@
             if (!response.ok) throw new Error('خطا در بارگذاری خدمات');
             
             const data = await response.json();
-            ui.slotsContainer.show();
+            
+            // --- *** اصلاحیه (مرحله ۱): این خط حذف شد *** ---
+            // ui.slotsContainer.show(); // <-- این خط باعث باگ بود و حذف شد
             
             // رندر کردن خدمات
             if (data.services && data.services.length > 0) {
@@ -77,6 +79,11 @@
      */
     api.fetchAndDisplaySlots = async function() {
         console.log("خدمت یا دستگاه عوض شد.");
+        
+        // --- *** اصلاحیه (مرحله ۲): این خط اضافه شد *** ---
+        // در اینجا محفظه تقویم را نمایش می‌دهیم (که لودر را نشان می‌دهد)
+        ui.slotsContainer.show();
+        
         uiHelpers.showSlotsLoading();
 
         let service_ids = [];
@@ -129,7 +136,17 @@
             ui.firstAvailableContainer.removeClass('d-none');
 
             state.allGroupedSlots = slots.reduce((acc, slot) => {
-                const jDate = moment.parseZone(slot.start); // <-- *** اصلاح شد ***
+                // ==========================================================
+                // --- *** اصلاحیه نهایی (Fix v3.1) *** ---
+                //
+                // مشکل: moment.parseZone(slot.start) تحت تاثیر locale('fa') 
+                // رشته ISO میلادی را اشتباه پارس می‌کرد.
+                //
+                // راه‌حل: از moment(slot.start) استفاده می‌کنیم که پارسر 
+                // استاندارد ISO را فراخوانی می‌کند و تاریخ را صحیح می‌سازد.
+                const jDate = moment(slot.start);
+                // ==========================================================
+
                 // کلید ماشینی (jYYYY-jMM-jDD) همچنان برای رندر تقویم استفاده می‌شود
                 const dateKey = jDate.format('jYYYY-jMM-jDD'); 
                 if (!acc[dateKey]) acc[dateKey] = [];
@@ -140,19 +157,21 @@
             const stepLabel = ui.devicesContainer.is(':empty') ? '۳' : '۴';
             ui.calendarStepLabel.text(`${stepLabel}. انتخاب روز و ساعت:`);
 
-            state.currentCalendarMoment = state.todayMoment.clone().startOf('jMonth'); // <-- *** اصلاح شد ***
+            // state.todayMoment اکنون به درستی در init.js ساخته شده است
+            state.currentCalendarMoment = state.todayMoment.clone().startOf('jMonth');
             
             // ==========================================================
             // --- DEBUG 4 ---
             // اینجا متغیری است که به تقویم ارسال می‌شود تا ماه را رندر کند
-            // این باید «آبان» باشد، اما در سیستم شما «بهمن» است
             console.log("DEBUG (booking-api.js): متغیر 'state.currentCalendarMoment' (برای رندر تقویم) تنظیم شد:");
+            // این لاگ همچنان ممکن است 1404-08-01 را نشان دهد (به دلیل باگ لایبرری)
+            // اما مهم این است که آبجکت moment داخلی صحیح است.
             console.log("DEBUG: فرمت میلادی:", state.currentCalendarMoment.format('YYYY-MM-DD'));
             console.log("DEBUG: فرمت شمسی:", state.currentCalendarMoment.format('jYYYY-jMM-jDD'));
             // ==========================================================
 
             // فراخوانی buildCalendar (بدون تغییر)
-            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); // <-- *** اصلاح شد ***
+            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment);
             
             ui.calendarWrapper.show();
 

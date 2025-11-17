@@ -1,5 +1,5 @@
 // static/js/booking-calendar.js
-// --- نسخه v6.3 (Refactor Fix) ---
+// --- نسخه v6.4 (Fix: Calendar Rendering Logic) ---
 // این فایل "کتابخانه" رندر کننده تقویم شمسی سفارشی است.
 // این فایل به کتابخانه jalali-moment و Namespace سراسری BookingApp نیاز دارد.
 
@@ -42,42 +42,55 @@ function buildCalendar(jMoment, allGroupedSlots, todayJalali) {
         calendarGridBody.append('<div class="calendar-day-empty"></div>');
     }
 
-    // ۲. رندر کردن روزهای ماه
+    // ==========================================================
+    // --- *** شروع اصلاحیه: بازنویسی منطق رندر روزها *** ---
+    // ==========================================================
     for (let day = 1; day <= daysInMonth; day++) {
+        
+        // ۱. سلول و آبجکت moment آن روز را بساز
         const dayCell = $(`<div class="calendar-day">${day}</div>`);
         const currentDayMoment = jMoment.clone().jDate(day);
 
-        // ۳. بررسی روزهای گذشته (امروز قابل رزرو است)
+        // ۲. بررسی کن آیا روز در گذشته است یا امروز/آینده
         if (currentDayMoment.isBefore(todayJalali, 'day')) {
-            dayCell.addClass('past-day');
-            calendarGridBody.append(dayCell);
-            continue;
-        }
-
-        const dateKey = currentDayMoment.format('jYYYY-jMM-jDD');
-        
-        if (allGroupedSlots[dateKey]) {
-            const slotsForThisDay = allGroupedSlots[dateKey];
-            const count = slotsForThisDay.length;
-
-            dayCell.addClass('available');
+            // اگر در گذشته بود، کلاس 'past-day' (که استایل پیش‌فرض .calendar-day است)
+            // اعمال می‌شود و هیچ کار دیگری لازم نیست.
+            // dayCell.addClass('past-day'); // این خط اضافی است چون CSS پیش‌فرض همین است
+        } else {
+            // اگر امروز یا در آینده بود، بررسی کن اسلات خالی دارد یا نه
+            const dateKey = currentDayMoment.format('jYYYY-jMM-jDD');
             
-            // --- (مورد ۳) منطق نقشه حرارتی (Heatmap) ---
-            // این کد اکنون باید به درستی اجرا شود
-            if (count <= 3) {
-                dayCell.addClass('available-low'); // قرمز
-            } else if (count <= 7) {
-                dayCell.addClass('available-medium'); // زرد
-            } else {
-                dayCell.addClass('available-high'); // سبز
+            if (allGroupedSlots[dateKey]) {
+                // اگر اسلات داشت، آن را "available" کن
+                const slotsForThisDay = allGroupedSlots[dateKey];
+                const count = slotsForThisDay.length;
+
+                dayCell.addClass('available'); // این کلاس استایل خاکستری پیش‌فرض را لغو می‌کند
+                
+                // --- منطق نقشه حرارتی (Heatmap) ---
+                if (count <= 3) {
+                    dayCell.addClass('available-low'); // قرمز
+                } else if (count <= 7) {
+                    dayCell.addClass('available-medium'); // زرد
+                } else {
+                    dayCell.addClass('available-high'); // سبز
+                }
+                
+                // دیتا را برای کلیک کردن به سلول متصل کن
+                dayCell.data('slots', slotsForThisDay);
+                dayCell.data('date-object', currentDayMoment.toDate());
             }
-            
-            dayCell.data('slots', slotsForThisDay);
-            dayCell.data('date-object', currentDayMoment.toDate());
+            // اگر اسلات نداشت (else)، هیچ کلاسی اضافه نمی‌شود
+            // و سلول با استایل پیش‌فرض (خاکستری) رندر می‌شود
         }
         
+        // ۳. در هر صورت (چه گذشته، چه آینده، چه با اسلات، چه بی اسلات)
+        // سلول را به تقویم اضافه کن.
         calendarGridBody.append(dayCell);
     }
+    // ==========================================================
+    // --- *** پایان اصلاحیه *** ---
+    // ==========================================================
 
     // ۳. مدیریت دکمه‌های ماه قبل/بعد
     BookingApp.ui.prevMonthBtn.prop('disabled', jMoment.isSame(todayJalali, 'jMonth'));

@@ -1,8 +1,6 @@
 // static/js/booking-init.js
+// --- نسخه v6.7 (Fix: Correct Gregorian Date Parsing) ---
 // وظیفه: فایل راه‌انداز (Initializer) برنامه.
-// 1. کتابخانه‌ها را چک می‌کند.
-// 2. سلکتورها و متغیرها را از DOM مقداردهی می‌کند.
-// 3. Event Listeners را به توابع مناسب متصل می‌کند.
 
 (function(App, $) {
     // ماژول Init
@@ -15,7 +13,6 @@
     $(document).ready(function() {
         
         // --- ۱. بررسی کتابخانه‌های ضروری ---
-        // *** اصلاح شد: چک کردن 'moment' به جای 'jalaliMoment' ***
         if (typeof moment === 'undefined' || typeof moment.fn.jYear === 'undefined') {
             console.error("خطای حیاتی: کتابخانه jalali-moment (moment.js) بارگذاری نشده است.");
             alert("خطا در بارگذاری تقویم. لطفاً صفحه را رفرش کنید.");
@@ -25,10 +22,10 @@
             console.error("خطای حیاتی: کتابخانه booking-calendar.js بارگذاری نشده است.");
             return;
         }
-        moment.locale('fa'); // <-- *** اصلاح شد *** (تنظیم سراسری زبان)
+        moment.locale('fa'); 
         console.log("BookingApp v1.0 (Refactored) لود شد.");
 
-        // --- ۲. مقداردهی سلکتورهای UI ---
+        // --- ۲. مقداردهی سلکتورهای UI (بدون تغییر) ---
         ui.bookingForm = $('#bookingForm');
         ui.serviceGroupSelect = $('#serviceGroup');
         ui.servicesContainer = $('#servicesContainer');
@@ -50,11 +47,11 @@
         ui.fomoTimerMessage = $('#fomo-timer-message');
         ui.selectedSlotInput = $('#selectedSlot');
         ui.confirmBtn = $('#confirmBtn');
-        ui.submitBtn = $('#submitBtn'); // (این دکمه در مودال است، باید بعدا پیدا شود)
+        ui.submitBtn = $('#submitBtn'); 
         ui.applyPointsCheckbox = $('#apply_points');
         ui.finalPriceSpan = $('#finalPrice');
         ui.confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
-        ui.infoConfirmationCheck = $('#infoConfirmationCheck'); // (این چک‌باکس در مودال است)
+        ui.infoConfirmationCheck = $('#infoConfirmationCheck'); 
         ui.discountCodeInput = $('#discountCode');
         ui.applyDiscountBtn = $('#applyDiscountBtn');
         ui.discountMessage = $('#discountMessage');
@@ -75,25 +72,23 @@
             state.todayMoment = moment().startOf('day'); // (Fallback)
         } else {
             // ==========================================================
-            // --- اصلاحیه نهایی و قطعی (روش Native Date) ---
-            // 1. رشته تاریخ میلادی را به آرایه تبدیل می‌کنیم
-            const dateParts = state.TODAY_DATE_SERVER.split('-'); // e.g., ["2025", "11", "16"]
+            // --- *** اصلاحیه کلیدی (رفع باگ پارس تاریخ) *** ---
+            //
+            // مشکل: moment.locale('fa') باعث می‌شد که `moment("2025-11-17")`
+            // این تاریخ میلادی را به عنوان تاریخ "شمسی" پارس کند و خراب شود.
+            // 
+            // راه‌حل: ما به moment صریحاً می‌گوییم که تاریخ سرور
+            // (state.TODAY_DATE_SERVER) یک تاریخ میلادی (Gregorian) است
+            // و باید بر اساس فرمت 'YYYY-MM-DD' پارس شود.
             
-            // 2. یک آبجکت Date نیتیو جاوا اسکریپت می‌سازیم (که همیشه میلادی است)
-            // (توجه: ماه در Date() جاوا اسکریپت 0-indexed است، پس '1' کم می‌کنیم)
-            const gregorianDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-            
-            // 3. آبجکت Date نیتیو را به moment() پاس می‌دهیم تا از پارس رشته‌ای جلوگیری شود
-            state.todayMoment = moment(gregorianDate).startOf('day');
+            state.todayMoment = moment(state.TODAY_DATE_SERVER, 'YYYY-MM-DD').startOf('day');
             // ==========================================================
         }
 
-        // --- ۴. اتصال Event Handlers ---
+        // --- ۴. اتصال Event Handlers (کدهای این بخش بدون تغییر هستند) ---
 
-        // انتخاب گروه
         ui.serviceGroupSelect.on('change', api.fetchServicesForGroup);
 
-        // انتخاب خدمت (چون داینامیک اضافه می‌شود از document.on استفاده می‌کنیم)
         $(document).on('change', '.service-item', function() {
             let currentBasePrice = 0;
             let currentTotalDuration = 0;
@@ -107,25 +102,21 @@
             ui.discountCodeInput.val('');
             ui.discountMessage.text('').removeClass('text-success text-danger');
             uiHelpers.updateFinalPrice();
-            
-            // فراخوانی API
             api.fetchAndDisplaySlots();
         });
 
-        // انتخاب دستگاه
         $(document).on('change', '#deviceSelect', function() {
             ui.selectedDeviceInput.val($(this).val());
             api.fetchAndDisplaySlots();
         });
 
-        // --- رویدادهای تقویم ---
         ui.nextMonthBtn.on('click', function() {
             state.currentCalendarMoment.add(1, 'jMonth');
-            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); // <-- *** اصلاح شد ***
+            buildCalendar(state.currentCalendarMoment, state.allGroupDlots, state.todayMoment); 
         });
         ui.prevMonthBtn.on('click', function() {
             state.currentCalendarMoment.subtract(1, 'jMonth');
-            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); // <-- *** اصلاح شد ***
+            buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); 
         });
         $(document).on('click', '.calendar-day.available', function(e) {
             e.preventDefault();
@@ -135,7 +126,6 @@
             uiHelpers.renderTimeSlots(slotsForDay);
         });
 
-        // --- رویدادهای انتخاب ساعت ---
         $(document).on('click', '.time-select-item', function() {
             $('.time-select-item').removeClass('active');
             $(this).addClass('active');
@@ -155,8 +145,6 @@
             $('html, body').animate({ scrollTop: $("#confirmBtn").offset().top }, 500);
         });
 
-
-        // --- رویدادهای تخفیف و ثبت نهایی ---
         if (ui.applyPointsCheckbox.length) {
             ui.applyPointsCheckbox.on('change', uiHelpers.updateFinalPrice);
         }
@@ -166,7 +154,6 @@
             uiHelpers.stopFomoTimer();
             ui.fomoTimerMessage.text("زمان شما با موفقیت ثبت موقت شد.").removeClass('text-danger').addClass('text-success').show();
             
-            // اعتبارسنجی نهایی
             const deviceSelect = $('#deviceSelect');
             if (deviceSelect.length > 0 && !ui.selectedDeviceInput.val()) {
                  alert('لطفا دستگاه مورد نظر را انتخاب کنید.');
@@ -175,9 +162,9 @@
             }
             if (ui.bookingForm[0].checkValidity() && $('.service-item:checked').length > 0 && ui.selectedSlotInput.val()) {
                 if ($('#manual_confirm').is(':checked')) {
-                    ui.bookingForm.submit(); // ثبت دستی توسط پذیرش
+                    ui.bookingForm.submit(); 
                 } else {
-                    ui.confirmationModal.show(); // نمایش مودال تایید
+                    ui.confirmationModal.show(); 
                 }
             } else {
                 ui.bookingForm[0].reportValidity();
@@ -186,7 +173,6 @@
             }
         });
 
-        // (این رویدادها مربوط به داخل مودال هستند)
         $(document).on('change', '#infoConfirmationCheck', function() {
             $('#submitBtn').prop('disabled', !this.checked);
         });

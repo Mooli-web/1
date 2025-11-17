@@ -1,5 +1,5 @@
 {# mooli-web/templates/booking/create_booking.html #}
-{# نسخه v6.2 (با کدهای عیب‌یابی) #}
+{# نسخه v6.6 (Fix: Modal HTML Structure) #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
@@ -31,7 +31,7 @@
                       data-apply-discount-url="{% url 'booking:apply_discount' %}"
                       data-csrf-token="{{ csrf_token }}"
                       data-max-discount="{{ max_discount|default:0 }}"
-                      data-today-date="{{ today_date_server }}"> {# <-- *** اصلاحیه ۱: این خط اضافه شد *** #}
+                      data-today-date="{{ today_date_server }}"> {# <-- *** (حفظ شده از قبل) *** #}
                     
                     {% csrf_token %}
                     
@@ -51,7 +51,7 @@
                     {# --- مرحله ۳ و ۴: تقویم حرارتی (بدون تغییر) --- #}
                     <div id="slotsContainer" class="mb-4" style="display: none;">
                         
-                        {# --- ایده ۲: دکمه اولین نوبت موجود --- #}
+                        {# --- دکمه اولین نوبت موجود --- #}
                         <div id="first-available-slot-container" class="alert alert-info d-none" role="alert">
                             ⚡️ اولین نوبت موجود: <strong id="first-slot-label"></strong>
                             <button type="button" class="btn btn-primary btn-sm ms-3" id="book-first-slot-btn">رزرو فوری این زمان</button>
@@ -59,7 +59,7 @@
                         
                         <label class="form-label fs-5 mb-2" id="calendar-step-label"></label>
 
-                        {# --- ایده ۱: ساختار تقویم حرارتی --- #}
+                        {# --- تقویم حرارتی --- #}
                         <div id="booking-calendar-wrapper">
                             <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
                                 <button type="button" class="btn btn-outline-secondary" id="calendar-prev-month" disabled>« ماه قبل</button>
@@ -86,7 +86,7 @@
                     <div id="time-selection-container" class="mt-4" style="display: none;">
                         </div>
                     
-                    {# --- ایده ۴: تایمر رزرو موقت (جایگاه) --- #}
+                    {# --- تایمر رزرو موقت (جایگاه) --- #}
                     <div id="fomo-timer-message" class="text-center text-danger fw-bold mt-3" style="display: none;"></div>
 
                     {# --- بخش تخفیف و ادامه (بدون تغییر) --- #}
@@ -139,34 +139,61 @@
     </div>
 </div>
 
-{# --- مودال تایید (بدون تغییر) --- #}
-<div class="modal fade" id="confirmationModal" tabindex="-1">
-  </div>
+{# =================================================================== #}
+{# --- *** اصلاحیه: ساختار مودال تکمیل شد *** --- #}
+{# =================================================================== #}
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">تایید نهایی اطلاعات</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>لطفاً صحت اطلاعات زیر را تایید کنید:</p>
+                <ul>
+                    <li><strong>نام بیمار:</strong> {{ request.user.get_full_name|default:request.user.username }}</li>
+                    <li><strong>شماره تماس:</strong> {{ request.user.phone_number }}</li>
+                </ul>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" value="" id="infoConfirmationCheck">
+                    <label class="form-check-label" for="infoConfirmationCheck">
+                        اطلاعات فوق مورد تایید است و با اطلاعات حساب کاربری من مطابقت دارد.
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" id="submitBtn" class="btn btn-success" disabled>تایید و پرداخت نهایی</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {# =================================================================== #}
-{# --- *** اصلاحیه ۲: بازنویسی کامل بلوک جاوا اسکریپت *** --- #}
+{# --- *** (بلوک جاوا اسکریپت بدون تغییر نسبت به قبل) *** --- #}
 {# =================================================================== #}
 {% block extra_js %}
 {{ block.super }} 
 
-{# ۱. بارگذاری کتابخانه جلالی (بدون تغییر) #}
+{# ۱. بارگذاری کتابخانه جلالی #}
 <script src="{% static 'js/jalali-moment.browser.js' %}"></script>
 
-{# ۲. بارگذاری ماژول تعریف State (باید قبل از calendar.js باشد) #}
+{# ۲. بارگذاری ماژول تعریف State #}
 <script src="{% static 'js/booking-state.js' %}"></script>
 
-{# ۳. بارگذاری کتابخانه رندر کننده تقویم (بدون تغییر) #}
+{# ۳. بارگذاری کتابخانه رندر کننده تقویم #}
 <script src="{% static 'js/booking-calendar.js' %}"></script>
 
 {# ۴. بارگذاری ماژول‌های کمکی UI و API #}
 <script src="{% static 'js/booking-ui.js' %}"></script>
 <script src="{% static 'js/booking-api.js' %}"></script>
 
-{# ۵. بارگذاری اسکریپت راه‌انداز (Init) (باید آخرین فایل باشد) #}
+{# ۵. بارگذاری اسکریپت راه‌انداز (Init) #}
 <script src="{% static 'js/booking-init.js' %}"></script>
 
-{# (اسکریپت Navbar Scroll - بدون تغییر) #}
+{# (اسکریپت Navbar Scroll) #}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const navbar = document.querySelector('.navbar.sticky-top');
