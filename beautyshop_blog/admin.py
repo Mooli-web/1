@@ -5,6 +5,7 @@
 
 from django.contrib import admin
 from .models import Post, Category
+from jalali_date.admin import ModelAdminJalaliMixin # <-- اضافه شد
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -16,7 +17,7 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
 @admin.register(Post)
-class PostAdmin(admin.ModelAdmin):
+class PostAdmin(ModelAdminJalaliMixin, admin.ModelAdmin): # <-- اصلاح شد
     """
     کلاس مدیریتی برای "پست".
     """

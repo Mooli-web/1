@@ -1,4 +1,5 @@
 {% extends "reception_panel/reception_base.html" %}
+{% load jalali_tags %}
 
 {% block title %}مدیریت بیماران{% endblock %}
 
@@ -41,7 +42,7 @@
                         <td>{{ p.phone_number }}</td>
                         <td>{{ p.username }}</td>
                         <td>{{ p.profile.points }}</td>
-                        <td>{{ p.date_joined|date:"Y/m/d" }}</td>
+                        <td>{{ p.date_joined|jformat:"%Y/%m/%d" }}</td>
                         <td>
                             <a href="{% url 'reception_panel:patient_detail' p.pk %}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye-fill"></i> مشاهده پرونده

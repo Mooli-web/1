@@ -1,4 +1,5 @@
 {% extends "reception_panel/reception_base.html" %}
+{% load jalali_tags %}
 
 {% block title %}لیست نوبت‌ها{% endblock %}
 
@@ -34,7 +35,7 @@
                         <td>{{ app.patient.phone_number }}</td>
                         <td>{{ app.get_services_display }}</td>
                         <td>{{ app.selected_device.name|default:"-" }}</td>
-                        <td>{{ app.start_time|date:"Y/m/d - H:i" }}</td>
+                        <td>{{ app.start_time|jformat:"%Y/%m/%d - %H:%M" }}</td>
                         <td>
                             {% if app.status == 'CONFIRMED' %}
                                 <span class="badge bg-success">{{ app.get_status_display }}</span>

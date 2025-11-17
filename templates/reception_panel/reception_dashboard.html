@@ -1,4 +1,5 @@
 {% extends "reception_panel/reception_base.html" %}
+{% load jalali_tags %}
 
 {% block title %}داشبورد{% endblock %}
 
@@ -7,7 +8,7 @@
 {% block content %}
 <div class="row">
     <div class="col-md-6 col-lg-3 mb-4">
-        <div class_card="card text-bg-primary shadow-sm h-100">
+        <div class="card text-bg-primary shadow-sm h-100">
             <div class="card-body">
                 <h5 class="card-title">نوبت‌های تایید شده امروز</h5>
                 <p class="card-text display-4">{{ today_appointments_count }}</p>
@@ -52,7 +53,7 @@
                     {% for app in appointments_today %}
                     <a href="{% url 'reception_panel:patient_detail' app.patient.pk %}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">{{ app.start_time|time:"H:i" }} - {{ app.patient.get_full_name|default:app.patient.username }}</h5>
+                            <h5 class="mb-1">{{ app.start_time|jformat:"%H:%M" }} - {{ app.patient.get_full_name|default:app.patient.username }}</h5>
                             <small>{{ app.patient.phone_number }}</small>
                         </div>
                         <p class="mb-0 text-muted">{{ app.get_services_display }}</p>
@@ -95,7 +96,7 @@
                 <div class="list-group list-group-flush">
                     {% for app in pending_appointments %}
                     <a href="{% url 'reception_panel:patient_detail' app.patient.pk %}" class="list-group-item list-group-item-action">
-                        <strong>{{ app.patient.username }}</strong> ({{ app.start_time|date:"Y/m/d" }})
+                        <strong>{{ app.patient.username }}</strong> ({{ app.start_time|jformat:"%Y/%m/%d" }})
                         <p class="mb-0 text-muted small">{{ app.get_services_display }}</p>
                     </a>
                     {% endfor %}

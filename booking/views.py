@@ -65,6 +65,8 @@ def create_booking_view(request):
         device_id = request.POST.get('device_id')
         manual_confirm_str = request.POST.get('manual_confirm') # مخصوص پذیرش
 
+        # (کد دیباگ حذف شد)
+
         if not all([service_ids, start_time_str]):
             messages.error(request, 'اطلاعات ارسالی ناقص است. (خدمت یا زمان انتخاب نشده)')
             return redirect('booking:create_booking')
@@ -104,10 +106,20 @@ def create_booking_view(request):
 
         # --- ۴. اعتبارسنجی زمان و بررسی تداخل ---
         try:
-            # فرمت ارسالی از JS ما 'Y-m-d H:M' است
-            naive_start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
-            aware_start_time = timezone.make_aware(naive_start_time)
+            # ==========================================================
+            # --- *** شروع اصلاحیه (حل مشکل فرمت زمان) *** ---
+            #
+            # فرمت ارسالی از JS یک رشته کامل ISO است 
+            # (e.g., '2025-11-18T15:30:00+03:30')
+            # از datetime.fromisoformat برای پارس کردن آن استفاده می‌کنیم.
+            aware_start_time = datetime.fromisoformat(start_time_str)
+            
+            # (دیگر نیازی به timezone.make_aware نیست چون زمان ارسالی 'aware' است)
+            
             aware_end_time = aware_start_time + timedelta(minutes=total_duration)
+            # --- *** پایان اصلاحیه *** ---
+            # ==========================================================
+
         except ValueError:
             messages.error(request, 'فرمت زمان ارسالی نامعتبر است.')
             return redirect('booking:create_booking')
@@ -194,7 +206,7 @@ def create_booking_view(request):
         except Exception as e:
             # مدیریت خطاهای پیش‌بینی نشده در طول تراکنش
             messages.error(request, f'خطایی در فرآیند رزرو رخ داد: {e}')
-            pass  # فرم دوباره نمایش داده می‌شود
+            return redirect('booking:create_booking')
 
     # --- منطق GET: نمایش فرم اولیه ---
     groups = ServiceGroup.objects.all()

@@ -16,9 +16,102 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg sticky-top {% block navbar_extra_class %}{% endblock %}">
-        </nav>
+    
+    <nav class="navbar navbar-expand-lg sticky-top {% block navbar_extra_class %}navbar-scrolled{% endblock %}">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'clinic:home' %}">کلینیک زیبایی</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link px-4 {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'clinic:home' %}">صفحه اصلی</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-4 {% if request.resolver_match.url_name == 'service_list' %}active{% endif %}" href="{% url 'clinic:service_list' %}">خدمات</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-4 {% if request.resolver_match.url_name == 'portfolio_gallery' %}active{% endif %}" href="{% url 'clinic:portfolio_gallery' %}">نمونه کارها</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-4 {% if 'beautyshop_blog' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'beautyshop_blog:post_list' %}">وبلاگ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-4 {% if request.resolver_match.url_name == 'faq' %}active{% endif %}" href="{% url 'clinic:faq' %}">سوالات متداول</a>
+                    </li>
+                    {% if request.user.is_authenticated and not request.user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link px-4 {% if 'consultation' in request.resolver_match.app_name %}active{% endif %}" href="{% url 'consultation:request_list' %}">مشاوره آنلاین</a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <div class="d-flex align-items-center">
+                    {% if request.user.is_authenticated %}
+                        
+                        <div class="dropdown me-3">
+                            <a class="nav-link text-dark" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-bell-fill position-relative fs-5">
+                                    {% if unread_notification_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em;">
+                                        {{ unread_notification_count }}
+                                    </span>
+                                    {% endif %}
+                                </i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown" style="width: 300px;">
+                                {% for notif in latest_notifications %}
+                                    <li>
+                                        <a class="dropdown-item text-wrap {% if not notif.is_read %}fw-bold{% endif %}" href="{{ notif.link|default:'#' }}">
+                                            <small>{{ notif.message|truncatewords:10 }}</small>
+                                            <br>
+                                            <small class="text-muted">{{ notif.created_at|timesince }} قبل</small>
+                                        </a>
+                                    </li>
+                                {% empty %}
+                                    <li><span class="dropdown-item text-muted text-center">اعلانی وجود ندارد.</span></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        <div class="dropdown me-2">
+                            <a href="#" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-fill me-1"></i>
+                                {{ request.user.first_name|default:request.user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'users:profile_update' %}">ویرایش پروفایل</a></li>
+                                <li><a class="dropdown-item" href="{% url 'users:dashboard' %}">داشبورد من (نوبت‌ها)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button class="dropdown-item text-danger" type="submit">خروج</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">ورود</a>
+                        <a href="{% url 'users:signup' %}" class="btn btn-primary">ثبت نام</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
     <main class="{% block main_container_class %}container my-5{% endblock %}">
+        
+        {% if messages %}
+            <div class="container" style="padding-top: 1rem;"> 
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
     <footer class="footer">

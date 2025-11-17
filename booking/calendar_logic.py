@@ -171,7 +171,13 @@ def generate_available_slots_for_range(start_date: datetime.date,
             while True:
                 potential_end_aware = current_slot_start_aware + timedelta(minutes=total_duration)
 
-                if potential_end_aware <= timezone.now():
+                # ==========================================================
+                # --- *** شروع اصلاحیه (حل مشکلات ۳ و ۴) *** ---
+                #
+                # بررسی می‌کنیم که *زمان شروع* اسلات در گذشته نباشد
+                if current_slot_start_aware <= timezone.now():
+                # --- *** پایان اصلاحیه *** ---
+                # ==========================================================
                     current_slot_start_aware += timedelta(minutes=total_duration)
                     continue
                 

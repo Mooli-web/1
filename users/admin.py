@@ -7,8 +7,9 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser, Profile
 from django.utils.translation import gettext_lazy as _
+from jalali_date.admin import ModelAdminJalaliMixin # <-- اضافه شد
 
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(ModelAdminJalaliMixin, UserAdmin): # <-- اصلاح شد
     """
     سفارشی‌سازی نمایش CustomUser در پنل ادمین.
     فیلدهای سفارشی (role, phone_number, gender) را به پنل ادمین
@@ -22,7 +23,8 @@ class CustomUserAdmin(UserAdmin):
         'first_name', 
         'last_name', 
         'gender',  # فیلد سفارشی
-        'is_staff'
+        'is_staff',
+        'date_joined', # <-- اضافه کردن تاریخ عضویت به لیست
     )
     
     # فیلدهایی که در صفحه "ویرایش" کاربر در ادمین نمایش داده می‌شوند
@@ -36,7 +38,10 @@ class CustomUserAdmin(UserAdmin):
     )
     
     search_fields = ('username', 'first_name', 'last_name', 'phone_number', 'email')
-    list_filter = ('role', 'is_staff', 'is_superuser', 'is_active', 'gender')
+    list_filter = ('role', 'is_staff', 'is_superuser', 'is_active', 'gender', 'date_joined') # <-- date_joined اضافه شد
+    
+    # اضافه کردن فیلتر تاریخ شمسی
+    date_hierarchy = 'date_joined'
 
 # ثبت مدل CustomUser با کلاس ادمین سفارشی
 admin.site.register(CustomUser, CustomUserAdmin)

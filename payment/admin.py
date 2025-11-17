@@ -5,9 +5,10 @@
 
 from django.contrib import admin
 from .models import Transaction  # <-- مهم: مدل از اینجا "وارد" (import) می‌شود
+from jalali_date.admin import ModelAdminJalaliMixin # <-- اضافه شد
 
 @admin.register(Transaction)
-class TransactionAdmin(admin.ModelAdmin):
+class TransactionAdmin(ModelAdminJalaliMixin, admin.ModelAdmin): # <-- اصلاح شد
     """
     کلاس مدیریتی برای نمایش تراکنش‌ها در پنل ادمین.
     تراکنش‌ها در ادمین "فقط خواندنی" (Read-Only) هستند.

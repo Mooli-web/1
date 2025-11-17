@@ -1,4 +1,6 @@
-{% extends base_template %} {% load crispy_forms_tags %}
+{% extends base_template %} 
+{% load crispy_forms_tags %}
+{% load jalali_tags %}
 {% block title %}جزئیات مشاوره{% endblock %}
 {% block content %}
 <h2>{{ consultation_request.subject }}</h2>
@@ -16,13 +18,13 @@
         <small>
             <strong>(شرح اولیه درخواست)</strong> - 
             {{ consultation_request.patient.get_full_name|default:consultation_request.patient.username }} - 
-            {{ consultation_request.created_at|date:"H:i - Y/m/d" }}
+            {{ consultation_request.created_at|jformat:"%H:%M - %Y/%m/%d" }}
         </small>
     </div>
     {% for msg in messages %}
         <div class="message {% if msg.user.role == 'PATIENT' %}patient{% else %}staff{% endif %}">
             <p class="mb-0">{{ msg.message }}</p>
-            <small>{{ msg.user.get_full_name|default:msg.user.username }} - {{ msg.timestamp|date:"H:i - Y/m/d" }}</small>
+            <small>{{ msg.user.get_full_name|default:msg.user.username }} - {{ msg.timestamp|jformat:"%H:%M - %Y/%m/%d" }}</small>
         </div>
     {% endfor %}
 </div>

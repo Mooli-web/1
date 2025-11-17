@@ -1,4 +1,5 @@
 {% extends "reception_panel/reception_base.html" %}
+{% load jalali_tags %}
 
 {% block title %}مدیریت مشاوره‌ها{% endblock %}
 
@@ -15,7 +16,7 @@
             <a href="{% url 'reception_panel:consultation_detail' req.pk %}" class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1">{{ req.subject }}</h5>
-                    <small>{{ req.created_at|date:"Y/m/d" }}</small>
+                    <small>{{ req.created_at|jformat:"%Y/%m/%d" }}</small>
                 </div>
                 <p class="mb-1 text-muted">بیمار: {{ req.patient.get_full_name|default:req.patient.username }} ({{ req.patient.phone_number }})</p>
                 <small>وضعیت: <span class="badge 

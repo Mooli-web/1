@@ -5,6 +5,7 @@
 
 from django.contrib import admin
 from .models import ConsultationRequest, ConsultationMessage
+from jalali_date.admin import ModelAdminJalaliMixin # <-- اضافه شد
 
 class ConsultationMessageInline(admin.TabularInline):
     """
@@ -19,7 +20,7 @@ class ConsultationMessageInline(admin.TabularInline):
     verbose_name_plural = "پیام‌ها"
 
 @admin.register(ConsultationRequest)
-class ConsultationRequestAdmin(admin.ModelAdmin):
+class ConsultationRequestAdmin(ModelAdminJalaliMixin, admin.ModelAdmin): # <-- اصلاح شد
     """
     کلاس مدیریتی برای "درخواست مشاوره" در پنل ادمین.
     """
