@@ -1,6 +1,5 @@
 // static/js/booking-state.js
-// وظیفه: ایجاد Namespace سراسری BookingApp و تعریف تمام متغیرهای State و سلکتورهای UI.
-// این فایل باید اولین فایل اسکریپت در create_booking.html باشد.
+// وظیفه: ایجاد Namespace سراسری BookingApp و تعریف تمام متغیرهای State.
 
 window.BookingApp = {
     // 1. State: متغیرهای مربوط به وضعیت برنامه
@@ -12,20 +11,21 @@ window.BookingApp = {
         CSRF_TOKEN: null,
         MAX_DISCOUNT: 0,
         TODAY_DATE_SERVER: null,
+        PRICE_TO_POINTS_RATE: 0, // <-- متغیر جدید: نرخ تبدیل
 
         // متغیرهای داخلی
         codeDiscountAmount: 0,
         allGroupedSlots: {},
-        todayMoment: null, // <--*** اصلاح شد: نام متغیر تغییر کرد ***
+        todayMoment: null,
         currentCalendarMoment: null,
         
         // تایمر FOMO
         fomoExpirationTimer: null,
         fomoIntervalTimer: null,
-        FOMO_DURATION_SECONDS: 5 * 60 // 5 دقیقه
+        FOMO_DURATION_SECONDS: 5 * 60
     },
 
-    // 2. UI: تمام سلکتورهای jQuery (برای دسترسی آسان)
+    // 2. UI: تمام سلکتورهای jQuery
     ui: {
         bookingForm: null,
         serviceGroupSelect: null,
@@ -57,10 +57,12 @@ window.BookingApp = {
         applyDiscountBtn: null,
         discountMessage: null,
         basePriceInput: null,
-        totalDurationInput: null
+        totalDurationInput: null,
+        rewardBox: null, // <-- المنت جدید
+        rewardText: null  // <-- متن داخل المنت
     },
 
-    // 3. Namespaces برای توابع (توسط فایل‌های دیگر پر می‌شوند)
+    // 3. Namespaces
     api: {},
     uiHelpers: {},
     init: {}

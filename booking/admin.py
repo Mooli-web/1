@@ -1,86 +1,96 @@
 # booking/admin.py
 """
 تنظیمات پنل ادمین جنگو برای مدل‌های اپلیکیشن booking.
+اصلاح شده: افزودن منطق 'پاداش اولین مراجعه' (Welcome Bonus) در هنگام تکمیل نوبت.
 """
 
 from django.contrib import admin
 from .models import Appointment
-from jalali_date.admin import ModelAdminJalaliMixin  # برای نمایش تقویم شمسی
-from site_settings.models import SiteSettings  # برای دسترسی به تنظیمات امتیازدهی
+from jalali_date.admin import ModelAdminJalaliMixin
+from site_settings.models import SiteSettings
+from django.conf import settings  # برای دسترسی به تنظیمات پروژه
 
+# --- تعریف ثابت پاداش (می‌تواند به SiteSettings منتقل شود) ---
+# فرض: هر امتیاز = 100 تومان (طبق settings.py)
+# هدف: 50,000 تومان پاداش
+# پس: 50000 / 100 = 500 امتیاز
+WELCOME_BONUS_POINTS = 500 
 
-# --- تعریف Action سفارشی برای ادمین ---
 
 @admin.action(description="علامت‌گذاری به عنوان 'انجام شده' و اعطای امتیاز")
 def mark_as_done_and_award_points(modeladmin, request, queryset):
     """
-    یک Action سفارشی در پنل ادمین که:
-    1. وضعیت نوبت‌های انتخاب شده را به 'DONE' تغییر می‌دهد.
-    2. بر اساس مبلغ پرداخت شده در تراکنش، به بیمار امتیاز می‌دهد.
+    اکشن سفارشی:
+    1. وضعیت را به DONE تغییر می‌دهد.
+    2. امتیاز تراکنش را محاسبه می‌کند.
+    3. چک می‌کند اگر اولین مراجعه باشد، پاداش خوش‌آمدگویی (Cashback) می‌دهد.
     """
     try:
-        # واکشی تنظیمات نرخ امتیاز از مدل SiteSettings
         rate = SiteSettings.load().price_to_points_rate
     except Exception:
-        rate = 0  # اگر تنظیمات موجود نباشد، امتیازی داده نمی‌شود
+        rate = 0
 
-    # فقط نوبت‌هایی که "تایید شده" هستند و "هنوز امتیاز نگرفته‌اند"
+    # فقط نوبت‌های تایید شده که هنوز امتیاز نگرفته‌اند
     valid_appointments = queryset.filter(status='CONFIRMED', points_awarded=False)
     
     for appointment in valid_appointments:
+        
+        # 1. بررسی اینکه آیا این "اولین" نوبت انجام شده کاربر است؟
+        # (قبل از اینکه وضعیت این نوبت را DONE کنیم چک می‌کنیم)
+        previous_done_count = Appointment.objects.filter(
+            patient=appointment.patient, 
+            status='DONE'
+        ).count()
+        
+        is_first_visit = (previous_done_count == 0)
+        
+        # 2. تغییر وضعیت
         appointment.status = 'DONE'
-        appointment.points_awarded = True  # علامت‌گذاری جهت جلوگیری از امتیازدهی مجدد
+        appointment.points_awarded = True
         appointment.save()
         
-        # --- منطق اعطای امتیاز ---
+        # 3. محاسبه و اعطای امتیاز
         try:
-            # بررسی اینکه آیا نرخ معتبر است و آیا نوبت تراکنش موفق داشته است
+            total_points_to_add = 0
+            
+            # الف) امتیاز عادی (بر اساس مبلغ پرداخت شده)
             if rate > 0 and hasattr(appointment, 'transaction') and \
                appointment.transaction.status == 'SUCCESS' and \
                appointment.transaction.amount > 0:
+                normal_points = int(appointment.transaction.amount / rate)
+                total_points_to_add += normal_points
+            
+            # ب) پاداش اولین مراجعه (Cashback Strategy)
+            if is_first_visit:
+                total_points_to_add += WELCOME_BONUS_POINTS
+                # (اختیاری: می‌توان اینجا لاگ یا پیامی برای ادمین چاپ کرد)
                 
-                # محاسبه امتیاز بر اساس "مبلغ واقعی پرداخت شده"
-                points_to_award = int(appointment.transaction.amount / rate)
-                
-                if points_to_award > 0:
-                    appointment.patient.profile.points += points_to_award
-                    appointment.patient.profile.save()
+            # ذخیره امتیاز در پروفایل
+            if total_points_to_add > 0:
+                appointment.patient.profile.points += total_points_to_add
+                appointment.patient.profile.save()
                     
-        except Exception: 
-            # اگر تراکنش وجود نداشته باشد یا خطای دیگری رخ دهد،
-            # فقط وضعیت نوبت تغییر می‌کند و امتیازی داده نمی‌شود.
-            pass 
-
-# --- ثبت مدل Appointment در ادمین ---
+        except Exception as e:
+            print(f"Error awarding points for appointment {appointment.id}: {e}")
 
 @admin.register(Appointment)
 class AppointmentAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
-    """
-    کلاس مدیریتی برای نمایش مدل Appointment در پنل ادمین.
-    - از ModelAdminJalaliMixin برای تقویم شمسی استفاده می‌کند.
-    """
-    
     list_display = (
         'patient', 
-        'get_services_display',  # متد سفارشی مدل
+        'get_services_display', 
         'start_time', 
         'status', 
         'selected_device', 
-        'points_awarded'  # نمایش وضعیت اعطای امتیاز
+        'points_awarded'
     )
     list_filter = ('status', 'start_time', 'selected_device', 'points_awarded')
     search_fields = ('patient__username', 'services__name')
-    actions = [mark_as_done_and_award_points]  # افزودن اکشن سفارشی
+    actions = [mark_as_done_and_award_points]
     
     readonly_fields = ('get_services_display',)
     list_per_page = 20
-    
-    # استفاده از raw_id_fields برای جستجوی آسان بیمار، کد و دستگاه
     raw_id_fields = ('patient', 'discount_code', 'selected_device')
 
     def get_services_display(self, obj):
-        """
-        فراخوانی متد مدل برای نمایش در list_display و readonly_fields.
-        """
         return obj.get_services_display()
     get_services_display.short_description = "خدمات"

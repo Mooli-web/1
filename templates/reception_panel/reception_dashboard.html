@@ -1,6 +1,7 @@
-{# --- DEBUG v2 --- #}
+{# mooli-web/templates/reception_panel/reception_dashboard.html #}
+{# --- FIX v2: Using custom 'jalali_format' tag --- #}
 {% extends "reception_panel/reception_base.html" %}
-{% load jalali_tags %}
+{% load reception_tags %} {# <-- بارگذاری تگ جدید #}
 
 {% block title %}داشبورد{% endblock %}
 
@@ -54,7 +55,8 @@
                     {% for app in appointments_today %}
                     <a href="{% url 'reception_panel:patient_detail' app.patient.pk %}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">{{ app.start_time|jformat:"%H:%M" }} - {{ app.patient.get_full_name|default:app.patient.username }}</h5>
+                            {# --- استفاده از فیلتر جدید: نمایش ساعت --- #}
+                            <h5 class="mb-1">{{ app.start_time|jalali_format:"%H:%M" }} - {{ app.patient.get_full_name|default:app.patient.username }}</h5>
                             <small>{{ app.patient.phone_number }}</small>
                         </div>
                         <p class="mb-0 text-muted">{{ app.get_services_display }}</p>
@@ -97,7 +99,8 @@
                 <div class="list-group list-group-flush">
                     {% for app in pending_appointments %}
                     <a href="{% url 'reception_panel:patient_detail' app.patient.pk %}" class="list-group-item list-group-item-action">
-                        <strong>{{ app.patient.username }}</strong> ({{ app.start_time|jformat:"%Y/%m/%d" }})
+                        {# --- استفاده از فیلتر جدید: نمایش تاریخ --- #}
+                        <strong>{{ app.patient.username }}</strong> ({{ app.start_time|jalali_format:"%Y/%m/%d" }})
                         <p class="mb-0 text-muted small">{{ app.get_services_display }}</p>
                     </a>
                     {% endfor %}

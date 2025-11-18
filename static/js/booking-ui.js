@@ -1,16 +1,11 @@
 // static/js/booking-ui.js
-// وظیفه: شامل تمام توابع کمکی مربوط به دستکاری DOM و UI.
-// (مانند محاسبه قیمت، مدیریت تایمر، رندر کردن دکمه‌های ساعت)
+// نسخه v7.1 (Smart Marketing Message)
 
 (function(App) {
-    // ماژول کمکی UI
     const uiHelpers = App.uiHelpers;
     const ui = App.ui;
     const state = App.state;
 
-    /**
-     * ریست کردن UI هنگام تغییر گروه خدماتی
-     */
     uiHelpers.resetUIOnGroupChange = function() {
         ui.servicesContainer.html('');
         ui.devicesContainer.html('');
@@ -31,9 +26,6 @@
         state.allGroupedSlots = {};
     };
 
-    /**
-     * نمایش لودر هنگام جستجوی اسلات‌ها
-     */
     uiHelpers.showSlotsLoading = function() {
         ui.slotsLoader.show();
         ui.slotsInitialMessage.hide();
@@ -45,9 +37,6 @@
         uiHelpers.stopFomoTimer();
     };
 
-    /**
-     * محاسبه و نمایش قیمت نهایی
-     */
     uiHelpers.updateFinalPrice = function() {
         let basePrice = parseFloat(ui.basePriceInput.val() || 0);
         let pointsDiscount = 0;
@@ -62,17 +51,40 @@
         
         ui.finalPriceSpan.text(finalPrice.toLocaleString('fa-IR') + ' تومان');
         
-        // به‌روزرسانی لیبل تخفیف امتیاز
         if (ui.applyPointsCheckbox.length) {
             let maxPointsDiscount = state.MAX_DISCOUNT;
             let applicableDiscount = Math.min(basePrice, maxPointsDiscount);
             ui.applyPointsCheckbox.next('label').find('strong').last().text(applicableDiscount.toLocaleString('fa-IR') + ' تومان');
         }
+
+        // --- منطق بازاریابی: محاسبه پاداش + پاداش احتمالی اولین خرید ---
+        if (state.PRICE_TO_POINTS_RATE > 0 && finalPrice > 0) {
+            const earnedPoints = Math.floor(finalPrice / state.PRICE_TO_POINTS_RATE);
+            
+            // (اینجا یک فرض هوشمندانه می‌کنیم: همه کاربران را تشویق می‌کنیم)
+            // چون در جاوااسکریپت نمی‌دانیم کاربر جدید است یا نه، پیامی کلی اما جذاب می‌دهیم.
+            
+            if (earnedPoints > 0) {
+                let message = `با انجام این رزرو، <strong class="text-dark">${earnedPoints} امتیاز</strong>`;
+                
+                // اضافه کردن بخش وسوسه‌کننده برای کاربرانی که امتیاز کمی دارند (احتمالا جدید هستند)
+                // فرض: اگر کاربر امتیاز قابل مصرف کمی دارد، یعنی مشتری جدید یا کم‌مصرف است.
+                if (state.MAX_DISCOUNT < 1000) { // مثلا کمتر از 1000 تومان امتیاز دارد
+                    message += ` <span class="text-danger fw-bold">+ پاداش ویژه اولین مراجعه</span>`;
+                }
+                
+                message += ` هدیه می‌گیرید! 🎁`;
+                
+                ui.rewardText.html(message);
+                ui.rewardBox.fadeIn();
+            } else {
+                ui.rewardBox.fadeOut();
+            }
+        } else {
+            ui.rewardBox.fadeOut();
+        }
     };
 
-    /**
-     * رندر کردن دکمه‌های انتخاب ساعت برای یک روز خاص
-     */
     uiHelpers.renderTimeSlots = function(slotsForDay) {
         uiHelpers.stopFomoTimer();
         ui.selectedSlotInput.val('');
@@ -84,14 +96,14 @@
         const buttonGroup = $('<div class="d-flex flex-wrap gap-2 mb-3"></div>');
         
         slotsForDay.forEach(slot => {
-            const slotMoment = moment.parseZone(slot.start); // <-- *** اصلاح شد ***
+            const slotMoment = moment.parseZone(slot.start); 
             const timeStr = slotMoment.format('HH:mm');
             const backendFormat = slot.start;
             let popularTag = '';
             const hour = slotMoment.hour();
-            const dayOfWeek = slotMoment.day(); // شنبه=۰
+            const dayOfWeek = slotMoment.day(); 
 
-            if ((hour >= 10 && hour < 14) || dayOfWeek === 3 || dayOfWeek === 4) { // چهارشنبه (3) و پنجشنبه (4)
+            if ((hour >= 10 && hour < 14) || dayOfWeek === 3 || dayOfWeek === 4) { 
                 popularTag = '<span class="popular-tag">🔥 محبوب</span>';
             }
             
@@ -109,24 +121,16 @@
         ui.timeSelectionContainer.show();
     };
 
-    /**
-     * توقف و پاک کردن تایمر FOMO
-     */
     uiHelpers.stopFomoTimer = function() {
         if (state.fomoExpirationTimer) clearTimeout(state.fomoExpirationTimer);
         if (state.fomoIntervalTimer) clearInterval(state.fomoIntervalTimer);
         ui.fomoTimerMessage.hide();
     };
 
-    /**
-     * شروع تایمر FOMO (رزرو موقت)
-     */
     uiHelpers.startFomoTimer = function() {
-        uiHelpers.stopFomoTimer(); // ریست کردن تایمر قبلی
-        
+        uiHelpers.stopFomoTimer(); 
         let secondsLeft = state.FOMO_DURATION_SECONDS;
         ui.fomoTimerMessage.removeClass('text-success').addClass('text-danger').show();
-        
         state.fomoIntervalTimer = setInterval(() => {
             if (secondsLeft <= 0) {
                  clearInterval(state.fomoIntervalTimer);
@@ -139,7 +143,6 @@
                 `این زمان به مدت <strong class="mx-1">${minutes}:${seconds.toString().padStart(2, '0')}</strong> برای شما رزرو موقت شد ⏳`
             );
         }, 1000);
-        
         state.fomoExpirationTimer = setTimeout(() => {
             clearInterval(state.fomoIntervalTimer);
             ui.fomoTimerMessage.text("!زمان شما منقضی شد. لطفاً مجدداً انتخاب کنید");

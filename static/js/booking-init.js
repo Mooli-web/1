@@ -1,10 +1,7 @@
 // static/js/booking-init.js
-// --- نسخه v6.9 (Fix: Typo in nextMonthBtn handler) ---
 // وظیفه: فایل راه‌انداز (Initializer) برنامه.
 
 (function(App, $) {
-    // ماژول Init
-    const init = App.init;
     const ui = App.ui;
     const state = App.state;
     const api = App.api;
@@ -14,17 +11,15 @@
         
         // --- ۱. بررسی کتابخانه‌های ضروری ---
         if (typeof moment === 'undefined' || typeof moment.fn.jYear === 'undefined') {
-            console.error("خطای حیاتی: کتابخانه jalali-moment (moment.js) بارگذاری نشده است.");
-            alert("خطا در بارگذاری تقویم. لطفاً صفحه را رفرش کنید.");
+            console.error("خطای حیاتی: کتابخانه jalali-moment بارگذاری نشده است.");
             return;
         }
         if (typeof buildCalendar === 'undefined') {
             console.error("خطای حیاتی: کتابخانه booking-calendar.js بارگذاری نشده است.");
             return;
         }
-        console.log("BookingApp v1.0 (Refactored) لود شد.");
 
-        // --- ۲. مقداردهی سلکتورهای UI (بدون تغییر) ---
+        // --- ۲. مقداردهی سلکتورهای UI ---
         ui.bookingForm = $('#bookingForm');
         ui.serviceGroupSelect = $('#serviceGroup');
         ui.servicesContainer = $('#servicesContainer');
@@ -56,29 +51,28 @@
         ui.discountMessage = $('#discountMessage');
         ui.basePriceInput = $('#basePrice');
         ui.totalDurationInput = $('#totalDuration');
+        // --- المنت‌های جدید ---
+        ui.rewardBox = $('#rewardBox');
+        ui.rewardText = $('#rewardText');
 
-        // --- ۳. مقداردهی State از DOM (data- attributes) ---
+        // --- ۳. مقداردهی State از DOM ---
         state.GET_SLOTS_URL = ui.bookingForm.data('get-slots-url');
         state.GET_SERVICES_URL = ui.bookingForm.data('get-services-url');
         state.APPLY_DISCOUNT_URL = ui.bookingForm.data('apply-discount-url');
         state.CSRF_TOKEN = ui.bookingForm.data('csrf-token');
         state.MAX_DISCOUNT = parseFloat(ui.bookingForm.data('max-discount') || 0);
         state.TODAY_DATE_SERVER = ui.bookingForm.data('today-date');
+        // --- خواندن نرخ امتیاز ---
+        state.PRICE_TO_POINTS_RATE = parseFloat(ui.bookingForm.data('points-rate') || 0);
 
-        // (BUG FIX P2) تنظیم "امروز" بر اساس تاریخ سرور
         if (!state.TODAY_DATE_SERVER) {
-            console.error("خطای حیاتی: data-today-date یافت نشد. تقویم ممکن است اشتباه باشد.");
-            state.todayMoment = moment().startOf('day'); // (Fallback)
+            state.todayMoment = moment().startOf('day');
         } else {
-            // (اصلاحیه قبلی - صحیح است)
             state.todayMoment = moment(state.TODAY_DATE_SERVER, 'YYYY-MM-DD').startOf('day');
         }
-
-        // (اصلاحیه قبلی - صحیح است)
         moment.locale('fa'); 
 
         // --- ۴. اتصال Event Handlers ---
-
         ui.serviceGroupSelect.on('change', api.fetchServicesForGroup);
 
         $(document).on('change', '.service-item', function() {
@@ -93,7 +87,7 @@
             state.codeDiscountAmount = 0;
             ui.discountCodeInput.val('');
             ui.discountMessage.text('').removeClass('text-success text-danger');
-            uiHelpers.updateFinalPrice();
+            uiHelpers.updateFinalPrice(); // <-- محاسبه پاداش اینجا انجام می‌شود
             api.fetchAndDisplaySlots();
         });
 
@@ -104,18 +98,10 @@
 
         ui.nextMonthBtn.on('click', function() {
             state.currentCalendarMoment.add(1, 'jMonth');
-            
-            // ==========================================================
-            // --- *** شروع اصلاحیه (Fix v6.9) *** ---
-            //
-            // مشکل: اشتباه تایپی (allGroupDlots) باعث ارسال undefined می‌شد.
-            //
             buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); 
-            // ==========================================================
         });
         ui.prevMonthBtn.on('click', function() {
             state.currentCalendarMoment.subtract(1, 'jMonth');
-            // (این خط از قبل درست بود)
             buildCalendar(state.currentCalendarMoment, state.allGroupedSlots, state.todayMoment); 
         });
         $(document).on('click', '.calendar-day.available', function(e) {
@@ -180,7 +166,6 @@
             ui.bookingForm.submit();
         });
         
-        // --- ۵. اجرای اولیه ---
         uiHelpers.updateFinalPrice();
     });
 

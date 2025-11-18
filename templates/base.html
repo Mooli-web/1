@@ -1,3 +1,5 @@
+{# mooli-web/templates/base.html #}
+{# --- FIX v4: Added Sticky Consultation CTA --- #}
 {% load static %}
 <!doctype html>
 <html lang="fa" dir="rtl">
@@ -65,7 +67,9 @@
                                         <a class="dropdown-item text-wrap {% if not notif.is_read %}fw-bold{% endif %}" href="{{ notif.link|default:'#' }}">
                                             <small>{{ notif.message|truncatewords:10 }}</small>
                                             <br>
-                                            <small class="text-muted">{{ notif.created_at|timesince }} قبل</small>
+                                            {# --- اصلاح تاریخ با تگ جدید --- #}
+                                            {% load reception_tags %}
+                                            <small class="text-muted">{{ notif.created_at|jalali_format:"%Y/%m/%d" }}</small>
                                         </a>
                                     </li>
                                 {% empty %}
@@ -118,14 +122,15 @@
         <p>&copy; {% now "Y" %} کلینیک زیبایی. تمام حقوق محفوظ است.</p>
     </footer>
 
+    {# --- NEW: Sticky Consultation Button --- #}
+    <a href="{% url 'consultation:create_request' %}" class="sticky-consultation-btn shadow-lg" title="مشاوره آنلاین رایگان">
+        <i class="bi bi-chat-text-fill fs-4"></i>
+        <span class="d-none d-md-inline ms-2 fw-bold">مشاوره رایگان</span>
+    </a>
+    {# --------------------------------------- #}
+
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    {# --- *** این بخش حذف شد *** --- #}
-    {# <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script> #}
-    {# <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales/fa.global.min.js'></script> #}
-    {# <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/jalali@6.1.15/index.global.min.js'></script> #}
-    {# --- *** پایان حذف *** --- #}
     
     {% block extra_js %}
     <script>
@@ -133,37 +138,24 @@
         $('#notificationDropdown').on('click', function() {
             var badge = $(this).find('.badge');
             if (badge.length > 0) {
-    
-                // 1. Get CSRF token
                 var csrfToken = $('form[action*="logout"] input[name="csrfmiddlewaretoken"]').val();
-                if (!csrfToken) {
-                    console.error('CSRF token not found for notification request.');
-                    return;
-                }
+                if (!csrfToken) return;
                 
-                // 2. Send AJAX request
                 $.ajax({
                     url: "{% url 'users:mark_notifications_as_read' %}",
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken
-                    },
+                    headers: { 'X-CSRFToken': csrfToken },
                     dataType: 'json',
                     success: function(data) {
                         if (data.status === 'success') {
-                            // 3. Remove badge on success
                             badge.remove();
                         }
-                    },
-                    error: function(error) {
-                        console.error('Error marking notifications as read:', error);
                     }
                 });
             }
         });
     });
     </script>
-    
     {% endblock %}
 </body>
 </html>

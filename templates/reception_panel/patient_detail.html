@@ -1,6 +1,8 @@
+{# mooli-web/templates/reception_panel/patient_detail.html #}
+{# --- FIX v2: Using custom 'jalali_format' tag --- #}
 {% extends "reception_panel/reception_base.html" %}
 {% load crispy_forms_tags %}
-{% load jalali_tags %}
+{% load reception_tags %}
 
 {% block title %}پرونده بیمار: {{ patient.get_full_name|default:patient.username }}{% endblock %}
 
@@ -64,7 +66,8 @@
                             <tr>
                                 <td>{{ app.get_services_display }}</td>
                                 <td>{{ app.selected_device.name|default:"-" }}</td>
-                                <td>{{ app.start_time|jformat:"%Y/%m/%d - %H:%M" }}</td>
+                                {# --- اصلاح شد --- #}
+                                <td>{{ app.start_time|jalali_format:"%Y/%m/%d - %H:%M" }}</td>
                                 <td><span class="badge bg-secondary">{{ app.get_status_display }}</span></td>
                                 <td>
                                     {% if app.status == 'PENDING' or app.status == 'CONFIRMED' %}
@@ -105,7 +108,8 @@
                             <tr>
                                 <td>{{ trans.amount|floatformat:"0" }}</td>
                                 <td><span class="badge bg-secondary">{{ trans.get_status_display }}</span></td>
-                                <td>{{ trans.created_at|jformat:"%Y/%m/%d - %H:%M" }}</td>
+                                {# --- اصلاح شد --- #}
+                                <td>{{ trans.created_at|jalali_format:"%Y/%m/%d - %H:%M" }}</td>
                                 <td>{{ trans.authority|default:"---" }}</td>
                             </tr>
                             {% empty %}
@@ -122,7 +126,8 @@
                     <a href="{% url 'reception_panel:consultation_detail' req.pk %}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
                             <h5 class="mb-1">{{ req.subject }}</h5>
-                            <small>{{ req.created_at|jformat:"%Y/%m/%d" }}</small>
+                            {# --- اصلاح شد --- #}
+                            <small>{{ req.created_at|jalali_format:"%Y/%m/%d" }}</small>
                         </div>
                         <small>وضعیت: <span class="badge bg-secondary">{{ req.get_status_display }}</span></small>
                     </a>

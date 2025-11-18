@@ -1,6 +1,7 @@
-{# --- DEBUG v2 --- #}
+{# mooli-web/templates/reception_panel/reception_base.html #}
+{# --- FIX v2: Using custom 'jalali_format' tag --- #}
 {% load static %}
-{% load jalali_tags %}
+{% load reception_tags %} {# <-- بارگذاری تگ جدید #}
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
@@ -11,7 +12,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <style>
-        /* استایل‌های ساده برای پنل مدیریت */
         body { background-color: #f8f9fa; }
         .sidebar {
             background-color: #343a40;
@@ -47,7 +47,6 @@
     </style>
 </head>
 <body>
-    
     <div class="container-fluid">
         <div class="row">
             <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
@@ -84,15 +83,13 @@
                                 <i class="bi bi-chat-dots-fill me-2"></i> مدیریت مشاوره‌ها
                             </a>
                         </li>
-                        
                         <li class="nav-item">
                             <a class="nav-link {% if 'service' in request.resolver_match.view_name or 'work_hours' in request.resolver_match.view_name %}active{% endif %}" 
                                href="{% url 'reception_panel:service_list' %}">
                                 <i class="bi bi-gear-fill me-2"></i> مدیریت خدمات و ساعات
                             </a>
                         </li>
-                        </ul>
-                    
+                    </ul>
                     <div class="mt-5 p-3">
                          <form method="post" action="{% url 'logout' %}?next={% url 'reception_panel:login' %}">
                             {% csrf_token %}
@@ -125,7 +122,8 @@
                                         <a class="dropdown-item text-wrap {% if not notif.is_read %}fw-bold{% endif %}" href="{{ notif.link|default:'#' }}">
                                             <small>{{ notif.message|truncatewords:10 }}</small>
                                             <br>
-                                            <small class="text-muted">{{ notif.created_at|jformat:"%Y/%m/%d - %H:%M" }}</small>
+                                            {# --- استفاده از فیلتر جدید --- #}
+                                            <small class="text-muted">{{ notif.created_at|jalali_format:"%Y/%m/%d - %H:%M" }}</small>
                                         </a>
                                     </li>
                                 {% empty %}
@@ -150,7 +148,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         var notificationDropdown = document.getElementById('notificationDropdownStaff');
@@ -158,14 +155,8 @@
             notificationDropdown.addEventListener('click', function() {
                 var badge = this.querySelector('.badge');
                 if (badge) {
-                    // 1. Get CSRF token
                     var csrfToken = document.querySelector('form[action*="logout"] input[name="csrfmiddlewaretoken"]');
-                    if (!csrfToken) {
-                        console.error('CSRF token not found for notification request.');
-                        return;
-                    }
-    
-                    // 2. Send AJAX request
+                    if (!csrfToken) return;
                     fetch("{% url 'reception_panel:mark_notifications_as_read' %}", {
                         method: 'POST',
                         headers: {
@@ -175,12 +166,8 @@
                     })
                     .then(response => response.json())
                     .then(data => {
-                        if (data.status === 'success') {
-                            // 3. Remove badge on success
-                            badge.remove();
-                        }
-                    })
-                    .catch(error => console.error('Error marking notifications as read:', error));
+                        if (data.status === 'success') badge.remove();
+                    });
                 }
             });
         }

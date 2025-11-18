@@ -5,23 +5,25 @@
 
 from django import forms
 from .models import ConsultationRequest, ConsultationMessage
-# کدهای مربوط به Specialist به طور کامل حذف شدند.
 
 class ConsultationRequestForm(forms.ModelForm):
     """
     فرم ایجاد "درخواست مشاوره" جدید توسط بیمار.
+    تغییر: فیلد 'subject' حذف شد تا کاربر درگیر عنوان‌نویسی نشود.
     """
     class Meta:
         model = ConsultationRequest
-        # فیلد 'specialist' از اینجا حذف شده است.
-        fields = ['subject', 'description']
+        # فیلد subject را حذف کردیم، در ویو به صورت خودکار پر می‌شود.
+        fields = ['description'] 
         widgets = {
-            'subject': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 5,
+                'placeholder': 'لطفاً سوال یا مشکل خود را اینجا بنویسید...'
+            }),
         }
         labels = {
-            'subject': 'موضوع مشاوره',
-            'description': 'شرح درخواست',
+            'description': 'متن پیام شما',
         }
 
 class ConsultationMessageForm(forms.ModelForm):
@@ -33,8 +35,13 @@ class ConsultationMessageForm(forms.ModelForm):
         model = ConsultationMessage
         fields = ['message']
         widgets = {
-            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'پیام خود را بنویسید...'}),
+            'message': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 2, 
+                'placeholder': 'پیام خود را بنویسید...',
+                'style': 'resize: none;' # جلوگیری از تغییر سایز زشت
+            }),
         }
         labels = {
-            'message': 'پیام شما',
+            'message': '', # لیبل را حذف کردیم تا شبیه مسنجر شود
         }

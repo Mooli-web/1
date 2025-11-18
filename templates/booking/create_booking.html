@@ -1,14 +1,36 @@
 {# mooli-web/templates/booking/create_booking.html #}
-{# نسخه v6.6 (Fix: Modal HTML Structure) #}
+{# --- نسخه v7.0 (Added Reward Display) --- #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
 {% block title %}رزرو نوبت جدید{% endblock %}
 
-{# --- بارگذاری CSS سفارشی تقویم (بدون تغییر) --- #}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/booking-calendar.css' %}">
+<style>
+    /* استایل مخصوص باکس جایزه */
+    .reward-box {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffecb3 100%);
+        border: 1px solid #ffe082;
+        color: #856404;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+        display: none; /* پیش‌فرض مخفی */
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    .reward-box i {
+        font-size: 1.5rem;
+        color: #ffca28;
+        margin-left: 10px;
+        vertical-align: middle;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -31,11 +53,12 @@
                       data-apply-discount-url="{% url 'booking:apply_discount' %}"
                       data-csrf-token="{{ csrf_token }}"
                       data-max-discount="{{ max_discount|default:0 }}"
-                      data-today-date="{{ today_date_server }}"> {# <-- *** (حفظ شده از قبل) *** #}
+                      data-today-date="{{ today_date_server }}"
+                      data-points-rate="{{ price_to_points_rate|default:0 }}"> {# <-- *** نرخ امتیاز اضافه شد *** #}
                     
                     {% csrf_token %}
                     
-                    {# --- مرحله ۱ و ۲: انتخاب گروه و خدمت (بدون تغییر) --- #}
+                    {# --- مراحل انتخاب (بدون تغییر) --- #}
                     <div class="mb-3">
                         <label for="serviceGroup" class="form-label fs-5">۱. انتخاب گروه خدمت:</label>
                         <select name="service_group" id="serviceGroup" class="form-select form-select-lg" required>
@@ -48,18 +71,13 @@
                     <div id="servicesContainer" class="mb-3"></div>
                     <div id="devicesContainer" class="mb-3"></div>
 
-                    {# --- مرحله ۳ و ۴: تقویم حرارتی (بدون تغییر) --- #}
+                    {# --- تقویم (بدون تغییر) --- #}
                     <div id="slotsContainer" class="mb-4" style="display: none;">
-                        
-                        {# --- دکمه اولین نوبت موجود --- #}
                         <div id="first-available-slot-container" class="alert alert-info d-none" role="alert">
                             ⚡️ اولین نوبت موجود: <strong id="first-slot-label"></strong>
                             <button type="button" class="btn btn-primary btn-sm ms-3" id="book-first-slot-btn">رزرو فوری این زمان</button>
                         </div>
-                        
                         <label class="form-label fs-5 mb-2" id="calendar-step-label"></label>
-
-                        {# --- تقویم حرارتی --- #}
                         <div id="booking-calendar-wrapper">
                             <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
                                 <button type="button" class="btn btn-outline-secondary" id="calendar-prev-month" disabled>« ماه قبل</button>
@@ -69,27 +87,18 @@
                             <div class="calendar-grid-header">
                                 <div>ش</div><div>ی</div><div>د</div><div>س</div><div>چ</div><div>پ</div><div>ج</div>
                             </div>
-                            <div id="calendar-grid-body" class="calendar-grid-body">
-                                </div>
+                            <div id="calendar-grid-body" class="calendar-grid-body"></div>
                         </div>
-                        
-                        {# محفظه لودینگ (مشترک) #}
                         <div id="slots-loader" class="text-center p-4" style="display: none;">
                             <div class="spinner-border text-primary" role="status"></div>
                             <p class="mt-2">در حال جستجوی زمان‌های خالی...</p>
                         </div>
-                        {# پیام اولیه (قبل از انتخاب خدمت) #}
                         <div id="slots-initial-message" class="alert alert-info">لطفاً ابتدا خدمت و دستگاه (در صورت نیاز) را انتخاب کنید تا زمان‌های موجود نمایش داده شوند.</div>
                     </div>
                     
-                    {# --- مرحله ۵: انتخاب ساعت (جایگاه) --- #}
-                    <div id="time-selection-container" class="mt-4" style="display: none;">
-                        </div>
-                    
-                    {# --- تایمر رزرو موقت (جایگاه) --- #}
+                    <div id="time-selection-container" class="mt-4" style="display: none;"></div>
                     <div id="fomo-timer-message" class="text-center text-danger fw-bold mt-3" style="display: none;"></div>
 
-                    {# --- بخش تخفیف و ادامه (بدون تغییر) --- #}
                     <div class="mb-3">
                         <label for="discountCode" class="form-label">کد تخفیف دارید؟</label>
                         <div class="input-group">
@@ -98,6 +107,7 @@
                         </div>
                         <div id="discountMessage" class="form-text mt-2"></div>
                     </div>
+                    
                     {% if user_points > 0 %}
                     <div class="alert alert-info mt-3">
                         <div class="form-check fs-5">
@@ -108,19 +118,26 @@
                         </div>
                     </div>
                     {% endif %}
+                    
                     <hr class="my-4">
-                    <div class="text-center">
+                    
+                    {# --- بخش جدید: باکس پاداش --- #}
+                    <div id="rewardBox" class="reward-box text-center">
+                        <i class="bi bi-gift-fill"></i>
+                        <span id="rewardText" class="fs-5 fw-bold"></span>
+                    </div>
+                    {# --------------------------- #}
+
+                    <div class="text-center mt-4">
                         <h4 class="mb-3">مبلغ نهایی قابل پرداخت:</h4>
                         <h2 id="finalPrice" class="text-success fw-bold">۰ تومان</h2>
                     </div>
 
-                    {# --- فیلدهای مخفی (بدون تغییر) --- #}
                     <input type="hidden" name="slot" id="selectedSlot">
                     <input type="hidden" id="basePrice" value="0">
                     <input type="hidden" id="totalDuration" value="0">
                     <input type="hidden" name="device_id" id="selectedDevice">
                     
-                    {# --- رزرو دستی توسط پذیرش (بدون تغییر) --- #}
                     {% if request.user.is_staff and patient_user_for_template %}
                     <div class="form-check fs-5 my-3 alert alert-warning">
                         <input class="form-check-input" type="checkbox" name="manual_confirm" id="manual_confirm">
@@ -139,9 +156,7 @@
     </div>
 </div>
 
-{# =================================================================== #}
-{# --- *** اصلاحیه: ساختار مودال تکمیل شد *** --- #}
-{# =================================================================== #}
+{# --- مودال تایید (بدون تغییر) --- #}
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -171,29 +186,14 @@
 </div>
 {% endblock %}
 
-{# =================================================================== #}
-{# --- *** (بلوک جاوا اسکریپت بدون تغییر نسبت به قبل) *** --- #}
-{# =================================================================== #}
 {% block extra_js %}
 {{ block.super }} 
-
-{# ۱. بارگذاری کتابخانه جلالی #}
 <script src="{% static 'js/jalali-moment.browser.js' %}"></script>
-
-{# ۲. بارگذاری ماژول تعریف State #}
 <script src="{% static 'js/booking-state.js' %}"></script>
-
-{# ۳. بارگذاری کتابخانه رندر کننده تقویم #}
 <script src="{% static 'js/booking-calendar.js' %}"></script>
-
-{# ۴. بارگذاری ماژول‌های کمکی UI و API #}
 <script src="{% static 'js/booking-ui.js' %}"></script>
 <script src="{% static 'js/booking-api.js' %}"></script>
-
-{# ۵. بارگذاری اسکریپت راه‌انداز (Init) #}
 <script src="{% static 'js/booking-init.js' %}"></script>
-
-{# (اسکریپت Navbar Scroll) #}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const navbar = document.querySelector('.navbar.sticky-top');
