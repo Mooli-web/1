@@ -6,6 +6,22 @@
 - API مربوط به خواندن اعلان‌ها
 """
 
+# --- DEBUG V3: FORCE IMPORT ---
+# این خط را اضافه می‌کنیم تا مطمئن شویم پایتون پکیج را پیدا می‌کند
+try:
+    import jalali_date
+    print("\n--- DEBUG: 'import jalali_date' SUCCESSFUL ---\n")
+except ImportError as e:
+    print("\n" + "="*50)
+    print("--- DEBUG: !!! IMPORT ERROR CAUGHT IN VIEW !!! ---")
+    print(f"--- FAILED TO IMPORT 'jalali_date'. Error: {e}")
+    print("--- This confirms the package is not installed in the virtual env.")
+    print("="*50 + "\n")
+    # خطا را بالا ببر تا سرور متوقف شود
+    raise e
+# --- END DEBUG V3 ---
+
+
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
@@ -13,6 +29,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from datetime import datetime, time
+# --- DEBUG: Import TemplateSyntaxError ---
+from django.template.exceptions import TemplateSyntaxError 
 
 from .forms import ReceptionLoginForm
 from .decorators import staff_required
@@ -46,13 +64,18 @@ def reception_login_view(request):
     
     return render(request, 'reception_panel/reception_login.html', {'form': form})
 
-# --- داشبورد (بازنویسی شده) ---
+# --- داشبورد (بازنویسی شده با دیباگ) ---
 @staff_required
 def dashboard_view(request):
     """
     داشبورد اصلی پنل پذیرش (مرکز فرماندهی).
     اطلاعات کلیدی و دسترسی‌های سریع را نمایش می‌دهد.
     """
+    
+    # --- DEBUG 1: Log entry ---
+    print("\n" + "="*30)
+    print("--- DEBUG: 1. Entering dashboard_view ---")
+    
     today = timezone.now().date()
     # تعریف ابتدا و انتهای امروز برای فیلتر زمانی دقیق
     start_of_day = timezone.make_aware(datetime.combine(today, time.min))
@@ -87,7 +110,33 @@ def dashboard_view(request):
         'patient_count': patient_count,
         'today_appointments_count': today_appointments_count,
     }
-    return render(request, 'reception_panel/reception_dashboard.html', context)
+    
+    # --- DEBUG 2: Log before render ---
+    print("--- DEBUG: 2. Context built. Attempting to render 'reception_panel/reception_dashboard.html' ---")
+
+    try:
+        # تلاش برای رندر کردن تمپلیت
+        return render(request, 'reception_panel/reception_dashboard.html', context)
+    
+    except TemplateSyntaxError as e:
+        # --- DEBUG 3: CATCHING THE ERROR ---
+        # اگر خطا از نوع TemplateSyntaxError بود، اطلاعات دقیق آن را در کنسول چاپ کن
+        print("\n" + "="*50)
+        print("--- DEBUG: 3. !!! TEMPLATE SYNTAX ERROR CAUGHT IN VIEW !!! ---")
+        print(f"--- Error Message: {e}")
+        # این بخش‌ها به ما می‌گویند کدام فایل و کدام خط باعث خطا شده
+        if hasattr(e, 'template_name'):
+             print(f"--- Template Name from Error: {e.template_name}")
+        if hasattr(e, 'lineno'):
+             print(f"--- Line Number: {e.lineno}")
+        print("="*50 + "\n")
+        # خطا را دوباره ارسال کن تا صفحه زرد جنگو نمایش داده شود
+        raise e
+    
+    except Exception as e:
+        # مدیریت خطاهای پیش‌بینی نشده دیگر
+        print(f"--- DEBUG: An unexpected error (not TemplateSyntaxError) occurred: {e} ---")
+        raise e
 
 
 # --- API (بدون تغییر) ---
