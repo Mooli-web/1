@@ -121,21 +121,28 @@ class ReceptionProfileUpdateForm(forms.ModelForm):
 class ReceptionServiceUpdateForm(forms.ModelForm):
     """
     فرم ویرایش خدمات توسط پذیرش.
-    مهم: این فرم فیلد "price" را شامل *نمی‌شود*.
+    تغییر: فیلدهای badge و old_price اضافه شدند.
     """
     class Meta:
         model = Service
-        # پذیرش فقط مجاز به تغییر نام، توضیحات و مدت زمان است
-        fields = ['name', 'description', 'duration']
+        # پذیرش فقط مجاز به تغییر نام، توضیحات، مدت زمان و فیلدهای بازاریابی است
+        fields = ['name', 'description', 'duration', 'old_price', 'badge']
         labels = {
             'name': 'نام خدمت',
             'description': 'توضیحات',
             'duration': 'مدت زمان (دقیقه)',
+            'old_price': 'قیمت خط‌خورده (تومان)',
+            'badge': 'برچسب بازاریابی',
         }
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'duration': forms.NumberInput(attrs={'class': 'form-control'}),
+            'old_price': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'خالی بگذارید اگر تخفیفی ندارد'
+            }),
+            'badge': forms.Select(attrs={'class': 'form-select'}),
         }
 
 # --- فرم‌ست (FormSet) ساعات کاری ---
@@ -170,4 +177,4 @@ WorkHoursFormSet = modelformset_factory(
     extra=1,          # اجازه افزودن 1 ردیف خالی جدید در هر بار
     can_delete=True,  # اجازه تیک زدن چک‌باکس "حذف"
     fields=['day_of_week', 'start_time', 'end_time', 'gender_specific']
-)
+)   

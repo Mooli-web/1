@@ -1,4 +1,4 @@
-{# a_copy/templates/clinic/service_list.html #}
+{# mooli-web/templates/clinic/service_list.html #}
 {% extends "base.html" %}
 {% load static %}
 
@@ -15,12 +15,50 @@
 <div class="row g-4">
     {% for service in services %}
     <div class="col-lg-4 col-md-6 service-card-wrapper" style="--delay: {% widthratio forloop.counter0 1 100 %}ms;">
-        <div class="service-card">
-            <h3 class="card-title">{{ service.name }}</h3>
+        <div class="service-card position-relative">
+            {# --- بخش ب: برچسب‌های راهنما (Service Badges) --- #}
+            {% if service.badge != 'NONE' %}
+                <div class="position-absolute top-0 start-0 m-3 z-2">
+                    {% if service.badge == 'BEST_SELLER' %}
+                        <span class="badge bg-warning text-dark shadow-sm p-2"><i class="bi bi-fire me-1"></i> پرفروش‌ترین</span>
+                    {% elif service.badge == 'SPECIAL_OFFER' %}
+                        <span class="badge bg-danger shadow-sm p-2 animate-pulse"><i class="bi bi-gem me-1"></i> پیشنهاد ویژه</span>
+                    {% elif service.badge == 'NEW' %}
+                        <span class="badge bg-info text-dark shadow-sm p-2"><i class="bi bi-stars me-1"></i> جدید</span>
+                    {% elif service.badge == 'ECONOMICAL' %}
+                        <span class="badge bg-success shadow-sm p-2"><i class="bi bi-cash-coin me-1"></i> به‌صرفه</span>
+                    {% elif service.badge == 'LIMITED' %}
+                        <span class="badge bg-secondary shadow-sm p-2"><i class="bi bi-hourglass-split me-1"></i> ظرفیت محدود</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <h3 class="card-title mt-4">{{ service.name }}</h3>
             <p class="card-text">{{ service.description }}</p>
-            <div class="service-card-footer">
-                <span class="service-price">{{ service.price|floatformat:"0" }} تومان</span>
-                <a href="{% url 'booking:create_booking' %}" class="btn btn-primary">رزرو</a>
+            
+            <div class="service-card-footer d-flex justify-content-between align-items-center">
+                
+                {# --- بخش الف: قیمت‌گذاری لنگری پویا (Anchor Pricing) --- #}
+                <div class="pricing-container">
+                    {% if service.old_price and service.old_price > service.price %}
+                        <div class="d-flex flex-column align-items-start">
+                            <span class="text-muted text-decoration-line-through small" style="font-size: 0.9rem;">
+                                {{ service.old_price|floatformat:"0" }} تومان
+                            </span>
+                            <span class="service-price text-danger fw-bold">
+                                {{ service.price|floatformat:"0" }} تومان
+                            </span>
+                        </div>
+                    {% else %}
+                        <span class="service-price text-primary fw-bold">
+                            {{ service.price|floatformat:"0" }} تومان
+                        </span>
+                    {% endif %}
+                </div>
+
+                <a href="{% url 'booking:create_booking' %}" class="btn btn-primary shadow-sm">
+                    رزرو <i class="bi bi-arrow-left-short"></i>
+                </a>
             </div>
         </div>
     </div>
@@ -30,4 +68,33 @@
     </div>
     {% endfor %}
 </div>
+
+<style>
+    /* انیمیشن ضربان برای پیشنهاد ویژه */
+    @keyframes pulse-badge {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .animate-pulse {
+        animation: pulse-badge 2s infinite;
+    }
+    
+    /* اصلاح استایل کارت برای نمایش بهتر بج‌ها */
+    .service-card {
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1.5rem;
+        background-color: var(--bg-card);
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+</style>
 {% endblock %}

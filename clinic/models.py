@@ -148,9 +148,17 @@ class ServiceGroup(models.Model):
 class Service(models.Model):
     """
     مدل "خدمت" (زیرگروه).
-    (مثلاً: لیزر فول بادی، تزریق بوتاکس پیشانی)
-    هر خدمت باید به یک "گروه خدماتی" تعلق داشته باشد.
+    تغییرات جدید: اضافه شدن فیلدهای بازاریابی (old_price, badge).
     """
+    
+    class ServiceBadge(models.TextChoices):
+        NONE = 'NONE', '--- بدون برچسب ---'
+        BEST_SELLER = 'BEST_SELLER', '🔥 پرفروش‌ترین'
+        SPECIAL_OFFER = 'SPECIAL_OFFER', '💎 پیشنهاد ویژه'
+        NEW = 'NEW', '🆕 جدید'
+        ECONOMICAL = 'ECONOMICAL', '💰 به‌صرفه'
+        LIMITED = 'LIMITED', '⏳ ظرفیت محدود'
+
     group = models.ForeignKey(
         ServiceGroup,
         on_delete=models.CASCADE,
@@ -169,12 +177,38 @@ class Service(models.Model):
         verbose_name="قیمت"
     )
     
+    # --- فیلدهای جدید بازاریابی ---
+    old_price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=0, 
+        null=True, 
+        blank=True, 
+        verbose_name="قیمت اصلی (جهت خط خوردن)",
+        help_text="اگر پر شود، این مبلغ خط‌خورده نمایش داده می‌شود و قیمت نهایی قرمز می‌شود (تکنیک لنگر)."
+    )
+
+    badge = models.CharField(
+        max_length=20,
+        choices=ServiceBadge.choices,
+        default=ServiceBadge.NONE,
+        verbose_name="برچسب بازاریابی"
+    )
+    
     class Meta:
         verbose_name = "خدمت (زیرگروه)"
         verbose_name_plural = "خدمات (زیرگروه‌ها)"
 
     def __str__(self):
         return f"{self.group.name} - {self.name}"
+    
+    @property
+    def discount_percentage(self):
+        """
+        محاسبه درصد تخفیف برای نمایش به کاربر (اختیاری).
+        """
+        if self.old_price and self.old_price > self.price:
+            return int(((self.old_price - self.price) / self.old_price) * 100)
+        return 0
 
 class PortfolioItem(models.Model):
     """
