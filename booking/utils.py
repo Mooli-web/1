@@ -1,99 +1,74 @@
 # booking/utils.py
-"""
-این فایل شامل توابع کمکی (Helper Functions) برای اپلیکیشن booking است.
-هدف این فایل، جدا کردن منطق‌های تکراری و پیچیده از فایل views.py
-و افزایش خوانایی ویوها است.
-"""
-
 from django.conf import settings
-from django.db.models import Q
-from django.utils import timezone
-from datetime import datetime, time, timedelta
-import jdatetime
-
+from typing import Tuple, Optional, Any
 from users.models import CustomUser
-from clinic.models import DiscountCode, Service
-from .models import Appointment
+from clinic.models import DiscountCode
+from site_settings.models import SiteSettings
 
-# --- Helper 1: تشخیص هویت بیمار ---
-def _get_patient_for_booking(request):
+def _get_patient_for_booking(request) -> Tuple[Optional[CustomUser], bool, Optional[CustomUser]]:
     """
-    تابع کمکی برای تشخیص اینکه "چه کسی" در حال رزرو نوبت است.
-    
-    این تابع سه سناریو را مدیریت می‌کند:
-    1. بیمار عادی (لاگین کرده و در حال رزرو برای خود است).
-    2. پذیرش (در حال رزرو برای یک بیمار خاص است - "act as").
-    3. کاربر لاگین نکرده (AnonymousUser).
-    
-    خروجی: (patient_user, is_reception_booking, patient_user_for_template)
-    - patient_user: آبجکت کاربری که نوبت برای او ثبت می‌شود.
-    - is_reception_booking: یک بولین (boolean) که مشخص می‌کند آیا پذیرش در حال رزرو است یا خیر.
-    - patient_user_for_template: آبجکت بیمار (برای نمایش نام او در تمپلیت).
+    تشخیص هویت بیمار (خود کاربر یا رزرو توسط پذیرش).
     """
     is_reception_booking = False
-    patient_user = request.user  # پیش‌فرض: کاربری که لاگین کرده
+    patient_user = request.user
     patient_user_for_template = None
 
-    # سناریوی ۲: پذیرش در حال رزرو برای بیمار است
     if request.user.is_staff and request.session.get('reception_acting_as_patient_id'):
         is_reception_booking = True
         try:
-            patient_id = request.session['reception_acting_as_patient_id']
-            patient_user = CustomUser.objects.get(id=patient_id)
-            patient_user_for_template = patient_user  # برای نمایش در هدر فرم
+            p_id = request.session['reception_acting_as_patient_id']
+            patient_user = CustomUser.objects.get(id=p_id)
+            patient_user_for_template = patient_user
         except CustomUser.DoesNotExist:
-            patient_user = None  # ویو اصلی این None را مدیریت خواهد کرد
+            patient_user = None 
     
-    # در سناریوی ۱ و ۳، 'patient_user' همان 'request.user' باقی می‌ماند
     return patient_user, is_reception_booking, patient_user_for_template
 
-# --- Helper 2: محاسبه تخفیف‌ها ---
-def _calculate_discounts(patient_user, total_price, apply_points_str, discount_code_str):
+def _calculate_discounts(patient_user: CustomUser, total_price: float, apply_points: bool, discount_code_str: str):
     """
-    تابع کمکی برای محاسبه تخفیف‌های امتیاز (Points) و کد تخفیف (DiscountCode).
-    
-    خروجی: (points_discount, points_to_use, code_discount, discount_code_obj, error_message)
+    محاسبه تخفیف‌های امتیازی و کدی.
     """
     points_discount = 0
     points_to_use = 0
     code_discount = 0
-    discount_code_obj = None
-    error_message = None
+    discount_obj = None
+    error_msg = None
 
-    # ۱. محاسبه تخفیف بر اساس امتیازات کاربر
-    if apply_points_str:  # اگر چک‌باکس "استفاده از امتیاز" فعال بود
+    # 1. امتیاز
+    if apply_points:
+        try:
+            # بارگذاری نرخ تبدیل از تنظیمات (با مقدار پیش‌فرض امن)
+            rate = SiteSettings.load().price_to_points_rate
+            points_value_toman = settings.POINTS_TO_TOMAN_RATE # یا از تنظیمات
+        except:
+            points_value_toman = 100 # Default fallback
+
         profile = patient_user.profile
-        # حداکثر تخفیفی که بیمار می‌تواند با امتیازش بگیرد
-        max_possible_discount = profile.points * settings.POINTS_TO_TOMAN_RATE
-        # تخفیف امتیازی نمی‌تواند از قیمت کل بیشتر باشد
-        points_discount = min(max_possible_discount, total_price) 
-        # محاسبه تعداد امتیازی که باید مصرف شود
-        points_to_use = int(points_discount / settings.POINTS_TO_TOMAN_RATE)
+        max_discount = profile.points * points_value_toman
+        points_discount = min(max_discount, total_price)
+        if points_value_toman > 0:
+            points_to_use = int(points_discount / points_value_toman)
 
-    # ۲. محاسبه تخفیف بر اساس کد تخفیف
+    # 2. کد تخفیف
     if discount_code_str:
         try:
-            discount_code_obj = DiscountCode.objects.get(code__iexact=discount_code_str)
-            
-            # اعتبارسنجی کد
-            if not discount_code_obj.is_valid():
-                error_message = 'کد تخفیف معتبر نیست یا منقضی شده.'
-                discount_code_obj = None
-            elif discount_code_obj.user and discount_code_obj.user != patient_user:
-                error_message = 'این کد تخفیف مخصوص شما نیست.'
-                discount_code_obj = None
-            elif discount_code_obj.is_one_time and discount_code_obj.is_used:
-                error_message = 'این کد تخفیف قبلاً استفاده شده است.'
-                discount_code_obj = None
+            discount_obj = DiscountCode.objects.get(code__iexact=discount_code_str)
+            if not discount_obj.is_valid():
+                error_msg = 'کد تخفیف معتبر نیست.'
+                discount_obj = None
+            elif discount_obj.user and discount_obj.user != patient_user:
+                error_msg = 'کد تخفیف متعلق به شما نیست.'
+                discount_obj = None
+            elif discount_obj.is_one_time and discount_obj.is_used:
+                error_msg = 'کد قبلا استفاده شده.'
+                discount_obj = None
             else:
-                # محاسبه مبلغ تخفیف بر اساس نوع کد
-                if discount_code_obj.discount_type == 'PERCENTAGE':
-                    code_discount = (total_price * discount_code_obj.value) / 100
-                else:  # FIXED_AMOUNT
-                    code_discount = discount_code_obj.value
-                    
+                if discount_obj.discount_type == 'PERCENTAGE':
+                    code_discount = (total_price * discount_obj.value) / 100
+                else:
+                    code_discount = discount_obj.value
         except DiscountCode.DoesNotExist:
-            error_message = 'کد تخفیف یافت نشد.'
-            discount_code_obj = None  # اطمینان از اینکه آبجکت کد ارسال نمی‌شود
+            error_msg = 'کد تخفیف یافت نشد.'
+            discount_obj = None
 
-    return points_discount, points_to_use, code_discount, discount_code_obj, error_message
+    return points_discount, points_to_use, code_discount, discount_obj, error_msg

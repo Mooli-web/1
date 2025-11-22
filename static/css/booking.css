@@ -1,0 +1,50 @@
+/* static/css/booking.css */
+.fc .fc-toolbar-title {
+    font-family: var(--heading-font);
+    color: var(--text-dark);
+}
+.fc .fc-button-primary {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+.fc .fc-button-primary:hover {
+    background-color: var(--accent-darker);
+    border-color: var(--accent-darker);
+}
+
+.fc-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.fc-day-available {
+    background-color: #d4edda !important; 
+    cursor: pointer;
+}
+.fc-day-available:hover {
+    background-color: #c3e6cb !important; 
+}
+
+.fc-day-unavailable {
+    background-color: #e9ecef !important; 
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.fc-day-past {
+    background-color: #f8f9fa !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.fc .fc-bg-event {
+    display: none;
+}

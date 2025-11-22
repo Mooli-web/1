@@ -1,23 +1,20 @@
 # clinic_project/settings/local.py
 """
-تنظیمات مخصوص محیط "توسعه" (Development / Local).
-این فایل base.py را import کرده و تنظیمات آن را برای
-محیط توسعه بازنویسی (Override) می‌کند.
+تنظیمات محیط "توسعه" (Local Development).
+این فایل برای اجرا روی سیستم شخصی برنامه‌نویس است و نباید در سرور اصلی استفاده شود.
 """
 
-from .base import * # وارد کردن تمام تنظیمات پایه
+from .base import *
 
-# --- تنظیمات مخصوص توسعه ---
-
-# DEBUG در حالت توسعه همیشه روشن است
+# --- Debug Mode ---
+# در محیط لوکال همیشه روشن باشد تا خطاها را کامل ببینیم
 DEBUG = True
 
-# هاست‌های مجاز برای توسعه
+# --- Allowed Hosts ---
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
-# استفاده از دیتابیس SQLite برای توسعه آسان
-# (این شرط بررسی می‌کند که آیا دیتابیس در base.py (از .env)
-# تنظیم شده است یا خیر. اگر نشده باشد، SQLite را تنظیم می‌کند)
+# --- Database ---
+# اگر دیتابیس اصلی (PostgreSQL) در .env تنظیم نشده بود، از SQLite استفاده کن
 if not DATABASES or 'default' not in DATABASES or not DATABASES['default']:
     DATABASES = {
         'default': {
@@ -26,9 +23,12 @@ if not DATABASES or 'default' not in DATABASES or not DATABASES['default']:
         }
     }
 
-# نمایش ایمیل‌ها در کنسول به جای ارسال واقعی
+# --- Email ---
+# چاپ ایمیل‌ها در کنسول به جای ارسال واقعی
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# می‌توانید اپ‌های مخصوص دیباگ (مانند Debug Toolbar) را در اینجا اضافه کنید
+# --- Debug Toolbar (Optional) ---
+# اگر نیاز به دیباگ تولبار داشتید، اینجا اضافه کنید
 # INSTALLED_APPS += ['debug_toolbar']
 # MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+# INTERNAL_IPS = ['127.0.0.1']

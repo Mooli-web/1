@@ -1,100 +1,219 @@
-{# mooli-web/templates/clinic/service_list.html #}
+{# templates/clinic/service_list.html #}
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}خدمات ما | کلینیک زیبایی{% endblock %}
+{% block title %}راهنمای خدمات و تعرفه‌ها | کلینیک زیبایی{% endblock %}
 
 {% block content %}
-<section class="hero-section">
-    <h1 class="display-4">تخصصی در هنر زیبایی</h1>
-    <p class="lead mt-3">
-        باور ما این است که زیبایی حقیقی در جزئیات نهفته است. ما با تلفیق دانش پزشکی و هنر، به شما کمک می‌کنیم تا بهترین نسخه از خود را کشف کنید.
-    </p>
+<section class="bg-light py-5 mb-5 text-center position-relative overflow-hidden">
+    <div class="container position-relative z-2">
+        <h1 class="display-5 fw-bold text-dark mb-3">راهنمای جامع خدمات زیبایی</h1>
+        <p class="lead text-muted mx-auto" style="max-width: 700px;">
+            شفافیت در خدمات و قیمت‌ها، حق شماست. در اینجا می‌توانید جزئیات کامل هر درمان را مطالعه کرده و تعرفه‌های به‌روز را مشاهده کنید.
+        </p>
+    </div>
+    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" 
+         style="background: radial-gradient(circle at top right, var(--bs-primary), transparent 40%);"></div>
 </section>
 
-<div class="row g-4">
-    {% for service in services %}
-    <div class="col-lg-4 col-md-6 service-card-wrapper" style="--delay: {% widthratio forloop.counter0 1 100 %}ms;">
-        <div class="service-card position-relative">
-            {# --- بخش ب: برچسب‌های راهنما (Service Badges) --- #}
-            {% if service.badge != 'NONE' %}
-                <div class="position-absolute top-0 start-0 m-3 z-2">
-                    {% if service.badge == 'BEST_SELLER' %}
-                        <span class="badge bg-warning text-dark shadow-sm p-2"><i class="bi bi-fire me-1"></i> پرفروش‌ترین</span>
-                    {% elif service.badge == 'SPECIAL_OFFER' %}
-                        <span class="badge bg-danger shadow-sm p-2 animate-pulse"><i class="bi bi-gem me-1"></i> پیشنهاد ویژه</span>
-                    {% elif service.badge == 'NEW' %}
-                        <span class="badge bg-info text-dark shadow-sm p-2"><i class="bi bi-stars me-1"></i> جدید</span>
-                    {% elif service.badge == 'ECONOMICAL' %}
-                        <span class="badge bg-success shadow-sm p-2"><i class="bi bi-cash-coin me-1"></i> به‌صرفه</span>
-                    {% elif service.badge == 'LIMITED' %}
-                        <span class="badge bg-secondary shadow-sm p-2"><i class="bi bi-hourglass-split me-1"></i> ظرفیت محدود</span>
-                    {% endif %}
-                </div>
-            {% endif %}
-
-            <h3 class="card-title mt-4">{{ service.name }}</h3>
-            <p class="card-text">{{ service.description }}</p>
-            
-            <div class="service-card-footer d-flex justify-content-between align-items-center">
+<div class="container mb-5" style="min-height: 600px;">
+    <div class="row g-4">
+        
+        <div class="col-lg-3">
+            <div class="d-flex flex-column gap-2 sticky-top" style="top: 100px; z-index: 10;">
+                <h6 class="text-uppercase text-muted small fw-bold ms-2 mb-2">دسته‌بندی خدمات</h6>
                 
-                {# --- بخش الف: قیمت‌گذاری لنگری پویا (Anchor Pricing) --- #}
-                <div class="pricing-container">
-                    {% if service.old_price and service.old_price > service.price %}
-                        <div class="d-flex flex-column align-items-start">
-                            <span class="text-muted text-decoration-line-through small" style="font-size: 0.9rem;">
-                                {{ service.old_price|floatformat:"0" }} تومان
-                            </span>
-                            <span class="service-price text-danger fw-bold">
-                                {{ service.price|floatformat:"0" }} تومان
-                            </span>
-                        </div>
-                    {% else %}
-                        <span class="service-price text-primary fw-bold">
-                            {{ service.price|floatformat:"0" }} تومان
-                        </span>
-                    {% endif %}
+                <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                    {% for group in groups %}
+                    <button class="nav-link text-start py-3 px-4 d-flex justify-content-between align-items-center {% if forloop.first %}active{% endif %}" 
+                            id="v-pills-{{ group.id }}-tab" 
+                            data-bs-toggle="pill" 
+                            data-bs-target="#v-pills-{{ group.id }}" 
+                            type="button" 
+                            role="tab" 
+                            aria-controls="v-pills-{{ group.id }}" 
+                            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                        <span class="fw-medium">{{ group.name }}</span>
+                        <i class="bi bi-chevron-left small opacity-50"></i>
+                    </button>
+                    {% endfor %}
                 </div>
+            </div>
+        </div>
 
-                <a href="{% url 'booking:create_booking' %}" class="btn btn-primary shadow-sm">
-                    رزرو <i class="bi bi-arrow-left-short"></i>
-                </a>
+        <div class="col-lg-9">
+            <div class="tab-content" id="v-pills-tabContent">
+                {% for group in groups %}
+                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+                     id="v-pills-{{ group.id }}" 
+                     role="tabpanel" 
+                     aria-labelledby="v-pills-{{ group.id }}-tab">
+                    
+                    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+                        <div class="row g-0">
+                            <div class="col-md-8 p-4 d-flex flex-column justify-content-center">
+                                <div class="mb-3">
+                                    <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill mb-2">معرفی خدمات</span>
+                                    <h2 class="h3 fw-bold text-dark">{{ group.name }}</h2>
+                                </div>
+                                <p class="text-muted mb-4" style="line-height: 1.8; text-align: justify;">
+                                    {{ group.description|default:"توضیحات تکمیلی درباره این متد درمانی و مزایای آن برای زیبایی و سلامت شما."|linebreaksbr }}
+                                </p>
+                                
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div class="d-flex align-items-center text-secondary small bg-light px-3 py-2 rounded">
+                                        <i class="bi bi-clock-history me-2 text-primary"></i> مشاوره رایگان
+                                    </div>
+                                    <div class="d-flex align-items-center text-secondary small bg-light px-3 py-2 rounded">
+                                        <i class="bi bi-shield-check me-2 text-primary"></i> تضمین کیفیت مواد
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if group.home_page_image %}
+                            <div class="col-md-4 d-none d-md-block">
+                                <img src="{{ group.home_page_image.url }}" 
+                                     class="img-fluid h-100 w-100" 
+                                     style="object-fit: cover;" 
+                                     alt="{{ group.name }}">
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between mb-3 mt-5 border-bottom pb-2">
+                        <h4 class="h5 fw-bold text-dark mb-0">تعرفه‌ها و رزرو نوبت</h4>
+                        <span class="text-muted small">بروزرسانی: امروز</span>
+                    </div>
+                    
+                    <div class="row g-3">
+                        {% for service in group.services.all %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border hover-shadow transition-all service-item-card">
+                                <div class="card-body d-flex flex-column justify-content-between">
+                                    
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h6 class="fw-bold text-dark mb-1">{{ service.name }}</h6>
+                                            <small class="text-muted">{{ service.duration }} دقیقه</small>
+                                        </div>
+                                        {% if service.badge != 'NONE' %}
+                                            <span class="badge rounded-pill 
+                                                {% if service.badge == 'SPECIAL_OFFER' %}bg-danger animate-pulse
+                                                {% elif service.badge == 'BEST_SELLER' %}bg-warning text-dark
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ service.get_badge_display }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="d-flex align-items-end justify-content-between mt-2">
+                                        <div class="price-box">
+                                            {% if service.old_price and service.old_price > service.price %}
+                                                <div class="text-decoration-line-through text-muted small" style="font-size: 0.85rem;">
+                                                    {{ service.old_price|floatformat:"0" }}
+                                                </div>
+                                                <div class="fw-bold text-danger fs-5">
+                                                    {{ service.price|floatformat:"0" }} <span class="fs-6 text-dark fw-normal">تومان</span>
+                                                </div>
+                                            {% else %}
+                                                <div class="fw-bold text-dark fs-5">
+                                                    {{ service.price|floatformat:"0" }} <span class="fs-6 fw-normal">تومان</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        <a href="{% url 'booking:create_booking' %}?service_id={{ service.id }}" 
+                                           class="btn btn-outline-primary btn-sm rounded-pill px-3 stretched-link-custom">
+                                            رزرو وقت <i class="bi bi-arrow-left"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-light text-center border border-dashed">
+                                فعلاً خدمتی در این گروه تعریف نشده است.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
-    {% empty %}
-    <div class="col-12">
-        <p class="text-center">در حال حاضر خدمتی برای نمایش وجود ندارد.</p>
-    </div>
-    {% endfor %}
 </div>
 
 <style>
-    /* انیمیشن ضربان برای پیشنهاد ویژه */
-    @keyframes pulse-badge {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
+    /* استایل‌های اختصاصی برای زیبایی بیشتر */
+    .nav-pills .nav-link {
+        color: #6c757d;
+        background-color: #fff;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease-in-out;
     }
-    .animate-pulse {
-        animation: pulse-badge 2s infinite;
+    .nav-pills .nav-link:hover {
+        background-color: #f8f9fa;
+        color: var(--bs-primary);
+        transform: translateX(-5px);
+    }
+    .nav-pills .nav-link.active {
+        background-color: var(--bs-primary);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
     }
     
-    /* اصلاح استایل کارت برای نمایش بهتر بج‌ها */
-    .service-card {
-        border: 1px solid var(--border-light);
-        border-radius: 12px;
-        padding: 1.5rem;
-        background-color: var(--bg-card);
-        transition: all 0.3s ease;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+    .hover-shadow:hover {
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+        border-color: var(--bs-primary) !important;
     }
-    .service-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+    
+    /* انیمیشن بج پیشنهاد ویژه */
+    @keyframes pulse-red {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .animate-pulse {
+        animation: pulse-red 2s infinite;
     }
 </style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // خواندن هش از آدرس (مثلا #v-pills-5)
+        var hash = window.location.hash;
+        
+        if (hash) {
+            // پیدا کردن دکمه تب مربوطه
+            var triggerEl = document.querySelector('button[data-bs-target="' + hash + '"]');
+            
+            if (triggerEl) {
+                // فعال‌سازی بوت‌استرپ تب
+                var tab = new bootstrap.Tab(triggerEl);
+                tab.show();
+                
+                // اسکرول نرم به محل تب
+                setTimeout(() => {
+                    triggerEl.scrollIntoView({behavior: 'smooth', block: 'center'});
+                }, 100);
+            }
+        }
+        
+        // آپدیت کردن URL وقتی کاربر روی تب کلیک می‌کند (برای اشتراک‌گذاری لینک)
+        var tabLinks = document.querySelectorAll('button[data-bs-toggle="pill"]');
+        tabLinks.forEach(function(tabLink) {
+            tabLink.addEventListener('shown.bs.tab', function (event) {
+                history.pushState(null, null, event.target.getAttribute('data-bs-target'));
+            });
+        });
+    });
+</script>
 {% endblock %}

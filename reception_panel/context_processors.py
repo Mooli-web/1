@@ -1,39 +1,31 @@
 # reception_panel/context_processors.py
 """
-این فایل شامل Context Processors سفارشی است که
-متغیرهایی را به صورت خودکار به "تمام" تمپلیت‌های
-پروژه اضافه می‌کنند.
+Context Processors برای افزودن داده‌های سراسری به تمپلیت‌ها.
 """
 
+from django.http import HttpRequest
 from .models import Notification
 
-def unread_notifications(request):
+def unread_notifications(request: HttpRequest) -> dict:
     """
-    یک پردازشگر زمینه (Context Processor) که تعداد اعلان‌های
-    خوانده نشده و لیست آخرین اعلان‌ها را به کانتکست (context)
-    تمامی صفحات اضافه می‌کند.
-    
-    این تابع در 'settings.base.TEMPLATES' ثبت شده است.
+    افزودن تعداد و لیست اعلان‌های خوانده نشده به کانتکست.
     """
-    # این پردازشگر فقط برای کاربرانی که لاگین کرده‌اند اجرا می‌شود
     if request.user.is_authenticated:
-        
-        # ۱. محاسبه تعداد خوانده نشده‌ها (برای نمایش Badge)
+        # بهینه‌سازی: استفاده از exists() اگر فقط چک کردن وجود مهم است،
+        # اما اینجا تعداد دقیق را می‌خواهیم.
         unread_count = Notification.objects.filter(
             user=request.user, 
             is_read=False
         ).count()
         
-        # ۲. واکشی ۵ اعلان آخر (برای نمایش در Dropdown)
+        # دریافت ۵ اعلان آخر (خوانده شده یا نشده)
         latest_notifications = Notification.objects.filter(
             user=request.user
         ).order_by('-created_at')[:5]
         
-        # این دیکشنری با کانتکست اصلی تمپلیت ادغام می‌شود
         return {
             'unread_notification_count': unread_count,
             'latest_notifications': latest_notifications
         }
     
-    # اگر کاربر لاگین نکرده باشد، دیکشنری خالی برگردان
     return {}

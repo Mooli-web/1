@@ -1,30 +1,27 @@
+# reception_panel/templatetags/reception_tags.py
 from django import template
-import jdatetime
 from django.utils import timezone
+import jdatetime
+from typing import Any
 
 register = template.Library()
 
 @register.filter(name='jalali_format')
-def jalali_format(value, format_string='%Y/%m/%d'):
+def jalali_format(value: Any, format_string: str = '%Y/%m/%d') -> str:
     """
-    تبدیل تاریخ میلادی به شمسی با فرمت‌دهی صریح.
-    استفاده: {{ value|jalali_format:"%Y/%m/%d %H:%M" }}
+    فیلتر تبدیل تاریخ میلادی به شمسی با اعداد فارسی.
     """
     if not value:
         return ''
     
     try:
-        # اطمینان از اینکه زمان محلی (ایران) است
         if timezone.is_aware(value):
             value = timezone.localtime(value)
         
-        # تبدیل به آبجکت شمسی
         j_date = jdatetime.datetime.fromgregorian(datetime=value)
-        
-        # فرمت‌دهی صریح به رشته (Bypass __str__)
-        # تبدیل اعداد به فارسی برای زیبایی بیشتر
         formatted_date = j_date.strftime(format_string)
         
+        # تبدیل اعداد به فارسی
         persian_map = {
             '0': '۰', '1': '۱', '2': '۲', '3': '۳', '4': '۴',
             '5': '۵', '6': '۶', '7': '۷', '8': '۸', '9': '۹'
@@ -34,7 +31,6 @@ def jalali_format(value, format_string='%Y/%m/%d'):
             
         return formatted_date
         
-    except Exception as e:
-        # در صورت بروز هرگونه خطا، مقدار اصلی را برگردان تا صفحه کرش نکند
-        print(f"Jalali Conversion Error: {e}")
+    except Exception:
+        # در صورت خطا (مثلا مقدار ورودی تاریخ نیست)، همان مقدار را برگردان
         return str(value)

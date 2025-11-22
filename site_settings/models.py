@@ -1,64 +1,73 @@
 # site_settings/models.py
 """
-مدل‌های داده (Data Models) برای اپلیکیشن site_settings.
+مدل‌های داده برای تنظیمات سایت با قابلیت کش‌گذاری (Caching).
 """
 
 from django.db import models
+from django.core.cache import cache
+from django.utils.translation import gettext_lazy as _
 
 class SingletonModel(models.Model):
     """
-    مدل پایه‌ای "تک‌نمونه" (Singleton).
-    این مدل انتزاعی (abstract) تضمین می‌کند که هر مدلی که از آن
-    ارث‌بری می‌کند، همیشه "فقط یک" ردیف (instance) با pk=1
-    در دیتابیس داشته باشد.
+    مدل انتزاعی برای پیاده‌سازی الگوی Singleton در دیتابیس.
     """
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
         """
-        بازنویسی (Override) متد save برای اطمینان از اینکه
-        این آبجکت همیشه با پرایمری کی (pk) شماره 1 ذخیره می‌شود.
+        ذخیره با شناسه ثابت 1 و پاک‌سازی کش.
         """
         self.pk = 1
         super(SingletonModel, self).save(*args, **kwargs)
+        self.set_cache() # آپدیت کش بعد از ذخیره
 
     def delete(self, *args, **kwargs):
         """
-        بازنویسی متد delete برای جلوگیری از حذف شدن
-        این آبجکت Singleton.
+        جلوگیری از حذف فیزیکی.
         """
-        pass  # عملیات حذف نادیده گرفته می‌شود
+        pass
 
     @classmethod
     def load(cls):
         """
-        متد کمکی (classmethod) برای بارگذاری یا ایجاد اولین نمونه.
-        این متد روش استاندارد برای دسترسی به تنظیمات در
-        سایر نقاط پروژه است (مثال: SiteSettings.load().price_to_points_rate).
+        بارگذاری تنظیمات.
+        اولویت: 1. کش -> 2. دیتابیس -> 3. ایجاد پیش‌فرض
         """
-        # اگر آبجکت با pk=1 وجود نداشت، آن را ایجاد می‌کند.
+        # 1. تلاش برای خواندن از کش
+        if cache.get(cls.__name__):
+            return cache.get(cls.__name__)
+        
+        # 2. تلاش برای خواندن از دیتابیس یا ایجاد
         obj, created = cls.objects.get_or_create(pk=1)
+        
+        # 3. ذخیره در کش
+        obj.set_cache()
         return obj
+
+    def set_cache(self):
+        """
+        ذخیره آبجکت فعلی در کش سیستم.
+        """
+        # کش را برای مدت طولانی (مثلا 24 ساعت) نگه می‌داریم
+        # چون با هر بار save، کش آپدیت می‌شود، نگرانی بابت قدیمی بودن نداریم.
+        cache.set(self.__class__.__name__, self, 60 * 60 * 24)
 
 class SiteSettings(SingletonModel):
     """
-    مدل اصلی "تنظیمات سایت".
-    این مدل از SingletonModel ارث‌بری می‌کند تا تضمین شود
-    همیشه فقط یک نمونه از آن در دیتابیس وجود دارد (با pk=1).
+    تنظیمات عمومی سایت.
     """
     price_to_points_rate = models.PositiveIntegerField(
         default=1000, 
-        verbose_name="نرخ تبدیل پرداخت به امتیاز", 
-        help_text="به ازای هر X تومان، 1 امتیاز تعلق می‌گیرد (مثال: 1000)"
+        verbose_name=_("نرخ تبدیل پرداخت به امتیاز"), 
+        help_text=_("به ازای هر X تومان، 1 امتیاز تعلق می‌گیرد (مثال: 1000)")
     )
     
-    # می‌توان تنظیمات سراسری دیگری را در آینده به اینجا اضافه کرد
-    # (مثال: هزینه ارسال، درصد مالیات، و ...)
+    # سایر تنظیمات سراسری...
 
     class Meta:
-        verbose_name = "تنظیمات سایت"
-        verbose_name_plural = "تنظیمات سایت"
+        verbose_name = _("تنظیمات سایت")
+        verbose_name_plural = _("تنظیمات سایت")
 
     def __str__(self):
-        return "تنظیمات سایت"
+        return str(_("پیکربندی سایت"))

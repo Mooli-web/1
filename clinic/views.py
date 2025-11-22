@@ -1,25 +1,25 @@
 # clinic/views.py
 """
-این فایل شامل ویوهای عمومی و صفحات اصلی سایت است که
-محتوای "ایستا" (Static Pages) یا نمایش عمومی اطلاعات
-کلینیک را بر عهده دارند.
+ویوهای صفحات عمومی (استاتیک و داینامیک) سایت.
+بهینه‌سازی کوئری‌ها برای افزایش سرعت لود صفحات.
 """
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
+from django.http import HttpRequest, HttpResponse
 from .models import Service, PortfolioItem, FAQ, Testimonial, ServiceGroup
 
-def home_view(request):
+def home_view(request: HttpRequest) -> HttpResponse:
     """
-    ویو صفحه اصلی (Home Page).
-    - گروه‌های خدماتی (برای نمایش در صفحه)
-    - نظرات مشتریان (Testimonials)
-    را واکشی کرده و به تمپلیت ارسال می‌کند.
+    نمایش صفحه اصلی.
     """
-    # واکشی ۶ گروه خدماتی اول (برای نمایش در بلوک‌های صفحه اصلی)
+    # واکشی گروه‌های خدماتی (معمولا نیازی به جوین سنگین ندارند مگر اینکه عکس یا دستگاه بخواهیم)
     service_groups = ServiceGroup.objects.all()[:6]
     
-    # واکشی ۳ نظر آخر مشتریان (بهینه‌سازی شده با select_related)
-    testimonials = Testimonial.objects.select_related('service').all()[:3]
+    # نظرات مشتریان: حتماً به سرویس نیاز داریم، پس select_related می‌زنیم
+    testimonials = Testimonial.objects.select_related('service').filter(
+        # می‌توان شرط نمایش نظرات با امتیاز بالا را اضافه کرد
+        rating__gte=4 
+    ).order_by('-created_at')[:3]
     
     context = {
         'service_groups': service_groups, 
@@ -27,30 +27,26 @@ def home_view(request):
     }
     return render(request, 'clinic/home.html', context)
 
-def service_list_view(request):
+def service_list_view(request: HttpRequest) -> HttpResponse:
     """
-    ویو صفحه "لیست خدمات".
-    (توجه: بر اساس تمپلیت clinic/service_list.html، این ویو
-    در حال حاضر تمام "خدمات" (Services) را لیست می‌کند، نه "گروه‌های خدماتی")
+    نمایش تمام خدمات.
+    چون در تمپلیت احتمالا نام گروه هر خدمت (service.group.name) نمایش داده می‌شود،
+    از select_related('group') استفاده می‌کنیم تا از N+1 Query جلوگیری شود.
     """
-    services = Service.objects.all()
+    services = Service.objects.select_related('group').all()
     return render(request, 'clinic/service_list.html', {'services': services})
 
-def portfolio_gallery_view(request):
+def portfolio_gallery_view(request: HttpRequest) -> HttpResponse:
     """
-    ویو صفحه "گالری نمونه کارها" (Portfolio).
+    گالری نمونه کارها.
+    مشابه خدمات، برای نمایش نام سرویس مربوطه، بهینه می‌شود.
     """
-    portfolio_items = PortfolioItem.objects.all()
+    portfolio_items = PortfolioItem.objects.select_related('service').order_by('-created_at')
     return render(request, 'clinic/portfolio_gallery.html', {'portfolio_items': portfolio_items})
 
-def faq_view(request):
+def faq_view(request: HttpRequest) -> HttpResponse:
     """
-    ویو صفحه "سوالات متداول" (FAQ).
-    فقط سوالات "فعال" (is_active=True) نمایش داده می‌شوند.
+    سوالات متداول.
     """
     faqs = FAQ.objects.filter(is_active=True)
     return render(request, 'clinic/faq.html', {'faqs': faqs})
-
-# --- ویوهای مربوط به specialist_list و specialist_detail ---
-# --- به دلیل حذف مفهوم "متخصص" (Specialist) از پروژه، ---
-# --- این ویوها به طور کامل حذف شدند. ---

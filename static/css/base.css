@@ -1,0 +1,22 @@
+/* static/css/base.css */
+body {
+    background-color: var(--bg-main);
+    font-family: var(--primary-font);
+    font-weight: 400;
+    color: var(--text-dark);
+    line-height: 1.7;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--heading-font);
+    color: var(--text-dark);
+    font-weight: 700;
+}
+
+main.container {
+    flex: 1 0 auto;
+}

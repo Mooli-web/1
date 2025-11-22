@@ -3,11 +3,12 @@
 import os
 import sys
 
-
 def main():
     """Run administrative tasks."""
-    # CHANGED: Point to the 'local' settings by default for development.
+    # به صورت پیش‌فرض از تنظیمات local استفاده می‌کند (برای راحتی در توسعه)
+    # در سرور، متغیر محیطی DJANGO_SETTINGS_MODULE مقداردهی می‌شود و این خط نادیده گرفته می‌شود.
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clinic_project.settings.local')
+    
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -17,7 +18,6 @@ def main():
             "forget to activate a virtual environment?"
         ) from exc
     execute_from_command_line(sys.argv)
-
 
 if __name__ == '__main__':
     main()

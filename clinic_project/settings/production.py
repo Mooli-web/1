@@ -1,37 +1,42 @@
 # clinic_project/settings/production.py
 """
-تنظیمات مخصوص محیط "محصول نهایی" (Production).
-این فایل base.py را import کرده و تنظیمات آن را برای
-محیط سرور اصلی بازنویسی (Override) می‌کند.
+تنظیمات محیط "عملیاتی" (Production).
+این تنظیمات برای امنیت و کارایی روی سرور واقعی بهینه شده‌اند.
 """
 
-from .base import * # وارد کردن تمام تنظیمات پایه
+import os
+from .base import *
 
-# --- تنظیمات مخصوص محصول نهایی ---
-
-# DEBUG در پروداکشن همیشه خاموش است
+# --- Critical Settings ---
 DEBUG = False
 
-# کلید امنیتی باید "حتما" از متغیرهای محیطی خوانده شود
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+# کلید امنیتی باید حتماً ست شده باشد
+if not SECRET_KEY or SECRET_KEY == 'django-insecure-dev-key-change-me-in-prod':
+    raise ValueError("SECRET_KEY must be set in environment variables for production!")
 
-# هاست‌های مجاز "حتما" از متغیرهای محیطی خوانده می‌شوند
-ALLOWED_HOSTS = ALLOWED_HOSTS_STRING.split(',') if ALLOWED_HOSTS_STRING else []
+if not ALLOWED_HOSTS:
+    raise ValueError("ALLOWED_HOSTS must be set in environment variables for production!")
 
-# دیتابیس در پروداکشن باید "حتما" از DATABASE_URL (متغیر محیطی) تنظیم شود
+# دیتابیس باید حتماً ست شده باشد
 if not DATABASE_URL:
-    raise EnvironmentError("DATABASE_URL environment variable is not set.")
+    raise ValueError("DATABASE_URL must be set in environment variables for production!")
 
-# --- تنظیمات امنیتی پروداکشن ---
-# (این تنظیمات در حال حاضر کامنت هستند، اما برای استقرار نهایی
-# بر روی HTTPS باید فعال شوند)
 
-# SECURE_SSL_REDIRECT = True  # هدایت تمام ترافیک HTTP به HTTPS
-# SESSION_COOKIE_SECURE = True  # کوکی‌ها فقط روی HTTPS ارسال شوند
-# CSRF_COOKIE_SECURE = True  # کوکی CSRF فقط روی HTTPS ارسال شود
-# SECURE_HSTS_SECONDS = 31536000  # (1 سال) به مرورگر می‌گوید که همیشه با HTTPS به سایت بیاید
+# --- Security Enhancements (HTTPS) ---
+# هشدار: این تنظیمات را فقط زمانی فعال کنید که SSL/HTTPS روی سرور فعال باشد.
+# در غیر این صورت ممکن است دسترسی به سایت قطع شود.
+
+# SECURE_SSL_REDIRECT = True         # هدایت تمام درخواست‌ها به HTTPS
+# SESSION_COOKIE_SECURE = True       # کوکی نشست فقط در HTTPS
+# CSRF_COOKIE_SECURE = True          # کوکی CSRF فقط در HTTPS
+# SECURE_HSTS_SECONDS = 31536000     # اجبار مرورگر به استفاده از HTTPS (یک سال)
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SECURE_HSTS_PRELOAD = True
 
-# (تنظیمات مربوط به فایل‌های استاتیک در Production مانند Whitenoise
-# یا S3 نیز باید در این فایل اضافه شوند)
+
+# --- Static Files in Production ---
+# برای سرو کردن فایل‌های استاتیک در پروداکشن، معمولاً از WhiteNoise یا Nginx استفاده می‌شود.
+# اگر از WhiteNoise استفاده می‌کنید:
+# INSTALLED_APPS.append('whitenoise.runserver_nostatic')
+# MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

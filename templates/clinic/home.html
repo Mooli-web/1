@@ -1,48 +1,134 @@
 {# mooli-web/templates/clinic/home.html #}
-{# --- FIX v3: Marketing Shift to Cashback (Security) --- #}
+{# --- FIX v4: Implementation of Idea 1 (Minimalist Split Hero) --- #}
 {% extends "base.html" %}
 {% load static %}
+{% block extra_css %}
+<style>
+    .hero-split-image {
+        /* جنگو اینجا را درست رندر می‌کند و ویرایشگر هم کمتر ایراد می‌گیرد */
+        background-image: url("{% static 'images/clinic-hero-background.jpg' %}");
+    }
+</style>
+{% endblock %}
 
 {% block title %}صفحه اصلی{% endblock %}
 
-{% block navbar_extra_class %}navbar-transparent-on-top{% endblock %}
+{# نکته: حذف کلاس navbar-transparent برای خوانایی بهتر روی طرح مینیمال جدید #}
+{% block navbar_extra_class %}{% endblock %}
 {% block main_container_class %}container-fluid p-0{% endblock %}
 
 {% block content %}
-{# --- 1. New Immersive Hero Section --- #}
-<section class="hero-section">
-    <div class="hero-overlay"></div>
-    <div class="hero-text-content">
-        <h1 class="display-3 fw-bold mb-3">درخشش پوست شما از اینجا آغاز می‌شود</h1>
-        
-        {# --- تغییر استراتژی به Cashback --- #}
-        <p class="lead fs-3 mb-5">
-            با اولین رزرو و مراجعه به کلینیک،
-            <span class="fw-bold text-warning" style="text-shadow: 1px 1px 5px rgba(0,0,0,0.8);">۵۰ هزار تومان اعتبار هدیه</span> 
-            برای مراجعات بعدی دریافت کنید.
-        </p>
-        
-        <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg px-5 py-3 fs-5 shadow-lg">
-            <i class="bi bi-gift-fill me-2"></i> رزرو نوبت و دریافت اعتبار
-        </a>
+{# --- 1. New Minimalist Split Hero Section --- #}
+<section class="hero-split-wrapper">
+    <div class="row g-0 min-vh-100 flex-row-reverse">
+        {# بخش تصویر (سمت چپ در دسکتاپ) #}
+        <div class="col-lg-6 position-relative">
+            <div class="hero-split-image" 
+                style="background-image: url('{% static 'images/clinic-hero-background.jpg' %}');
+                        background-size: cover;
+                        background-repeat: no-repeat;
+                        background-position: center center;
+                        width: 100%;
+                        height: 100%;
+                        min-height: 500px;
+                        position: absolute;
+                        top: 0;
+                        left: 0;">
+            </div>
+            {# یک تگ تزیینی برای اتصال بصری #}
+            <div class="hero-decoration d-none d-lg-block"></div>
+        </div>
+
+        {# بخش متن (سمت راست در دسکتاپ) #}
+        <div class="col-lg-6 d-flex align-items-center bg-white">
+            <div class="hero-content-box px-4 px-md-5 py-5 mx-auto" style="max-width: 650px;">
+                <span class="badge bg-light text-dark mb-3 px-3 py-2 rounded-pill fw-light border">
+                    ✨ زیبایی شما، تخصص ماست
+                </span>
+                <h1 class="display-3 fw-bold mb-4 text-dark lh-base">
+                    تجربه درخشش و جوانی؛ <br>
+                    <span class="text-accent">حرفه‌ای‌تر از همیشه</span>
+                </h1>
+                
+                <p class="lead fs-4 mb-5 text-muted fw-normal">
+                    ما با ترکیب تکنولوژی روز و تخصص پزشکی، بهترین نسخه از زیبایی طبیعی شما را نمایان می‌کنیم. 
+                    <br>
+                    <span class="fs-6 text-success mt-2 d-block">
+                        <i class="bi bi-check-circle-fill me-1"></i> 
+                        شامل ۵۰ هزار تومان اعتبار هدیه در اولین مراجعه
+                    </span>
+                </p>
+                
+                <div class="d-flex flex-column flex-sm-row gap-3">
+                    <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg px-5 py-3 fs-5 shadow-custom">
+                        رزرو آنلاین نوبت
+                    </a>
+                    <a href="{% url 'clinic:service_list' %}" class="btn btn-outline-dark btn-lg px-5 py-3 fs-5">
+                        مشاهده خدمات
+                    </a>
+                </div>
+
+                {# بخش اعتماد سازی کوچک (Social Proof) #}
+                <div class="mt-5 pt-4 border-top">
+                    <p class="text-muted small mb-2">مورد اعتماد بیش از ۲۰۰۰ زیباجو</p>
+                    <div class="d-flex align-items-center opacity-50">
+                        <i class="bi bi-star-fill text-warning me-1"></i>
+                        <i class="bi bi-star-fill text-warning me-1"></i>
+                        <i class="bi bi-star-fill text-warning me-1"></i>
+                        <i class="bi bi-star-fill text-warning me-1"></i>
+                        <i class="bi bi-star-fill text-warning me-1"></i>
+                        <span class="ms-2 small fw-bold text-dark">۴.۹/۵ رضایت مشتریان</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
-{# --- (بقیه کد بدون تغییر باقی می‌ماند) --- #}
+{# mooli-web/templates/clinic/home.html #}
+
 {% for group in service_groups %}
-<section class="feature-block {% if not group.home_page_image %}{% if forloop.counter|divisibleby:2 %}bg-light-gray{% else %}bg-white{% endif %}{% endif %}">
-    <div class="home-image-wrapper-overlay">
-        {% if group.home_page_image %}
-            <img src="{{ group.home_page_image.url }}" alt="{{ group.name }}" class="feature-block-bg-img">
-            <div class="feature-block-overlay"></div>
-        {% endif %}
-        <div class="container-fluid px-md-5 feature-block-content text-center">
-            <h2 class="display-4 mb-3">{{ group.name }}</h2>
-            <p class="lead mb-4">{{ group.description|truncatewords:30 }}</p>
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a href="{% url 'clinic:service_list' %}" class="btn btn-primary btn-lg px-4 gap-3">اطلاعات بیشتر</a>
-                <a href="{% url 'booking:create_booking' %}" class="btn btn-outline-light btn-lg px-4">رزرو نوبت</a>
+<section class="feature-block bg-white overflow-hidden">
+    <div class="container py-4">
+        {# کلاس flex-lg-row-reverse باعث می‌شود جای تصویر و متن یکی در میان عوض شود #}
+        <div class="row align-items-center g-5 {% if forloop.counter|divisibleby:2 %}flex-lg-row-reverse{% endif %}">
+            
+            {# --- ستون تصویر --- #}
+            <div class="col-lg-6">
+                <div class="position-relative">
+                    {% if group.home_page_image %}
+                        <img src="{{ group.home_page_image.url }}" alt="{{ group.name }}" class="img-fluid rounded-4 shadow-lg service-card-img">
+                    {% else %}
+                        <div class="bg-light rounded-4 d-flex align-items-center justify-content-center service-placeholder">
+                            <span class="text-muted">تصویر بارگذاری نشده</span>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
+
+            {# --- ستون متن --- #}
+            <div class="col-lg-6">
+                <div class="p-lg-4">
+                    <h2 class="display-5 fw-bold mb-3 text-dark">{{ group.name }}</h2>
+                    
+                    {# یک خط تزیینی طلایی زیر تیتر #}
+                    <div class="separator-line mb-4"></div>
+                    
+                    <p class="lead text-muted mb-5 lh-lg">
+                        {{ group.description|truncatewords:35 }}
+                    </p>
+                    
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
+                            رزرو نوبت
+                        </a>
+                        <a href="{% url 'clinic:service_list' %}" class="btn btn-outline-dark btn-lg rounded-pill px-5">
+                            اطلاعات بیشتر
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </section>
@@ -67,5 +153,6 @@
              <p class="text-center text-muted">هنوز نظری ثبت نشده است.</p>
             {% endfor %}
        </div>
-   </div></section>
+   </div>
+</section>
 {% endblock %}

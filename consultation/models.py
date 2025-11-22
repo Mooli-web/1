@@ -1,75 +1,72 @@
 # consultation/models.py
 """
-مدل‌های داده (Data Models) برای اپلیکیشن consultation.
+مدل‌های داده برای اپلیکیشن مشاوره.
 """
 
 from django.db import models
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 class ConsultationRequest(models.Model):
     """
-    مدل "درخواست مشاوره".
-    نقطه شروع یک مکالمه (چت) مشاوره است.
+    مدل درخواست مشاوره (شروع چت).
     """
-    STATUS_CHOICES = [
-        ('PENDING', 'در انتظار پاسخ'),  # تازه ایجاد شده
-        ('ANSWERED', 'پاسخ داده شده'), # حداقل یک پاسخ از کارمند دریافت کرده
-        ('CLOSED', 'بسته شده'),       # بسته شده توسط کارمند
-    ]
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', _('در انتظار پاسخ')
+        ANSWERED = 'ANSWERED', _('پاسخ داده شده')
+        CLOSED = 'CLOSED', _('بسته شده')
     
     patient = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='consultation_requests',
-        verbose_name="بیمار"
+        verbose_name=_("بیمار")
     )
     
-    subject = models.CharField(max_length=200, verbose_name="موضوع مشاوره")
-    description = models.TextField(verbose_name="شرح درخواست (پیام اول)")
+    subject = models.CharField(max_length=200, verbose_name=_("موضوع مشاوره"))
+    description = models.TextField(verbose_name=_("شرح درخواست (پیام اول)"))
+    
     status = models.CharField(
         max_length=20, 
-        choices=STATUS_CHOICES, 
-        default='PENDING', 
-        verbose_name="وضعیت"
+        choices=Status.choices, 
+        default=Status.PENDING, 
+        verbose_name=_("وضعیت"),
+        db_index=True
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
-    
-    # فیلد 'specialist' از این مدل حذف شده است.
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("تاریخ ایجاد"), db_index=True)
     
     class Meta:
-        verbose_name = "درخواست مشاوره"
-        verbose_name_plural = "درخواست‌های مشاوره"
+        verbose_name = _("درخواست مشاوره")
+        verbose_name_plural = _("درخواست‌های مشاوره")
         ordering = ['-created_at']
 
     def __str__(self): 
-        return f"درخواست از {self.patient.username} - {self.subject}"
+        return f"{self.subject} ({self.patient.username})"
 
 class ConsultationMessage(models.Model):
     """
-    مدل "پیام مشاوره".
-    هر پیام در یک چت، یک نمونه از این مدل است.
+    مدل پیام‌های رد و بدل شده در یک مشاوره.
     """
     request = models.ForeignKey(
         ConsultationRequest, 
         on_delete=models.CASCADE, 
         related_name='messages',
-        verbose_name="درخواست مرتبط"
+        verbose_name=_("درخواست مرتبط")
     )
     
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE,
-        verbose_name="کاربر (ارسال کننده)",
-        help_text="کاربری که این پیام را ارسال کرده (می‌تواند بیمار یا کارمند باشد)"
+        verbose_name=_("کاربر (ارسال کننده)")
     )
     
-    message = models.TextField(verbose_name="متن پیام")
-    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="زمان ارسال")
+    message = models.TextField(verbose_name=_("متن پیام"))
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name=_("زمان ارسال"), db_index=True)
     
     class Meta:
-        verbose_name = "پیام مشاوره"
-        verbose_name_plural = "پیام‌های مشاوره"
-        ordering = ['timestamp']  # پیام‌ها به ترتیب زمانی نمایش داده می‌شوند
+        verbose_name = _("پیام مشاوره")
+        verbose_name_plural = _("پیام‌های مشاوره")
+        ordering = ['timestamp']
 
     def __str__(self): 
-        return f"پیام از {self.user.username}"
+        return f"{self.user.username}: {self.message[:30]}..."

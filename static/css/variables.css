@@ -1,0 +1,12 @@
+/* static/css/variables.css */
+:root {
+    --bg-main: #f8f9fa;
+    --bg-card: #FFFFFF;
+    --text-dark: #343a40;
+    --text-light: #6c757d;
+    --accent: #d4af37; /* Gold */
+    --accent-darker: #c8a02b;
+    --border-light: #dee2e6;
+    --primary-font: 'Vazirmatn', sans-serif;
+    --heading-font: 'Playfair Display', serif;
+}
