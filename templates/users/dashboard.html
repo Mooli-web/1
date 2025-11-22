@@ -1,150 +1,110 @@
-{# a_copy/templates/users/dashboard.html #}
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_tags %} {# لود کردن ابزار تبدیل تاریخ #}
 
-{% block title %}داشبورد کاربری{% endblock %}
+{% block title %}داشبورد کاربری | کلینیک زیبایی{% endblock %}
 
 {% block content %}
-<div class="row align-items-center mb-4">
-    <div class="col-md-8">
-        <h1 class="display-5">سلام، {{ user.first_name|default:user.username }}!</h1>
-        <p class="lead text-muted">به پنل کاربری خود خوش آمدید.</p>
-    </div>
-    <div class="col-md-4 text-md-end">
-        <div class="card text-center bg-light">
-            <div class="card-body">
-                <h5 class="card-title text-muted mb-2">امتیاز شما</h5>
-                <p class="card-text display-4 text-primary">{{ user_points }}</p>
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        {% if user.profile_image %}
+                            <img src="{{ user.profile_image.url }}" class="rounded-circle img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;" alt="{{ user.get_full_name }}">
+                        {% else %}
+                            <img src="{% static 'img/default-avatar.png' %}" class="rounded-circle img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;" alt="کاربر">
+                        {% endif %}
+                    </div>
+                    <h5 class="card-title fw-bold">{{ user.get_full_name|default:user.username }}</h5>
+                    <p class="text-muted small">{{ user.phone_number }}</p>
+                    <hr>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'users:profile_update' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil-square"></i> ویرایش پروفایل
+                        </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'reception_panel:dashboard' %}" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-shield-lock"></i> پنل پذیرش
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <div class="col-md-8">
+            <h3 class="mb-4 fw-bold text-primary border-bottom pb-2">نوبت‌های من</h3>
+            
+            {% if appointments %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle shadow-sm bg-white rounded-3 overflow-hidden">
+                        <thead class="table-light">
+                            <tr>
+                                <th>خدمت</th>
+                                <th>تاریخ و ساعت</th>
+                                <th>مدت</th>
+                                <th>وضعیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in appointments %}
+                            <tr>
+                                <td class="fw-bold text-dark">
+                                    {{ appointment.get_services_display }}
+                                    {% if appointment.selected_device %}
+                                        <small class="d-block text-muted" style="font-size: 0.8rem;">
+                                            ({{ appointment.selected_device.name }})
+                                        </small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {# --- تبدیل تاریخ میلادی به شمسی --- #}
+                                    <div class="fw-bold text-primary">
+                                        {{ appointment.start_time|to_jalali:'%Y/%m/%d' }}
+                                    </div>
+                                    <small class="text-muted">
+                                        ساعت {{ appointment.start_time|to_jalali:'%H:%M' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {{ appointment.get_total_duration }} دقیقه
+                                </td>
+                                <td>
+                                    {% if appointment.status == 'PENDING' %}
+                                        <span class="badge bg-warning text-dark">در انتظار پرداخت</span>
+                                    {% elif appointment.status == 'CONFIRMED' %}
+                                        <span class="badge bg-success">تایید شده</span>
+                                    {% elif appointment.status == 'DONE' %}
+                                        <span class="badge bg-info">انجام شده</span>
+                                    {% elif appointment.status == 'CANCELED' %}
+                                        <span class="badge bg-secondary">لغو شده</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">{{ appointment.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if appointment.status == 'PENDING' %}
+                                        <a href="#" class="btn btn-sm btn-success w-100 mb-1">پرداخت</a>
+                                    {% endif %}
+                                    <a href="#" class="btn btn-sm btn-outline-secondary w-100">جزئیات</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info rounded-3 text-center py-4">
+                    <i class="bi bi-calendar-x display-4 d-block mb-3"></i>
+                    <h5>هنوز نوبتی رزرو نکرده‌اید!</h5>
+                    <p>همین حالا اولین نوبت خود را رزرو کنید و از خدمات ما لذت ببرید.</p>
+                    <a href="{% url 'booking:create_booking' %}" class="btn btn-primary mt-2">رزرو نوبت جدید</a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
-
-<a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg my-3 px-5">رزرو نوبت جدید</a>
-
-<hr class="my-5">
-
-<h2>نوبت‌های در انتظار امتیازدهی</h2>
-{% if unrated_appointments %}
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">خدمات</th>
-                    <th scope="col">دستگاه</th>
-                    <th scope="col">تاریخ و ساعت</th>
-                    <th scope="col">وضعیت</th>
-                    <th scope="col">اقدام</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for app in unrated_appointments %}
-                    <tr>
-                        <td>{{ app.get_services_display }}</td>
-                        <td>{{ app.selected_device.name|default:"-" }}</td>
-                        <td>{{ app.start_time|date:"Y/m/d - H:i" }}</td>
-                        <td>
-                            <span class="badge bg-info text-dark">{{ app.get_status_display }}</span>
-                        </td>
-                        <td>
-                            <a href="{% url 'booking:rate_appointment' app.id %}" class="btn btn-sm btn-warning">
-                                <i class="bi bi-star-fill"></i> ثبت نظر
-                            </a>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-{% else %}
-    <div class="alert alert-info mt-3" role="alert">
-        شما نوبت "انجام شده" ای در انتظار ثبت نظر ندارید.
-    </div>
-{% endif %}
-
-<hr class="my-5">
-
-<h2>تاریخچه سایر نوبت‌ها</h2>
-{% if other_appointments %}
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">خدمات</th>
-                    <th scope="col">دستگاه</th>
-                    <th scope="col">تاریخ و ساعت</th>
-                    <th scope="col">وضعیت</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for app in other_appointments %}
-                    <tr>
-                        <td>{{ app.get_services_display }}</td>
-                        <td>{{ app.selected_device.name|default:"-" }}</td>
-                        <td>{{ app.start_time|date:"Y/m/d - H:i" }}</td>
-                        <td>
-                            {% if app.status == 'CONFIRMED' %}
-                                <span class="badge bg-success">{{ app.get_status_display }}</span>
-                            {% elif app.status == 'PENDING' %}
-                                <span class="badge bg-warning text-dark">{{ app.get_status_display }}</span>
-                            {% elif app.status == 'CANCELED' %}
-                                <span class="badge bg-danger">{{ app.get_status_display }}</span>
-                            {% elif app.status == 'DONE' %}
-                                 <span class="badge bg-info text-dark">{{ app.get_status_display }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ app.get_status_display }}</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-{% else %}
-    <div class="alert alert-info mt-3" role="alert">
-        شما تاکنون هیچ نوبت دیگری رزرو نکرده‌اید.
-    </div>
-{% endif %}
-
-<hr class="my-5">
-
-<h2>تاریخچه تراکنش‌ها</h2>
-{% if transactions %}
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th scope="col">خدمت مرتبط</th>
-                    <th scope="col">مبلغ (تومان)</th>
-                    <th scope="col">وضعیت پرداخت</th>
-                    <th scope="col">تاریخ</th>
-                    <th scope="col">کد رهگیری</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for trans in transactions %}
-                    <tr>
-                        <td>{{ trans.appointment.get_services_display }}</td>
-                        <td>{{ trans.amount|floatformat:"0" }} تومان</td>
-                        <td>
-                            {% if trans.status == 'SUCCESS' %}
-                                <span class="badge bg-success">{{ trans.get_status_display }}</span>
-                            {% elif trans.status == 'PENDING' %}
-                                <span class="badge bg-warning text-dark">{{ trans.get_status_display }}</span>
-                            {% else %}
-                                <span class="badge bg-danger">{{ trans.get_status_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ trans.created_at|date:"Y/m/d - H:i" }}</td>
-                        <td>{{ trans.authority|default:"---" }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-{% else %}
-    <div class="alert alert-info mt-3" role="alert">
-        شما تاکنون هیچ تراکنشی ثبت نکرده‌اید.
-    </div>
-{% endif %}
-
 {% endblock %}

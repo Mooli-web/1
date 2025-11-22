@@ -94,3 +94,4 @@ class AppointmentAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
     def get_services_display(self, obj):
         return obj.get_services_display()
     get_services_display.short_description = "خدمات"
+    

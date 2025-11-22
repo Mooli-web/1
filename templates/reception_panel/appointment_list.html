@@ -1,81 +1,69 @@
-{# mooli-web/templates/reception_panel/appointment_list.html #}
-{# --- FIX v2: Using custom 'jalali_format' tag --- #}
-{% extends "reception_panel/reception_base.html" %}
-{% load reception_tags %}
+{% extends 'reception_panel/reception_base.html' %}
+{% load jalali_tags %} {# لود کردن تگ‌ها #}
 
-{% block title %}لیست نوبت‌ها{% endblock %}
+{% block panel_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h4 mb-0 text-gray-800">لیست نوبت‌ها</h2>
+    <a href="{% url 'reception_panel:booking_select_patient' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> ثبت نوبت جدید
+    </a>
+</div>
 
-{% block page_title %}لیست تمام نوبت‌ها{% endblock %}
-
-{% block content %}
-<div class="card shadow-sm">
-    <div class="card-header">
-        <h5 class="mb-0">لیست نوبت‌ها</h5>
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">نوبت‌های امروز و آینده</h6>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
                     <tr>
-                        <th scope="col">بیمار</th>
-                        <th scope="col">شماره تلفن</th>
-                        <th scope="col">خدمات</th>
-                        <th scope="col">دستگاه</th>
-                        <th scope="col">زمان شروع</th>
-                        <th scope="col">وضعیت</th>
-                        <th scope="col">عملیات</th>
+                        <th>بیمار</th>
+                        <th>خدمات</th>
+                        <th>تاریخ</th>
+                        <th>ساعت</th>
+                        <th>وضعیت</th>
+                        <th>عملیات</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for app in appointments %}
+                    {% for appointment in appointments %}
                     <tr>
                         <td>
-                            <a href="{% url 'reception_panel:patient_detail' app.patient.pk %}">
-                                {{ app.patient.get_full_name|default:app.patient.username }}
+                            <a href="{% url 'reception_panel:patient_detail' appointment.patient.pk %}" class="text-decoration-none fw-bold">
+                                {{ appointment.patient.get_full_name|default:appointment.patient.username }}
                             </a>
                         </td>
-                        <td>{{ app.patient.phone_number }}</td>
-                        <td>{{ app.get_services_display }}</td>
-                        <td>{{ app.selected_device.name|default:"-" }}</td>
-                        {# --- اصلاح شد --- #}
-                        <td>{{ app.start_time|jalali_format:"%Y/%m/%d - %H:%M" }}</td>
-                        <td>
-                            {% if app.status == 'CONFIRMED' %}
-                                <span class="badge bg-success">{{ app.get_status_display }}</span>
-                            {% elif app.status == 'PENDING' %}
-                                <span class="badge bg-warning text-dark">{{ app.get_status_display }}</span>
-                            {% elif app.status == 'CANCELED' %}
-                                <span class="badge bg-danger">{{ app.get_status_display }}</span>
-                            {% elif app.status == 'DONE' %}
-                                 <span class="badge bg-info text-dark">{{ app.get_status_display }}</span>
+                        <td>{{ appointment.get_services_display|truncatechars:30 }}</td>
+                        
+                        {# --- نمایش شمسی --- #}
+                        <td class="text-center" dir="ltr">
+                            {{ appointment.start_time|to_jalali:'%Y/%m/%d' }}
+                        </td>
+                        <td class="text-center font-weight-bold">
+                            {{ appointment.start_time|to_jalali:'%H:%M' }}
+                        </td>
+                        
+                        <td class="text-center">
+                            {% if appointment.status == 'CONFIRMED' %}
+                                <span class="badge bg-success">تایید شده</span>
+                            {% elif appointment.status == 'PENDING' %}
+                                <span class="badge bg-warning text-dark">منتظر پرداخت</span>
+                            {% elif appointment.status == 'DONE' %}
+                                <span class="badge bg-info">انجام شده</span>
                             {% else %}
-                                <span class="badge bg-secondary">{{ app.get_status_display }}</span>
+                                <span class="badge bg-secondary">{{ appointment.get_status_display }}</span>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if app.status == 'PENDING' or app.status == 'CONFIRMED' %}
-                            <form action="{% url 'reception_panel:appointment_cancel' app.pk %}" method="post" class="d-inline" onsubmit="return confirm('آیا از لغو این نوبت مطمئن هستید؟');">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-danger btn-sm" title="لغو نوبت">
-                                    <i class="bi bi-x-circle-fill"></i>
-                                </button>
-                            </form>
-                            {% endif %}
-                            {% if app.status == 'CONFIRMED' %}
-                            <form action="{% url 'reception_panel:appointment_mark_done' app.pk %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-outline-success btn-sm" title="علامت‌گذاری به عنوان انجام شده">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </button>
-                            </form>
-                            {% endif %}
+                        <td class="text-center">
+                            <a href="#" class="btn btn-sm btn-info" title="مشاهده">
+                                <i class="fas fa-eye"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center">
-                            هنوز هیچ نوبتی در سیستم ثبت نشده است.
-                        </td>
+                        <td colspan="6" class="text-center text-muted py-4">نوبتی یافت نشد.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

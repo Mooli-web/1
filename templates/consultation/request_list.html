@@ -1,20 +1,41 @@
-{% extends "base.html" %}
-{% block title %}لیست مشاوره‌ها{% endblock %}
+{% extends 'base.html' %}
+{% load jalali_tags %}
+
+{% block title %}مشاوره‌های من{% endblock %}
+
 {% block content %}
-<h1 class="mb-4">مشاوره‌های من</h1>
-<a href="{% url 'consultation:create_request' %}" class="btn btn-primary mb-4">ایجاد درخواست مشاوره جدید</a>
-<div class="list-group">
-    {% for req in requests %}
-    <a href="{% url 'consultation:request_detail' req.pk %}" class="list-group-item list-group-item-action">
-        <div class="d-flex w-100 justify-content-between">
-            <h5 class="mb-1">{{ req.subject }}</h5>
-            <small>{{ req.created_at|date:"Y/m/d" }}</small>
+<div class="container mt-5">
+    <h2 class="mb-4 fw-bold border-start border-4 border-primary ps-3">تاریخچه درخواست‌های مشاوره</h2>
+
+    {% if requests %}
+        <div class="list-group">
+            {% for req in requests %}
+            <a href="{% url 'consultation:request_detail' req.pk %}" class="list-group-item list-group-item-action flex-column align-items-start shadow-sm mb-3 rounded border-0">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-2">
+                    <h5 class="mb-1 fw-bold text-dark">{{ req.subject }}</h5>
+                    <small class="text-muted">
+                        {# تاریخ ثبت درخواست به شمسی #}
+                        {{ req.created_at|to_jalali:'%Y/%m/%d - %H:%M' }}
+                    </small>
+                </div>
+                <p class="mb-1 text-muted">{{ req.description|truncatewords:20 }}</p>
+                <div class="mt-2">
+                    {% if req.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">در انتظار پاسخ</span>
+                    {% elif req.status == 'answered' %}
+                        <span class="badge bg-success">پاسخ داده شده</span>
+                    {% else %}
+                        <span class="badge bg-secondary">بسته شده</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
         </div>
-        <p class="mb-1 text-muted">{{ req.description|truncatewords:15 }}</p>
-        <small>وضعیت: {{ req.get_status_display }}</small>
-    </a>
-    {% empty %}
-    <p>شما هنوز هیچ درخواست مشاوره‌ای ثبت نکرده‌اید.</p>
-    {% endfor %}
+    {% else %}
+        <div class="alert alert-light text-center border" role="alert">
+            <p class="mb-0">شما تاکنون درخواست مشاوره‌ای ثبت نکرده‌اید.</p>
+            <a href="{% url 'consultation:create_request' %}" class="btn btn-primary mt-3">ثبت درخواست جدید</a>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}
