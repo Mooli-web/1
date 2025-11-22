@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',  # Required for SiteSettings
+    'django.contrib.sites',
+      'django.contrib.humanize',  # Required for SiteSettings
 
     # Third-party Apps
     'crispy_forms',

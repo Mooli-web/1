@@ -1,58 +1,61 @@
 # users/admin.py
 """
-تنظیمات پنل ادمین جنگو برای مدل‌های اپلیکیشن users.
+تنظیمات پنل ادمین برای اپلیکیشن users.
 """
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, Profile
 from django.utils.translation import gettext_lazy as _
-from jalali_date.admin import ModelAdminJalaliMixin # <-- اضافه شد
+from jalali_date.admin import ModelAdminJalaliMixin
+from .models import CustomUser, Profile
 
-class CustomUserAdmin(ModelAdminJalaliMixin, UserAdmin): # <-- اصلاح شد
+class CustomUserAdmin(ModelAdminJalaliMixin, UserAdmin):
     """
-    سفارشی‌سازی نمایش CustomUser در پنل ادمین.
-    فیلدهای سفارشی (role, phone_number, gender) را به پنل ادمین
-    اضافه می‌کند.
+    مدیریت کاربران در ادمین.
+    افزودن فیلدهای سفارشی (شماره تلفن، نقش، جنسیت) به فرم‌های ادمین.
     """
-    
     list_display = (
         'username', 
-        'email', 
         'phone_number', 
         'first_name', 
         'last_name', 
-        'gender',  # فیلد سفارشی
+        'role', 
         'is_staff',
-        'date_joined', # <-- اضافه کردن تاریخ عضویت به لیست
+        'date_joined_display' # استفاده از تاریخ شمسی
     )
     
-    # فیلدهایی که در صفحه "ویرایش" کاربر در ادمین نمایش داده می‌شوند
-    fieldsets = UserAdmin.fieldsets + (
-        (_('فیلدهای سفارشی'), {'fields': ('role', 'phone_number', 'gender')}),
-    )
-    
-    # فیلدهایی که در صفحه "ایجاد" کاربر جدید در ادمین نمایش داده می‌شوند
-    add_fieldsets = UserAdmin.add_fieldsets + (
-        (_('فیلدهای سفارشی'), {'fields': ('role', 'phone_number', 'first_name', 'last_name', 'email', 'gender')}),
-    )
-    
+    list_filter = ('role', 'is_staff', 'is_superuser', 'is_active', 'gender')
     search_fields = ('username', 'first_name', 'last_name', 'phone_number', 'email')
-    list_filter = ('role', 'is_staff', 'is_superuser', 'is_active', 'gender', 'date_joined') # <-- date_joined اضافه شد
+    ordering = ('-date_joined',)
+
+    # فیلدست‌های ویرایش کاربر
+    fieldsets = UserAdmin.fieldsets + (
+        (_('اطلاعات تکمیلی'), {'fields': ('role', 'phone_number', 'gender')}),
+    )
     
-    # اضافه کردن فیلتر تاریخ شمسی
-    date_hierarchy = 'date_joined'
+    # فیلدست‌های ایجاد کاربر
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        (_('اطلاعات تکمیلی'), {
+            'classes': ('wide',),
+            'fields': ('role', 'phone_number', 'first_name', 'last_name', 'email', 'gender'),
+        }),
+    )
 
-# ثبت مدل CustomUser با کلاس ادمین سفارشی
+    def date_joined_display(self, obj):
+        return obj.date_joined
+    date_joined_display.short_description = _("تاریخ عضویت")
+
 admin.site.register(CustomUser, CustomUserAdmin)
-
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     """
-    تنظیمات نمایش Profile در پنل ادمین.
+    مدیریت پروفایل کاربران.
     """
-    list_display = ('user', 'points')
-    search_fields = ('user__username',)
-    # استفاده از raw_id_fields برای جستجوی آسان کاربر (به جای dropdown)
-    raw_id_fields = ('user',)
+    list_display = ('user', 'points_display')
+    search_fields = ('user__username', 'user__phone_number')
+    autocomplete_fields = ['user'] # جستجوی سریع برای لیست‌های طولانی
+    
+    def points_display(self, obj):
+        return f"{obj.points:,} امتیاز"
+    points_display.short_description = _("امتیاز")

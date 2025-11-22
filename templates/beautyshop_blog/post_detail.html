@@ -1,78 +1,135 @@
 {% extends "base.html" %}
-{% block title %}{{ post.title }}{% endblock %}
+{% load static %}
+{% load jalali_tags %}
+
+{% block title %}{{ post.title }} | وبلاگ{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <h1 class="mb-4">{{ post.title }}</h1>
-        
-        <p class="text-muted">
-            نوشته شده در تاریخ {{ post.created_at|date:"Y/m/d" }} | 
-            <i class="bi bi-eye-fill"></i> {{ post.view_count }} | 
-            <i class="bi bi-heart-fill"></i> <span id="like-count">{{ post.total_likes }}</span>
-        </p>
-        
-        {% if post.image %}
-            <img src="{{ post.image.url }}" class="img-fluid post-detail-img shadow-sm" alt="{{ post.title }}">
-        {% endif %}
-        <div class="mt-4 fs-5 lh-lg">
-            {{ post.content|linebreaks }}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            
+            <div class="text-center mb-4">
+                <span class="badge bg-primary-subtle text-primary mb-2">{{ post.category.name|default:"عمومی" }}</span>
+                <h1 class="fw-bold mb-3">{{ post.title }}</h1>
+                <div class="text-muted small d-flex justify-content-center align-items-center gap-3">
+                    <span><i class="bi bi-calendar-event me-1"></i> {{ post.created_at|to_jalali:'%Y/%m/%d' }}</span>
+                    <span><i class="bi bi-person me-1"></i> {{ post.author.get_full_name|default:post.author.username }}</span>
+                    <span><i class="bi bi-eye me-1"></i> {{ post.view_count }} بازدید</span>
+                </div>
+            </div>
+
+            <div class="mb-5">
+                {% if post.image %}
+                    <img src="{{ post.image.url }}" class="img-fluid rounded-4 shadow w-100" alt="{{ post.title }}" style="max-height: 500px; object-fit: cover;">
+                {% else %}
+                    <img src="{% static 'images/blog-placeholder.jpg' %}" class="img-fluid rounded-4 shadow w-100" alt="تصویر مقاله" style="max-height: 400px; object-fit: cover; background-color: #f8f9fa;">
+                {% endif %}
+            </div>
+
+            <article class="blog-content fs-5 lh-lg text-justify mb-5">
+                {{ post.content|linebreaks }}
+            </article>
+
+            <div class="card border-0 bg-light rounded-4 p-4 mb-5">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    
+                    <div class="d-flex align-items-center gap-3">
+                        {% if user.is_authenticated %}
+                            <button id="like-btn" 
+                                    class="btn btn-lg d-flex align-items-center gap-2 {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %} rounded-pill px-4"
+                                    data-url="{% url 'beautyshop_blog:like_toggle' post.pk %}">
+                                <i class="bi {% if is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}" id="like-icon"></i>
+                                <span id="like-text" class="fs-6">{% if is_liked %}پسندیدم{% else %}لایک{% endif %}</span>
+                            </button>
+                        {% else %}
+                            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="bi bi-heart me-1"></i> برای لایک وارد شوید
+                            </a>
+                        {% endif %}
+                        
+                        <div class="text-muted">
+                            <span class="fw-bold fs-5" id="like-count">{{ post.total_likes }}</span> 
+                            <span class="small">لایک</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button class="btn btn-link text-muted text-decoration-none" onclick="navigator.clipboard.writeText(window.location.href); alert('لینک کپی شد!');">
+                            <i class="bi bi-share me-1"></i> اشتراک‌گذاری
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        
-        <hr class="my-4">
-        {% if user.is_authenticated %}
-            <button id="like-btn" 
-                    class="btn {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %}"
-                    data-url="{% url 'beautyshop_blog:like_toggle' post.pk %}">
-                <i class="bi bi-heart-fill"></i> 
-                <span id="like-text">{% if is_liked %}لایک را بردار{% else %}لایک کن{% endif %}</span>
-            </button>
-        {% else %}
-            <p class="text-muted">برای لایک کردن <a href="{% url 'login' %}?next={{ request.path }}">وارد شوید</a>.</p>
-        {% endif %}
-        
     </div>
 </div>
+
+{# تگ مخفی برای نگهداری توکن CSRF جهت استفاده در جاوااسکریپت #}
+{% csrf_token %}
+
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }} <script>
-$(document).ready(function() {
-    $('#like-btn').on('click', function(e) {
-        e.preventDefault();
-        
-        var $this = $(this);
-        var url = $this.data('url');
-        
-        // Find the CSRF token from the logout form in base.html
-        var csrfToken = $('form[action*="logout"] input[name="csrfmiddlewaretoken"]').val();
-        
-        if (!csrfToken) {
-            console.error('CSRF token not found.');
-            return;
-        }
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const likeBtn = document.getElementById('like-btn');
+    
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // دریافت ایمن توکن CSRF از ورودی مخفی که توسط تگ {% csrf_token %} ساخته شده
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrfToken = csrfInput ? csrfInput.value : '';
+            
+            const url = this.dataset.url;
+            const icon = document.getElementById('like-icon');
+            const text = document.getElementById('like-text');
+            const countSpan = document.getElementById('like-count');
 
-        $.ajax({
-            url: url,
-            method: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
-            dataType: 'json',
-            success: function(data) {
+            // استفاده از Fetch API (مدرن و بدون نیاز به jQuery)
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
                 if (data.status === 'success') {
-                    $('#like-count').text(data.count);
+                    // آپدیت تعداد لایک
+                    countSpan.textContent = data.count;
+                    
+                    // آپدیت وضعیت دکمه
                     if (data.liked) {
-                        $this.removeClass('btn-outline-danger').addClass('btn-danger');
-                        $('#like-text').text('لایک را بردار');
+                        likeBtn.classList.remove('btn-outline-danger');
+                        likeBtn.classList.add('btn-danger');
+                        icon.classList.remove('bi-heart');
+                        icon.classList.add('bi-heart-fill');
+                        text.textContent = 'پسندیدم';
                     } else {
-                        $this.removeClass('btn-danger').addClass('btn-outline-danger');
-                        $('#like-text').text('لایک کن');
+                        likeBtn.classList.remove('btn-danger');
+                        likeBtn.classList.add('btn-outline-danger');
+                        icon.classList.remove('bi-heart-fill');
+                        icon.classList.add('bi-heart');
+                        text.textContent = 'لایک';
                     }
                 }
-            },
-            error: function(error) {
-                console.error('Error during like toggle:', error);
-            }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('خطایی رخ داد. لطفا مجدد تلاش کنید.');
+            });
         });
-    });
+    }
 });
 </script>
 {% endblock %}

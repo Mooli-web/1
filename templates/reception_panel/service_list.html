@@ -1,45 +1,54 @@
-{% extends "reception_panel/reception_base.html" %}
+{% extends 'reception_panel/reception_base.html' %}
 
-{% block title %}مدیریت خدمات و ساعات کاری{% endblock %}
-
-{% block page_title %}مدیریت خدمات و ساعات کاری{% endblock %}
+{% block title %}مدیریت خدمات{% endblock %}
 
 {% block content %}
-<p class="lead">در این بخش می‌توانید خدمات و ساعات کاری مربوط به آن‌ها را مدیریت کنید. (امکان تغییر قیمت وجود ندارد)</p>
-
-{% for group in service_groups %}
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
-        <div class="d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">{{ group.name }}</h4>
-            <a href="{% url 'reception_panel:work_hours_group_update' group.pk %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-clock-fill me-1"></i> ویرایش ساعات کاری گروه
-            </a>
-        </div>
-    </div>
-    <div class="card-body">
-        <ul class="list-group list-group-flush">
-            {% for service in group.services.all %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>{{ service.name }}</strong>
-                    <br>
-                    <small class="text-muted">مدت زمان: {{ service.duration }} دقیقه</small>
-                </div>
-                <div>
-                    <a href="{% url 'reception_panel:work_hours_service_update' service.pk %}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-clock me-1"></i> ساعات کاری اختصاصی
-                    </a>
-                    <a href="{% url 'reception_panel:service_update' service.pk %}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-pencil-fill me-1"></i> ویرایش خدمت
-                    </a>
-                </div>
-            </li>
-            {% empty %}
-            <li class="list-group-item">هیچ خدمتی (زیرگروه) برای این گروه تعریف نشده است.</li>
-            {% endfor %}
-        </ul>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">خدمات کلینیک</h3>
+    <div class="alert alert-info py-1 px-3 mb-0 small">
+        <i class="bi bi-info-circle me-1"></i>برای افزودن خدمت جدید از پنل ادمین اصلی استفاده کنید.
     </div>
 </div>
-{% endfor %}
+
+<div class="accordion" id="servicesAccordion">
+    {% for group in service_groups %}
+    <div class="accordion-item shadow-sm border-0 mb-3 rounded overflow-hidden">
+        <h2 class="accordion-header" id="heading{{ group.id }}">
+            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} bg-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ group.id }}">
+                {{ group.name }}
+            </button>
+        </h2>
+        <div id="collapse{{ group.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#servicesAccordion">
+            <div class="accordion-body bg-light">
+                
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small">مدیریت ساعات کاری کلی گروه:</span>
+                    <a href="{% url 'reception_panel:work_hours_group_update' group.id %}" class="btn btn-sm btn-outline-primary bg-white">
+                        <i class="bi bi-clock me-1"></i> ساعات کاری گروه
+                    </a>
+                </div>
+
+                <div class="list-group shadow-sm">
+                    {% for service in group.services.all %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <h6 class="mb-1 fw-bold">{{ service.name }}</h6>
+                            <small class="text-muted">{{ service.duration }} دقیقه</small>
+                        </div>
+                        <div class="btn-group">
+                            <a href="{% url 'reception_panel:service_update' service.id %}" class="btn btn-sm btn-outline-secondary" title="ویرایش جزئیات">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'reception_panel:work_hours_service_update' service.id %}" class="btn btn-sm btn-outline-primary" title="ساعات کاری اختصاصی">
+                                <i class="bi bi-clock-history"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 {% endblock %}

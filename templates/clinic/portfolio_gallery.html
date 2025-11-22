@@ -1,39 +1,49 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}گالری نمونه کارها{% endblock %}
 
 {% block content %}
-<div class="text-center mb-5">
-    <h1 class="display-4">گالری نمونه کارها</h1>
-    <p class="lead text-muted">مشاهده نتایج درخشان خدمات ما.</p>
-</div>
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold text-dark">گالری نمونه کارها</h1>
+        <p class="lead text-muted">مشاهده نتایج درخشان و تغییرات واقعی مراجعین ما.</p>
+    </div>
 
-<div class="row row-cols-1 row-cols-md-2 g-4">
-    {% for item in portfolio_items %}
-    <div class="col">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="card-title mb-0">{{ item.title }}</h5>
-                <small>{{ item.service.name|default:"عمومی" }}</small>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6 text-center">
-                        <h6>قبل</h6>
-                        <img src="{{ item.before_image.url }}" alt="تصویر قبل از {{ item.title }}" class="img-fluid rounded shadow">
+    <div class="row row-cols-1 row-cols-md-2 g-4">
+        {% for item in portfolio_items %}
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold text-primary">{{ item.title }}</h5>
+                    <span class="badge bg-light text-dark border">{{ item.service.name|default:"عمومی" }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="position-relative">
+                                <img src="{{ item.before_image.url }}" alt="قبل از {{ item.title }}" class="img-fluid rounded-3 w-100 shadow-sm" style="height: 250px; object-fit: cover;">
+                                <span class="position-absolute bottom-0 start-0 bg-dark text-white px-2 py-1 m-2 rounded small opacity-75">قبل</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="position-relative">
+                                <img src="{{ item.after_image.url }}" alt="بعد از {{ item.title }}" class="img-fluid rounded-3 w-100 shadow-sm" style="height: 250px; object-fit: cover;">
+                                <span class="position-absolute bottom-0 start-0 bg-success text-white px-2 py-1 m-2 rounded small opacity-90">بعد</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-6 text-center">
-                        <h6>بعد</h6>
-                        <img src="{{ item.after_image.url }}" alt="تصویر بعد از {{ item.title }}" class="img-fluid rounded shadow">
-                    </div>
+                    {% if item.description %}
+                        <p class="card-text mt-3 text-muted small">{{ item.description }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="alert alert-info d-inline-block px-5"><i class="bi bi-images me-2"></i>هیچ نمونه کاری برای نمایش وجود ندارد.</div>
+        </div>
+        {% endfor %}
     </div>
-    {% empty %}
-    <div class="col">
-        <div class="alert alert-info">هیچ نمونه کاری برای نمایش وجود ندارد.</div>
-    </div>
-    {% endfor %}
 </div>
 {% endblock %}

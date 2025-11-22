@@ -1,22 +1,44 @@
 {% extends "base.html" %}
+
 {% block title %}سوالات متداول{% endblock %}
+
 {% block content %}
-<div class="text-center mb-5">
-    <h1 class="display-4">سوالات متداول</h1>
-    <p class="lead text-muted">پاسخ سوالات پرتکرار شما را اینجا گردآوری کرده‌ایم.</p>
-</div>
-<div class="accordion" id="faqAccordion">
-    {% for faq in faqs %}
-    <div class="accordion-item">
-        <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
-                {{ faq.question }}
-            </button>
-        </h2>
-        <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#faqAccordion">
-            <div class="accordion-body">{{ faq.answer }}</div>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-dark">سوالات متداول</h1>
+                <p class="lead text-muted">پاسخ سوالات پرتکرار شما را اینجا گردآوری کرده‌ایم.</p>
+            </div>
+            
+            <div class="accordion shadow-sm rounded-3 overflow-hidden" id="faqAccordion">
+                {% for faq in faqs %}
+                <div class="accordion-item border-0 border-bottom">
+                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
+                            <i class="bi bi-question-circle-fill text-primary me-2 opacity-75"></i> {{ faq.question }}
+                        </button>
+                    </h2>
+                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted lh-lg bg-light bg-opacity-50">
+                            {{ faq.answer|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <p class="text-muted">هنوز سوالی ثبت نشده است.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="text-center mt-5">
+                <p class="text-muted">پاسخ خود را پیدا نکردید؟</p>
+                <a href="{% url 'consultation:create_request' %}" class="btn btn-outline-primary rounded-pill px-4">
+                    <i class="bi bi-chat-dots me-2"></i>ارسال پیام به پشتیبانی
+                </a>
+            </div>
         </div>
     </div>
-    {% endfor %}
 </div>
 {% endblock %}

@@ -1,113 +1,107 @@
-{# mooli-web/templates/consultation/request_detail_shared.html #}
-{# --- FIX v5: Telegram Style Chat UI & Subject Removal --- #}
-{% extends base_template %} 
+{% extends base_template|default:"base.html" %}
+{% load static %}
+{% load jalali_tags %}
 {% load crispy_forms_tags %}
-{% load reception_tags %} 
 
-{% block title %}مشاوره آنلاین{% endblock %}
+{% block title %}{{ consultation_request.subject }}{% endblock %}
 
 {% block content %}
-
-{# --- هدر چت (نام طرف مقابل و وضعیت) --- #}
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center">
-            <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 45px; height: 45px; font-size: 1.2rem;">
-                <i class="bi bi-person-fill"></i>
-            </div>
-            <div>
-                <h5 class="mb-0 fw-bold">
-                    {% if consultation_request.patient == request.user %}
-                        پشتیبانی کلینیک
-                    {% else %}
-                        {{ consultation_request.patient.get_full_name|default:consultation_request.patient.username }}
-                    {% endif %}
-                </h5>
-                <small class="text-muted" style="font-size: 0.8rem;">
-                    وضعیت: 
-                    <span class="badge {% if consultation_request.status == 'CLOSED' %}bg-secondary{% else %}bg-success{% endif %}">
-                        {{ consultation_request.get_status_display }}
-                    </span>
-                </small>
-            </div>
-        </div>
-        {% if consultation_request.status != 'CLOSED' %}
-            <span class="badge bg-light text-dark border">در حال گفتگو</span>
-        {% endif %}
-    </div>
-
-    {# --- بدنه چت (کانتینر پیام‌ها) --- #}
-    <div class="messenger-container" id="chatContainer">
-        
-        {# --- پیام اول (شرح درخواست) - همیشه از طرف بیمار است --- #}
-        <div class="chat-bubble {% if consultation_request.patient == request.user %}me{% else %}other{% endif %}">
-            <p class="mb-1">{{ consultation_request.description|linebreaksbr }}</p>
-            <span class="chat-time">
-                {{ consultation_request.created_at|jalali_format:"%H:%M" }} 
-                {% if consultation_request.patient == request.user %}
-                    <i class="bi bi-check2-all text-primary ms-1"></i>
-                {% endif %}
-            </span>
-        </div>
-
-        {# --- حلقه پیام‌های بعدی --- #}
-        {% for msg in messages %}
-            {# تشخیص اینکه پیام مال "من" است یا "طرف مقابل" #}
-            <div class="chat-bubble {% if msg.user == request.user %}me{% else %}other{% endif %}">
-                
-                {# نام فرستنده (فقط اگر پیام طرف مقابل باشد نمایش میدهیم تا شلوغ نشود) #}
-                {% if msg.user != request.user %}
-                    <strong class="d-block text-primary mb-1" style="font-size: 0.8rem;">
-                        {{ msg.user.get_full_name|default:msg.user.username }}
-                    </strong>
-                {% endif %}
-
-                <p class="mb-1">{{ msg.message|linebreaksbr }}</p>
-                
-                <span class="chat-time">
-                    {{ msg.timestamp|jalali_format:"%H:%M" }}
-                    {% if msg.user == request.user %}
-                        <i class="bi bi-check2-all text-primary ms-1"></i>
-                    {% endif %}
-                </span>
-            </div>
-        {% endfor %}
-        
-    </div>
-
-    {# --- فوتر چت (فرم ارسال) --- #}
-    <div class="card-footer bg-light py-3">
-        {% if consultation_request.status != 'CLOSED' %}
-        <form method="post" class="d-flex align-items-center gap-2">
-            {% csrf_token %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
             
-            {# رندر دستی فیلد برای کنترل کامل استایل #}
-            <div class="flex-grow-1">
-                {{ form.message }}
+            <div class="chat-header shadow-sm d-flex justify-content-between align-items-center sticky-top z-3">
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'consultation:request_list' %}" class="btn btn-sm btn-light rounded-circle me-2">
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">{{ consultation_request.subject }}</h6>
+                        <small class="text-muted">
+                            {% if consultation_request.status == 'ANSWERED' %}
+                                <span class="text-success">پاسخ داده شده</span>
+                            {% else %}
+                                <span class="text-secondary">{{ consultation_request.get_status_display }}</span>
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                <div class="text-muted small">
+                    {{ consultation_request.created_at|to_jalali:'%Y/%m/%d' }}
+                </div>
             </div>
-            
-            <button type="submit" class="btn btn-primary rounded-circle p-0 d-flex justify-content-center align-items-center shadow-sm" style="width: 45px; height: 45px;">
-                <i class="bi bi-send-fill" style="transform: rotate(180deg) translateX(2px);"></i>
-            </button>
-        </form>
-        {% else %}
-        <div class="alert alert-warning mb-0 text-center">
-            <i class="bi bi-lock-fill"></i> این مشاوره بسته شده است و امکان ارسال پیام جدید وجود ندارد.
+
+            <div class="messenger-container shadow-inner" id="chat-box">
+                
+                <div class="chat-bubble {% if consultation_request.patient == request.user %}me{% else %}other{% endif %}">
+                    <div class="fw-bold small mb-1 opacity-75">
+                        {{ consultation_request.patient.get_full_name|default:consultation_request.patient.username }} (شروع کننده)
+                    </div>
+                    {{ consultation_request.description|linebreaksbr }}
+                    <span class="chat-time">{{ consultation_request.created_at|to_jalali:'%H:%M' }}</span>
+                </div>
+
+                {% for msg in messages %}
+                    <div class="chat-bubble {% if msg.user == request.user %}me{% else %}other{% endif %}">
+                        {% if msg.user != request.user %}
+                            <div class="fw-bold small mb-1 text-primary">
+                                {{ msg.user.get_full_name|default:msg.user.username }}
+                                {% if msg.user.is_staff %}<i class="bi bi-patch-check-fill ms-1"></i>{% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        {{ msg.message|linebreaksbr }}
+                        
+                        <span class="chat-time">
+                            {{ msg.timestamp|to_jalali:'%H:%M' }}
+                            {% if msg.user == request.user %}
+                                <i class="bi bi-check2-all ms-1"></i>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if consultation_request.status != 'CLOSED' %}
+                <div class="card border-0 shadow-sm mt-3">
+                    <div class="card-body p-2">
+                        <form method="post" class="d-flex align-items-end gap-2">
+                            {% csrf_token %}
+                            <div class="flex-grow-1">
+                                {{ form.message|as_crispy_field }}
+                            </div>
+                            <button type="submit" class="btn btn-primary rounded-circle p-3 mb-3 shadow-sm">
+                                <i class="bi bi-send-fill fs-5"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-secondary text-center mt-3 rounded-pill">
+                    <i class="bi bi-lock-fill me-2"></i>این گفتگو بسته شده است.
+                </div>
+            {% endif %}
+
         </div>
-        {% endif %}
     </div>
 </div>
-{% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
 <script>
-    // اسکرول خودکار به انتهای چت هنگام لود صفحه
-    document.addEventListener("DOMContentLoaded", function() {
-        var chatContainer = document.getElementById("chatContainer");
-        if(chatContainer) {
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+    // اسکرول خودکار به انتهای چت
+    window.onload = function() {
+        var chatBox = document.getElementById("chat-box");
+        if (chatBox) {
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
-    });
+    };
 </script>
+<style>
+    /* حذف حاشیه‌های اضافه فرم کریسپی برای جایگیری در نوار پایین */
+    #div_id_message { margin-bottom: 0 !important; }
+    #id_message { border-radius: 20px; background: #f8f9fa; border: none; padding: 10px 15px; }
+    #id_message:focus { background: #fff; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2); }
+</style>
+{% endblock %}
+
 {% endblock %}

@@ -1,69 +1,78 @@
-// static/js/booking-state.js
-// وظیفه: ایجاد Namespace سراسری BookingApp و تعریف تمام متغیرهای State.
+/* static/js/booking-state.js */
+/**
+ * مدیریت وضعیت (State Management) سیستم رزرو.
+ * این شیء وظیفه نگهداری داده‌های موقت کاربر در حین پروسه رزرو را بر عهده دارد.
+ */
 
-window.BookingApp = {
-    // 1. State: متغیرهای مربوط به وضعیت برنامه
+const BookingState = {
     state: {
-        // از data- attributes خوانده می‌شوند
-        GET_SLOTS_URL: null,
-        GET_SERVICES_URL: null,
-        APPLY_DISCOUNT_URL: null,
-        CSRF_TOKEN: null,
-        MAX_DISCOUNT: 0,
-        TODAY_DATE_SERVER: null,
-        PRICE_TO_POINTS_RATE: 0, // <-- متغیر جدید: نرخ تبدیل
-
-        // متغیرهای داخلی
-        codeDiscountAmount: 0,
-        allGroupedSlots: {},
-        todayMoment: null,
-        currentCalendarMoment: null,
-        
-        // تایمر FOMO
-        fomoExpirationTimer: null,
-        fomoIntervalTimer: null,
-        FOMO_DURATION_SECONDS: 5 * 60
+        selectedServices: [], // آرایه‌ای از ID خدمات انتخاب شده
+        selectedDevice: null, // ID دستگاه انتخاب شده (در صورت نیاز)
+        selectedDate: null,   // تاریخ انتخاب شده (شمسی)
+        selectedSlot: null,   // اسلات زمانی انتخاب شده (ISO String)
     },
 
-    // 2. UI: تمام سلکتورهای jQuery
-    ui: {
-        bookingForm: null,
-        serviceGroupSelect: null,
-        servicesContainer: null,
-        devicesContainer: null,
-        selectedDeviceInput: null,
-        slotsContainer: null,
-        calendarStepLabel: null,
-        calendarWrapper: null,
-        calendarGridBody: null,
-        calendarMonthLabel: null,
-        prevMonthBtn: null,
-        nextMonthBtn: null,
-        timeSelectionContainer: null,
-        slotsLoader: null,
-        slotsInitialMessage: null,
-        firstAvailableContainer: null,
-        firstSlotLabel: null,
-        bookFirstSlotBtn: null,
-        fomoTimerMessage: null,
-        selectedSlotInput: null,
-        confirmBtn: null,
-        submitBtn: null,
-        applyPointsCheckbox: null,
-        finalPriceSpan: null,
-        confirmationModal: null,
-        infoConfirmationCheck: null,
-        discountCodeInput: null,
-        applyDiscountBtn: null,
-        discountMessage: null,
-        basePriceInput: null,
-        totalDurationInput: null,
-        rewardBox: null, // <-- المنت جدید
-        rewardText: null  // <-- متن داخل المنت
+    /**
+     * راه‌اندازی اولیه وضعیت
+     */
+    init() {
+        this.reset();
     },
 
-    // 3. Namespaces
-    api: {},
-    uiHelpers: {},
-    init: {}
+    /**
+     * بازنشانی وضعیت به مقادیر پیش‌فرض
+     */
+    reset() {
+        this.state = {
+            selectedServices: [],
+            selectedDevice: null,
+            selectedDate: null,
+            selectedSlot: null
+        };
+        console.log('Booking State Reset');
+    },
+
+    /**
+     * به‌روزرسانی خدمات انتخاب شده
+     * @param {Array} serviceIds - لیست ID خدمات
+     */
+    setServices(serviceIds) {
+        this.state.selectedServices = serviceIds;
+        // با تغییر سرویس، اسلات انتخاب شده باید پاک شود چون ممکن است دیگر معتبر نباشد
+        this.state.selectedSlot = null; 
+    },
+
+    /**
+     * انتخاب یا تغییر دستگاه
+     * @param {number|string} deviceId 
+     */
+    setDevice(deviceId) {
+        this.state.selectedDevice = deviceId;
+        this.state.selectedSlot = null;
+    },
+
+    /**
+     * انتخاب یک اسلات زمانی
+     * @param {string} slotData - داده‌های اسلات (زمان شروع)
+     */
+    setSlot(slotData) {
+        this.state.selectedSlot = slotData;
+    },
+
+    /**
+     * دریافت وضعیت فعلی
+     */
+    get() {
+        return { ...this.state }; // بازگرداندن کپی برای جلوگیری از تغییر مستقیم
+    },
+
+    /**
+     * بررسی اعتبار وضعیت برای رفتن به مرحله بعد
+     */
+    isValid() {
+        return this.state.selectedServices.length > 0 && this.state.selectedSlot !== null;
+    }
 };
+
+// اتصال به آبجکت window برای دسترسی جهانی (در صورت عدم استفاده از ماژول‌های ES6)
+window.BookingState = BookingState;

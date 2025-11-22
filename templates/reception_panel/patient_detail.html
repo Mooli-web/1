@@ -1,142 +1,135 @@
-{# mooli-web/templates/reception_panel/patient_detail.html #}
-{# --- FIX v2: Using custom 'jalali_format' tag --- #}
-{% extends "reception_panel/reception_base.html" %}
+{% extends 'reception_panel/reception_base.html' %}
+{% load static %}
+{% load jalali_tags %}
 {% load crispy_forms_tags %}
-{% load reception_tags %}
+{% load humanize %}
 
-{% block title %}پرونده بیمار: {{ patient.get_full_name|default:patient.username }}{% endblock %}
-
-{% block page_title %}پرونده بیمار: {{ patient.get_full_name|default:patient.username }}{% endblock %}
+{% block title %}پرونده بیمار: {{ patient.get_full_name }}{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header">
-        <ul class="nav nav-tabs card-header-tabs" id="patientTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">پروفایل و ویرایش</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab">تاریخچه نوبت‌ها</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions" type="button" role="tab">تاریخچه تراکنش‌ها</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="consultations-tab" data-bs-toggle="tab" data-bs-target="#consultations" type="button" role="tab">تاریخچه مشاوره‌ها</button>
-            </li>
-        </ul>
-    </div>
-    <div class="card-body">
-        <div class="tab-content" id="patientTabContent">
+<div class="row g-4">
+    <div class="col-lg-3">
+        <div class="card border-0 shadow-sm rounded-3 text-center p-4 mb-3">
+            {% if patient.profile.profile_picture %}
+                <img src="{{ patient.profile.profile_picture.url }}" class="rounded-circle mb-3 shadow-sm object-fit-cover" width="100" height="100">
+            {% else %}
+                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 text-secondary" style="width: 100px; height: 100px;">
+                    <i class="bi bi-person-fill fs-1"></i>
+                </div>
+            {% endif %}
             
-            <div class="tab-pane fade show active" id="profile" role="tabpanel">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <fieldset class="form-group">
-                        <legend class="border-bottom mb-3">اطلاعات کاربری</legend>
-                        {{ u_form|crispy }}
-                    </fieldset>
+            <h5 class="fw-bold mb-1">{{ patient.get_full_name|default:patient.username }}</h5>
+            <p class="text-muted small mb-3">{{ patient.phone_number }}</p>
+            
+            <div class="bg-light rounded p-2 mb-3">
+                <small class="d-block text-muted">امتیاز وفاداری</small>
+                <strong class="text-primary fs-5">{{ patient.profile.points }}</strong>
+            </div>
+            
+            <a href="{% url 'reception_panel:booking_act_as' patient.pk %}" class="btn btn-warning w-100 btn-sm fw-bold">
+                <i class="bi bi-calendar-plus me-1"></i> رزرو نوبت برای بیمار
+            </a>
+        </div>
+    </div>
 
-                    <fieldset class="form-group mt-4">
-                        <legend class="border-bottom mb-3">پروفایل (امتیاز و تصویر)</legend>
-                        {{ p_form|crispy }}
-                    </fieldset>
+    <div class="col-lg-9">
+        <div class="card border-0 shadow-sm rounded-3">
+            <div class="card-header bg-white border-bottom-0 px-4 pt-4">
+                <ul class="nav nav-tabs card-header-tabs" id="patientTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#info">ویرایش اطلاعات</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#history">سوابق نوبت‌ها</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#finance">تراکنش‌ها</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-4">
+                <div class="tab-content" id="patientTabsContent">
                     
-                    <div class="d-grid mt-4 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1">ذخیره تغییرات</button>
-                        <a href="{% url 'reception_panel:patient_list' %}" class="btn btn-outline-secondary btn-lg">بازگشت به لیست</a>
+                    <div class="tab-pane fade show active" id="info">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-md-6">{{ u_form.first_name|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ u_form.last_name|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ u_form.phone_number|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ u_form.gender|as_crispy_field }}</div>
+                                <div class="col-md-6">{{ p_form.points|as_crispy_field }}</div>
+                                <div class="col-md-12">{{ p_form.profile_picture|as_crispy_field }}</div>
+                            </div>
+                            <button type="submit" class="btn btn-success mt-3">
+                                <i class="bi bi-save me-1"></i> ذخیره تغییرات
+                            </button>
+                        </form>
                     </div>
-                </form>
-            </div>
 
-            <div class="tab-pane fade" id="appointments" role="tabpanel">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>خدمات</th>
-                                <th>دستگاه</th>
-                                <th>زمان شروع</th>
-                                <th>وضعیت</th>
-                                <th>اقدامات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for app in appointments %}
-                            <tr>
-                                <td>{{ app.get_services_display }}</td>
-                                <td>{{ app.selected_device.name|default:"-" }}</td>
-                                {# --- اصلاح شد --- #}
-                                <td>{{ app.start_time|jalali_format:"%Y/%m/%d - %H:%M" }}</td>
-                                <td><span class="badge bg-secondary">{{ app.get_status_display }}</span></td>
-                                <td>
-                                    {% if app.status == 'PENDING' or app.status == 'CONFIRMED' %}
-                                    <form action="{% url 'reception_panel:appointment_cancel' app.pk %}" method="post" class="d-inline" onsubmit="return confirm('آیا از لغو این نوبت مطمئن هستید؟');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm">لغو</button>
-                                    </form>
-                                    {% endif %}
-                                    {% if app.status == 'CONFIRMED' %}
-                                    <form action="{% url 'reception_panel:appointment_mark_done' app.pk %}" method="post" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-success btn-sm">انجام شد</button>
-                                    </form>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="5" class="text-center">هیچ نوبتی یافت نشد.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="transactions" role="tabpanel">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>مبلغ (تومان)</th>
-                                <th>وضعیت</th>
-                                <th>تاریخ</th>
-                                <th>کد رهگیری</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for trans in transactions %}
-                            <tr>
-                                <td>{{ trans.amount|floatformat:"0" }}</td>
-                                <td><span class="badge bg-secondary">{{ trans.get_status_display }}</span></td>
-                                {# --- اصلاح شد --- #}
-                                <td>{{ trans.created_at|jalali_format:"%Y/%m/%d - %H:%M" }}</td>
-                                <td>{{ trans.authority|default:"---" }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="4" class="text-center">هیچ تراکنشی یافت نشد.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="consultations" role="tabpanel">
-                <div class="list-group">
-                    {% for req in consultations %}
-                    <a href="{% url 'reception_panel:consultation_detail' req.pk %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h5 class="mb-1">{{ req.subject }}</h5>
-                            {# --- اصلاح شد --- #}
-                            <small>{{ req.created_at|jalali_format:"%Y/%m/%d" }}</small>
+                    <div class="tab-pane fade" id="history">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr><th>تاریخ</th><th>خدمت</th><th>وضعیت</th><th>عملیات</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for appt in appointments %}
+                                    <tr>
+                                        <td>{{ appt.start_time|to_jalali:'%Y/%m/%d %H:%M' }}</td>
+                                        <td>{{ appt.get_services_display }}</td>
+                                        <td>
+                                            <span class="badge {% if appt.status == 'DONE' %}bg-success{% elif appt.status == 'CANCELED' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
+                                                {{ appt.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if appt.status != 'CANCELED' %}
+                                            <form action="{% url 'reception_panel:appointment_cancel' appt.pk %}" method="post" class="d-inline" onsubmit="return confirm('لغو شود؟')">
+                                                {% csrf_token %}
+                                                <button class="btn btn-sm btn-link text-danger p-0">لغو</button>
+                                            </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center text-muted">سابقه‌ای یافت نشد.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                        <small>وضعیت: <span class="badge bg-secondary">{{ req.get_status_display }}</span></small>
-                    </a>
-                    {% empty %}
-                    <p class="text-center">هیچ مشاوره‌ای یافت نشد.</p>
-                    {% endfor %}
+                    </div>
+
+                    <div class="tab-pane fade" id="finance">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr><th>تاریخ</th><th>مبلغ</th><th>وضعیت</th><th>کد رهگیری</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for txn in transactions %}
+                                    <tr>
+                                        <td>{{ txn.created_at|to_jalali:'%Y/%m/%d' }}</td>
+                                        <td>{{ txn.amount|intcomma }}</td>
+                                        <td>
+                                            {% if txn.status == 'SUCCESS' %}
+                                                <span class="text-success"><i class="bi bi-check-circle"></i> موفق</span>
+                                            {% else %}
+                                                <span class="text-danger"><i class="bi bi-x-circle"></i> ناموفق</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="font-monospace small">{{ txn.authority }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center text-muted">تراکنشی یافت نشد.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-
         </div>
     </div>
 </div>

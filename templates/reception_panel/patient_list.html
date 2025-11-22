@@ -1,71 +1,55 @@
-{# mooli-web/templates/reception_panel/patient_list.html #}
-{# --- FIX v2: Using custom 'jalali_format' tag --- #}
-{% extends "reception_panel/reception_base.html" %}
-{% load reception_tags %}
+{% extends 'reception_panel/reception_base.html' %}
+{% load jalali_tags %}
 
-{% block title %}مدیریت بیماران{% endblock %}
-
-{% block page_title %}مدیریت بیماران{% endblock %}
+{% block title %}لیست بیماران{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">لیست بیماران</h5>
-        <a href="{% url 'reception_panel:patient_create' %}" class="btn btn-success">
-            <i class="bi bi-plus-lg me-1"></i> بیمار جدید
-        </a>
-    </div>
-    <div class="card-body">
-        <form method="get" class="mb-4">
-            <div class="input-group">
-                <input type="text" name="q" class="form-control" placeholder="جستجو بر اساس نام، نام خانوادگی، شماره تلفن یا نام کاربری..." value="{{ query }}">
-                <button class="btn btn-outline-primary" type="submit">
-                    <i class="bi bi-search"></i> جستجو
-                </button>
-            </div>
-        </form>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">بیماران</h3>
+    <a href="{% url 'reception_panel:patient_create' %}" class="btn btn-primary shadow-sm">
+        <i class="bi bi-person-plus-fill me-2"></i>ثبت بیمار جدید
+    </a>
+</div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">نام کامل</th>
-                        <th scope="col">شماره تلفن</th>
-                        <th scope="col">نام کاربری</th>
-                        <th scope="col">امتیاز</th>
-                        <th scope="col">تاریخ عضویت</th>
-                        <th scope="col">عملیات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in patients %}
-                    <tr>
-                        <td>{{ p.get_full_name|default:"---" }}</td>
-                        <td>{{ p.phone_number }}</td>
-                        <td>{{ p.username }}</td>
-                        <td>{{ p.profile.points }}</td>
-                        {# --- اصلاح شد --- #}
-                        <td>{{ p.date_joined|jalali_format:"%Y/%m/%d" }}</td>
-                        <td>
-                            <a href="{% url 'reception_panel:patient_detail' p.pk %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye-fill"></i> مشاهده پرونده
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center">
-                            {% if query %}
-                                هیچ بیماری با مشخصات «{{ query }}» یافت نشد.
-                            {% else %}
-                                هنوز هیچ بیماری ثبت نشده است.
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-2">
+        <form method="get" class="d-flex">
+            <input type="text" name="q" class="form-control border-0" placeholder="جستجو بر اساس نام، شماره تلفن یا کد ملی..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary rounded-3 px-4 ms-2">جستجو</button>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">نام و نام خانوادگی</th>
+                    <th>شماره تلفن</th>
+                    <th>جنسیت</th>
+                    <th>تاریخ عضویت</th>
+                    <th class="text-end pe-4">پرونده</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in patients %}
+                <tr>
+                    <td class="ps-4 fw-bold">{{ patient.get_full_name|default:patient.username }}</td>
+                    <td>{{ patient.phone_number }}</td>
+                    <td>{{ patient.get_gender_display|default:"-" }}</td>
+                    <td class="text-muted small">{{ patient.date_joined|to_jalali:'%Y/%m/%d' }}</td>
+                    <td class="text-end pe-4">
+                        <a href="{% url 'reception_panel:patient_detail' patient.pk %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            مشاهده پرونده
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center py-5 text-muted">بیماری با این مشخصات یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

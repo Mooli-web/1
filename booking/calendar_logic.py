@@ -10,7 +10,11 @@ import jdatetime
 from django.utils import timezone
 from django.db.models import Q
 
-from clinic.models import Service, Appointment
+# --- اصلاحیه ایمپورت‌ها ---
+# مدل‌های Service و WorkHours در اپلیکیشن clinic هستند
+from clinic.models import Service, WorkHours
+# مدل Appointment در همین اپلیکیشن (booking) قرار دارد
+from .models import Appointment
 from users.models import CustomUser
 
 # --- ثابت‌های فارسی‌سازی ---

@@ -1,41 +1,87 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
 {% load jalali_tags %}
 
 {% block title %}مشاوره‌های من{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="mb-4 fw-bold border-start border-4 border-primary ps-3">تاریخچه درخواست‌های مشاوره</h2>
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-dark"><i class="bi bi-chat-text-fill text-primary me-2"></i>مشاوره‌های من</h2>
+        <a href="{% url 'consultation:create_request' %}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>مشاوره جدید
+        </a>
+    </div>
 
     {% if requests %}
-        <div class="list-group">
+        <div class="row g-3">
             {% for req in requests %}
-            <a href="{% url 'consultation:request_detail' req.pk %}" class="list-group-item list-group-item-action flex-column align-items-start shadow-sm mb-3 rounded border-0">
-                <div class="d-flex w-100 justify-content-between align-items-center mb-2">
-                    <h5 class="mb-1 fw-bold text-dark">{{ req.subject }}</h5>
-                    <small class="text-muted">
-                        {# تاریخ ثبت درخواست به شمسی #}
-                        {{ req.created_at|to_jalali:'%Y/%m/%d - %H:%M' }}
-                    </small>
-                </div>
-                <p class="mb-1 text-muted">{{ req.description|truncatewords:20 }}</p>
-                <div class="mt-2">
-                    {% if req.status == 'pending' %}
-                        <span class="badge bg-warning text-dark">در انتظار پاسخ</span>
-                    {% elif req.status == 'answered' %}
-                        <span class="badge bg-success">پاسخ داده شده</span>
-                    {% else %}
-                        <span class="badge bg-secondary">بسته شده</span>
-                    {% endif %}
-                </div>
-            </a>
+            <div class="col-12">
+                <a href="{% url 'consultation:request_detail' req.pk %}" class="text-decoration-none">
+                    <div class="card border-0 shadow-sm hover-shadow transition-all rounded-3 overflow-hidden">
+                        <div class="card-body p-4 d-flex align-items-center">
+                            
+                            <div class="me-4 d-none d-md-block">
+                                {% if req.status == 'ANSWERED' %}
+                                    <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success">
+                                        <i class="bi bi-check-circle-fill fs-4"></i>
+                                    </div>
+                                {% elif req.status == 'CLOSED' %}
+                                    <div class="bg-secondary bg-opacity-10 p-3 rounded-circle text-secondary">
+                                        <i class="bi bi-archive-fill fs-4"></i>
+                                    </div>
+                                {% else %}
+                                    <div class="bg-warning bg-opacity-10 p-3 rounded-circle text-warning">
+                                        <i class="bi bi-hourglass-split fs-4"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h5 class="fw-bold text-dark mb-0">{{ req.subject }}</h5>
+                                    <small class="text-muted">{{ req.created_at|to_jalali:'%Y/%m/%d' }}</small>
+                                </div>
+                                <p class="text-muted small mb-2 text-truncate" style="max-width: 500px;">
+                                    {{ req.description|truncatewords:15 }}
+                                </p>
+                                <div>
+                                    {% if req.status == 'PENDING' %}
+                                        <span class="badge bg-warning text-dark rounded-pill">در انتظار پاسخ</span>
+                                    {% elif req.status == 'ANSWERED' %}
+                                        <span class="badge bg-success rounded-pill">پاسخ داده شده</span>
+                                    {% elif req.status == 'CLOSED' %}
+                                        <span class="badge bg-secondary rounded-pill">بسته شده</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="ms-3 text-muted">
+                                <i class="bi bi-chevron-left"></i>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
             {% endfor %}
         </div>
     {% else %}
-        <div class="alert alert-light text-center border" role="alert">
-            <p class="mb-0">شما تاکنون درخواست مشاوره‌ای ثبت نکرده‌اید.</p>
-            <a href="{% url 'consultation:create_request' %}" class="btn btn-primary mt-3">ثبت درخواست جدید</a>
+        <div class="text-center py-5">
+            <img src="{% static 'images/empty-state.svg' %}" alt="خالی" class="mb-4 opacity-50" style="max-width: 150px;">
+            <h5 class="text-muted">هنوز هیچ مشاوره‌ای ثبت نکرده‌اید.</h5>
+            <p class="text-muted small">سوالات خود را با متخصصین ما در میان بگذارید.</p>
+            <a href="{% url 'consultation:create_request' %}" class="btn btn-outline-primary mt-2">ثبت اولین مشاوره</a>
         </div>
     {% endif %}
 </div>
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .transition-all {
+        transition: all 0.3s ease;
+    }
+</style>
 {% endblock %}

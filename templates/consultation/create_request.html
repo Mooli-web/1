@@ -1,11 +1,40 @@
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
-{% block title %}درخواست مشاوره جدید{% endblock %}
+
+{% block title %}مشاوره جدید{% endblock %}
+
 {% block content %}
-<h2>ایجاد درخواست مشاوره جدید</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form|crispy }}
-    <button type="submit" class="btn btn-primary mt-3">ارسال درخواست</button>
-</form>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-header bg-primary text-white text-center py-4 border-0 rounded-top-4">
+                    <h4 class="fw-bold mb-1"><i class="bi bi-headset me-2"></i>ثبت درخواست مشاوره</h4>
+                    <p class="mb-0 small opacity-75">سوال خود را بپرسید، متخصصین ما به زودی پاسخ می‌دهند.</p>
+                </div>
+                <div class="card-body p-5">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-light border mb-4 d-flex align-items-start">
+                            <i class="bi bi-info-circle-fill text-primary fs-5 me-2 mt-1"></i>
+                            <small class="text-muted">
+                                لطفا مشکل یا سوال خود را به صورت کامل و شفاف شرح دهید. پاسخ شما از طریق اعلان درون برنامه و داشبورد قابل مشاهده خواهد بود.
+                            </small>
+                        </div>
+
+                        {{ form|crispy }}
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm rounded-pill">
+                                <i class="bi bi-send-fill me-2"></i>ارسال درخواست
+                            </button>
+                            <a href="{% url 'consultation:request_list' %}" class="btn btn-link text-muted text-decoration-none">انصراف</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
