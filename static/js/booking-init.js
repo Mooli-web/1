@@ -1,109 +1,162 @@
 /* static/js/booking-init.js */
 /**
- * نقطه شروع (Entry Point) اسکریپت‌های رزرو.
- * این فایل پس از لود شدن صفحه اجرا می‌شود و ماژول‌های دیگر را فراخوانی می‌کند.
+ * نقطه شروع سیستم رزرو.
+ * اتصال رویدادها و مدیریت جریان داده‌ها.
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Booking System Initializing...');
 
-    // 1. دریافت تنظیمات اولیه از HTML (دیتا اتریبیوت‌ها)
-    // این بهترین روش برای انتقال URL ها از جنگو به JS است
-    const configEl = document.getElementById('booking-config');
+    // 1. دریافت تنظیمات از فرم HTML
+    const configEl = document.getElementById('bookingForm');
     if (!configEl) {
-        console.warn('Booking config element not found. Skipping initialization.');
+        console.error('Form #bookingForm not found.');
         return;
     }
 
+    // تبدیل نام‌های دیتا-اتریبیوت (hyphen-case) به camelCase
     const config = {
-        slotsApiUrl: configEl.dataset.slotsApiUrl,
-        discountApiUrl: configEl.dataset.discountApiUrl,
+        getServicesUrl: configEl.dataset.getServicesUrl, // data-get-services-url
+        getSlotsUrl: configEl.dataset.getSlotsUrl,       // data-get-slots-url
         csrfToken: configEl.dataset.csrfToken,
+        priceToPointsRate: parseInt(configEl.dataset.pointsRate) || 0
     };
 
-    // 2. راه‌اندازی State
+    // 2. راه‌اندازی اولیه
     BookingState.init();
+    
+    // راه‌اندازی تقویم (بدون وابستگی به FullCalendar)
+    const calendarWrapper = document.getElementById('booking-calendar-wrapper');
+    if (window.BookingCalendar && calendarWrapper) {
+        BookingCalendar.init(calendarWrapper, (dateObj, dateKey) => {
+            // وقتی روی روز کلیک شد
+            const slots = BookingCalendar.availableDatesMap[dateKey];
+            if (slots && slots.length > 0) {
+                BookingState.state.selectedDate = dateKey;
+                BookingUI.renderSlots(slots, (selectedSlot) => {
+                    // وقتی روی ساعت کلیک شد
+                    BookingState.setSlot(selectedSlot.start);
+                    
+                    // پر کردن فیلد مخفی
+                    document.getElementById('selectedSlot').value = selectedSlot.start;
+                    
+                    // فعال کردن دکمه تایید
+                    const confirmBtn = document.getElementById('confirmBtn');
+                    if (confirmBtn) {
+                        confirmBtn.disabled = false;
+                        // اگر مودال تایید دارید، اینجا اتریبیوت دیتا-bs-toggle اضافه کنید یا مستقیم سابمیت
+                        confirmBtn.setAttribute('data-bs-toggle', 'modal');
+                        confirmBtn.setAttribute('data-bs-target', '#confirmationModal');
+                    }
+                });
+            } else {
+                BookingUI.clearSlots();
+            }
+        });
+    }
 
-    // 3. راه‌اندازی تقویم
-    const calendarEl = document.getElementById('calendar');
-    BookingCalendar.init(calendarEl, (dateObj, dateStr) => {
-        // وقتی روی یک روز کلیک شد:
-        
-        // الف) تبدیل تاریخ میلادی سلول به شمسی (کلید دیکشنری)
-        const jDate = moment(dateObj).locale('fa').format('YYYY-MM-DD');
-        
-        // ب) بررسی وجود اسلات
-        const slots = BookingCalendar.availableDatesMap[jDate];
-        
-        if (slots) {
-            BookingState.state.selectedDate = jDate;
-            // پ) نمایش اسلات‌ها در UI
-            BookingUI.renderSlots(slots, (selectedSlot) => {
-                // وقتی روی ساعت کلیک شد
-                BookingState.setSlot(selectedSlot.start);
-                
-                // پر کردن فیلد مخفی فرم برای ارسال به سرور
-                const hiddenInput = document.getElementById('id_slot'); // نام فیلد در فرم جنگو
-                if (hiddenInput) {
-                    hiddenInput.value = selectedSlot.start;
+    // 3. رویداد تغییر "گروه خدمات"
+    const serviceGroupSelect = document.getElementById('serviceGroup');
+    if (serviceGroupSelect) {
+        serviceGroupSelect.addEventListener('change', async function() {
+            const groupId = this.value;
+            
+            // پاک کردن وضعیت قبلی
+            BookingUI.clearSelectionArea();
+            BookingState.reset();
+            BookingCalendar.updateEvents({}); // پاک کردن تقویم
+
+            if (!groupId) return;
+
+            // دریافت خدمات از سرور
+            const data = await BookingAPI.fetchServicesForGroup(config.getServicesUrl, groupId);
+            
+            if (data) {
+                BookingUI.renderServices(data.services, data.allow_multiple_selection);
+                if (data.has_devices) {
+                    BookingUI.renderDevices(data.devices);
                 }
-                console.log('Slot Selected:', selectedSlot.start);
-            });
-        } else {
-            BookingUI.clearSlots();
-            // alert('برای این تاریخ نوبتی موجود نیست.');
+                
+                // اسکرول نرم به بخش خدمات
+                document.getElementById('servicesContainer').scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+
+    // 4. رویداد تغییر در لیست خدمات (Delegate Event)
+    // چون چک‌باکس‌ها بعداً اضافه می‌شوند، ایونت را به کانتینر پدر می‌دهیم
+    document.getElementById('servicesContainer').addEventListener('change', (e) => {
+        if (e.target.classList.contains('service-input')) {
+            handleSelectionChange();
         }
     });
 
-    // 4. گوش دادن به تغییرات سرویس (برای لود مجدد تقویم)
-    const serviceSelect = document.getElementById('id_services'); // نام فیلد Select2 یا چک‌باکس
-    const deviceSelect = document.getElementById('id_device');
-
-    const reloadCalendarData = async () => {
-        // دریافت ID سرویس‌های انتخاب شده
-        // فرض: اگر Select2 باشد
-        let selectedServices = [];
-        if (serviceSelect) {
-             selectedServices = Array.from(serviceSelect.selectedOptions).map(opt => opt.value);
+    // 5. رویداد تغییر دستگاه
+    document.getElementById('devicesContainer').addEventListener('change', (e) => {
+        if (e.target.classList.contains('device-input')) {
+            // پر کردن فیلد مخفی دستگاه
+            document.getElementById('selectedDevice').value = e.target.value;
+            handleSelectionChange();
         }
-        
-        // دریافت دستگاه (اگر وجود دارد)
-        let selectedDevice = deviceSelect ? deviceSelect.value : null;
+    });
 
-        if (selectedServices.length === 0) {
+    // تابع مدیریت تغییرات (انتخاب سرویس/دستگاه) -> لود مجدد تقویم
+    async function handleSelectionChange() {
+        // جمع‌آوری سرویس‌های انتخاب شده
+        const checkedInputs = document.querySelectorAll('.service-input:checked');
+        const serviceIds = Array.from(checkedInputs).map(input => input.value);
+        
+        // جمع‌آوری قیمت (محاسبه سمت کلاینت برای نمایش سریع)
+        let totalPrice = 0;
+        checkedInputs.forEach(input => {
+            totalPrice += parseInt(input.dataset.price || 0);
+        });
+        BookingUI.updateFinalPrice(totalPrice);
+        document.getElementById('basePrice').value = totalPrice; // ذخیره برای استفاده‌های بعدی
+
+        // بررسی دستگاه
+        const deviceSelect = document.getElementById('id_device');
+        const deviceId = deviceSelect ? deviceSelect.value : null;
+
+        // اگر دستگاه لازم است ولی انتخاب نشده، تقویم را نگیر
+        if (document.getElementById('devicesContainer').innerHTML !== '' && !deviceId) {
             BookingCalendar.updateEvents({});
-            BookingUI.clearSlots();
             return;
         }
 
-        BookingUI.toggleLoading(true);
-
-        // فراخوانی API
-        const data = await BookingAPI.fetchAvailableSlots(
-            config.slotsApiUrl, 
-            selectedServices, 
-            selectedDevice
-        );
-
-        BookingUI.toggleLoading(false);
-
-        if (data) {
-            // آپدیت تقویم با داده‌های جدید (رنگ کردن روزهای سبز)
-            BookingCalendar.updateEvents(data);
-            BookingUI.clearSlots(); // پاک کردن اسلات‌های ساعت چون تقویم رفرش شده
+        if (serviceIds.length > 0) {
+            BookingUI.toggleSlotsLoading(true);
+            
+            // دریافت تقویم پر
+            const slotsData = await BookingAPI.fetchAvailableSlots(
+                config.getSlotsUrl, 
+                serviceIds, 
+                deviceId
+            );
+            
+            BookingUI.toggleSlotsLoading(false);
+            
+            if (slotsData) {
+                BookingCalendar.updateEvents(slotsData);
+                // نمایش کانتینر تقویم
+                const slotsContainer = document.getElementById('slotsContainer');
+                if(slotsContainer) slotsContainer.style.display = 'block';
+                
+                // اسکرول به تقویم
+                document.getElementById('booking-calendar-wrapper').scrollIntoView({ behavior: 'smooth' });
+            }
+        } else {
+            // اگر همه تیک‌ها برداشته شد
+            BookingCalendar.updateEvents({});
+            BookingUI.clearSlots();
         }
-    };
-
-    // اتصال ایونت‌ها
-    if (serviceSelect) {
-        serviceSelect.addEventListener('change', reloadCalendarData);
     }
-    if (deviceSelect) {
-        deviceSelect.addEventListener('change', reloadCalendarData);
-    }
-
-    // فراخوانی اولیه (اگر صفحه رفرش شده و مقادیر مانده‌اند)
-    if (serviceSelect && serviceSelect.value) {
-        reloadCalendarData();
+    
+    // 6. هندل کردن دکمه تایید نهایی (سابمیت فرم)
+    const submitBtn = document.getElementById('submitBtn'); // دکمه داخل مودال
+    if (submitBtn) {
+        submitBtn.addEventListener('click', () => {
+            document.getElementById('bookingForm').submit();
+        });
     }
 });

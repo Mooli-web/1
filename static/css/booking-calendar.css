@@ -1,89 +1,73 @@
-/*
-  ========================================
-  --- Booking Calendar v6.0 (Heatmap) ---
-  ========================================
-*/
+/* static/css/booking-calendar.css */
 
-/* --- ایده ۱: ساختار تقویم حرارتی --- */
+/* کانتینر اصلی تقویم */
+#booking-calendar-wrapper {
+    direction: rtl;
+    font-family: inherit;
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+/* هدر و بدنه تقویم را شبکه‌ای کن */
 .calendar-grid-header, .calendar-grid-body {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px; /* فاصله بین دایره‌ها */
+    grid-template-columns: repeat(7, 1fr); /* ۷ ستون مساوی */
+    gap: 8px;
     text-align: center;
+    margin-bottom: 10px;
 }
 
+/* استایل روزهای هفته (شنبه، یکشنبه...) */
 .calendar-grid-header div {
     font-weight: bold;
-    color: var(--text-light);
-    padding-bottom: 10px;
+    color: #6c757d;
+    font-size: 0.9rem;
 }
 
-.calendar-grid-body .calendar-day {
-    padding: 10px 5px;
-    border-radius: 50%; /* ایجاد دایره (ایده شما) */
-    cursor: not-allowed;
-    background-color: #f8f9fa; /* رنگ روزهای غیرفعال/گذشته */
-    color: #adb5bd;
-    opacity: 0.7;
-    transition: all 0.2s ease-in-out;
-    border: 2px solid transparent;
-}
-
-/* روز خالی در گرید (قبل از شروع ماه) */
-.calendar-grid-body .calendar-day-empty {
-    background-color: transparent;
-    opacity: 1;
-    cursor: default;
-}
-
-.calendar-day.available {
-    cursor: pointer;
-    font-weight: bold;
-    opacity: 1;
-}
-.calendar-day.available:hover {
-    transform: scale(1.05);
-}
-
-/* --- ایده ۱: تکنیک بازاریابی: نقشه حرارتی --- */
-
-/* سبز: ظرفیت زیاد (بیش از 7 اسلات) */
-.calendar-day.available-high { 
-    background-color: #d4edda;
-    color: #155724;
-}
-
-/* زرد: ظرفیت محدود (3 تا 7 اسلات) */
-.calendar-day.available-medium { 
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-/* قرمز: در حال اتمام (1 تا 3 اسلات) */
-.calendar-day.available-low { 
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-/* آبی: روز انتخاب شده */
-.calendar-day.selected { 
-    background-color: #0d6efd;
-    color: white;
-    transform: scale(1.1);
-    border: 2px solid #0056b3;
-}
-
-/* --- ایده ۳: برچسب محبوب --- */
-.popular-tag {
-    font-size: 0.75em;
-    font-weight: bold;
-    color: #ff6a00; /* رنگ نارنجی آتشین */
-    margin-right: 5px;
-}
-
-/* --- ایده ۲: دکمه اولین نوبت --- */
-#first-available-slot-container {
+/* استایل خانه‌های روزها */
+.calendar-day {
+    aspect-ratio: 1; /* مربع کامل */
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+/* روزهای خالی (فاصله اول ماه) */
+.calendar-day-empty {
+    background-color: transparent;
+    pointer-events: none;
+}
+
+/* روزهای غیرفعال (گذشته یا بدون نوبت) */
+.calendar-day.disabled, .calendar-day.unavailable {
+    color: #dee2e6;
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+}
+
+/* روزهای دارای نوبت (سبز) */
+.calendar-day.available {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #badbcc;
+}
+
+.calendar-day.available:hover {
+    background-color: #a3cfbb;
+    transform: scale(1.1);
+}
+
+/* روز انتخاب شده (آبی) */
+.calendar-day.selected {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
 }

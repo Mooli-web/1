@@ -6,27 +6,15 @@
 
 const BookingAPI = {
     /**
-     * دریافت لیست اسلات‌های خالی برای یک بازه زمانی.
-     * * @param {string} apiUrl - آدرس API (توسط جنگو تولید می‌شود)
-     * @param {Array} serviceIds - لیست خدمات
-     * @param {string|null} deviceId - دستگاه (اختیاری)
-     * @returns {Promise} - خروجی JSON سرور
+     * دریافت لیست خدمات یک گروه خاص
+     * @param {string} apiUrl - آدرس API
+     * @param {number} groupId - شناسه گروه
      */
-    async fetchAvailableSlots(apiUrl, serviceIds, deviceId = null) {
-        if (!apiUrl) {
-            console.error('BookingAPI: API URL is missing.');
-            return null;
-        }
-
-        // ساخت پارامترهای URL
-        const params = new URLSearchParams();
-        serviceIds.forEach(id => params.append('service_ids[]', id));
-        if (deviceId) {
-            params.append('device_id', deviceId);
-        }
+    async fetchServicesForGroup(apiUrl, groupId) {
+        if (!apiUrl || !groupId) return null;
 
         try {
-            const response = await fetch(`${apiUrl}?${params.toString()}`, {
+            const response = await fetch(`${apiUrl}?group_id=${groupId}`, {
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
@@ -34,27 +22,40 @@ const BookingAPI = {
                 }
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            return data;
-
+            if (!response.ok) throw new Error('خطا در دریافت خدمات');
+            return await response.json();
         } catch (error) {
-            console.error('BookingAPI Error:', error);
-            // نمایش پیام خطا به کاربر (اختیاری)
-            // alert('خطا در دریافت نوبت‌های خالی. لطفا اتصال اینترنت خود را بررسی کنید.');
+            console.error('BookingAPI Error (Services):', error);
+            return null;
+        }
+    },
+
+    /**
+     * دریافت لیست اسلات‌های خالی
+     */
+    async fetchAvailableSlots(apiUrl, serviceIds, deviceId = null) {
+        if (!apiUrl || !serviceIds || serviceIds.length === 0) return null;
+
+        const params = new URLSearchParams();
+        serviceIds.forEach(id => params.append('service_ids[]', id));
+        if (deviceId) params.append('device_id', deviceId);
+
+        try {
+            const response = await fetch(`${apiUrl}?${params.toString()}`, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (!response.ok) throw new Error('خطا در دریافت نوبت‌ها');
+            return await response.json();
+        } catch (error) {
+            console.error('BookingAPI Error (Slots):', error);
             return null;
         }
     },
 
     /**
      * اعمال کد تخفیف
-     * @param {string} apiUrl 
-     * @param {string} code 
-     * @param {number} totalPrice 
-     * @param {string} csrfToken 
      */
     async applyDiscount(apiUrl, code, totalPrice, csrfToken) {
         const formData = new FormData();
@@ -73,7 +74,7 @@ const BookingAPI = {
             return await response.json();
         } catch (error) {
             console.error('Discount API Error:', error);
-            return { status: 'error', message: 'خطای سیستمی.' };
+            return { status: 'error', message: 'خطای ارتباط با سرور.' };
         }
     }
 };
