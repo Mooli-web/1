@@ -1,23 +1,23 @@
 # clinic/views.py
 """
 ویوهای صفحات عمومی (استاتیک و داینامیک) سایت.
-بهینه‌سازی کوئری‌ها برای افزایش سرعت لود صفحات.
+بهینه‌سازی کوئری‌ها برای افزایش سرعت لود صفحات و استفاده از کش.
 """
 
 from django.shortcuts import render
 from django.http import HttpRequest, HttpResponse
+from django.views.decorators.cache import cache_page
 from .models import Service, PortfolioItem, FAQ, Testimonial, ServiceGroup
 
 def home_view(request: HttpRequest) -> HttpResponse:
     """
     نمایش صفحه اصلی.
     """
-    # واکشی گروه‌های خدماتی (معمولا نیازی به جوین سنگین ندارند مگر اینکه عکس یا دستگاه بخواهیم)
+    # دریافت گروه‌ها برای نمایش در صفحه اصلی
     service_groups = ServiceGroup.objects.all()[:6]
     
-    # نظرات مشتریان: حتماً به سرویس نیاز داریم، پس select_related می‌زنیم
+    # دریافت نظرات مثبت برای بخش اعتماد سازی
     testimonials = Testimonial.objects.select_related('service').filter(
-        # می‌توان شرط نمایش نظرات با امتیاز بالا را اضافه کرد
         rating__gte=4 
     ).order_by('-created_at')[:3]
     
@@ -27,19 +27,23 @@ def home_view(request: HttpRequest) -> HttpResponse:
     }
     return render(request, 'clinic/home.html', context)
 
+# کش کردن صفحه خدمات برای ۱۵ دقیقه (900 ثانیه)
+# تغییرات قیمت در ادمین تا ۱۵ دقیقه بعد اعمال نمی‌شود مگر کش پاک شود
+@cache_page(60 * 15)
 def service_list_view(request: HttpRequest) -> HttpResponse:
     """
     نمایش تمام خدمات.
-    چون در تمپلیت احتمالا نام گروه هر خدمت (service.group.name) نمایش داده می‌شود،
-    از select_related('group') استفاده می‌کنیم تا از N+1 Query جلوگیری شود.
+    استفاده از prefetch_related برای دریافت خدمات زیرمجموعه هر گروه در یک کوئری بهینه.
     """
-    services = Service.objects.select_related('group').all()
-    return render(request, 'clinic/service_list.html', {'services': services})
+    # به جای دریافت سرویس‌ها و گروه بندی در تمپلیت، گروه‌ها را می‌گیریم و سرویس‌ها را به آن‌ها می‌چسبانیم
+    # این کار ساختار تمپلیت را منطقی‌تر می‌کند
+    groups = ServiceGroup.objects.prefetch_related('services').all()
+    
+    return render(request, 'clinic/service_list.html', {'groups': groups})
 
 def portfolio_gallery_view(request: HttpRequest) -> HttpResponse:
     """
     گالری نمونه کارها.
-    مشابه خدمات، برای نمایش نام سرویس مربوطه، بهینه می‌شود.
     """
     portfolio_items = PortfolioItem.objects.select_related('service').order_by('-created_at')
     return render(request, 'clinic/portfolio_gallery.html', {'portfolio_items': portfolio_items})
