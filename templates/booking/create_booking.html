@@ -1,12 +1,11 @@
 {# mooli-web/templates/booking/create_booking.html #}
-{# --- نسخه اصلاح شده (Fix: CSS Block & Calendar ID) --- #}
+{# --- نسخه اصلاح شده (Fix: Calendar ID Mismatch) --- #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
 {% block title %}رزرو نوبت جدید{% endblock %}
 
-{# --- اصلاح ۱: تغییر نام بلاک از extra_head به extra_css --- #}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/booking-calendar.css' %}">
 <style>
@@ -80,9 +79,8 @@
                         </div>
                         <label class="form-label fs-5 mb-2" id="calendar-step-label"></label>
                         
-                        {# --- اصلاح ۲: افزودن id="calendar" برای شناسایی توسط JS --- #}
-                        <div id="calendar" class="booking-calendar-wrapper">
-                            {# محتویات داخلی (هدر و بادی) ممکن است توسط FullCalendar جایگزین شوند، اما برای استایل‌دهی اولیه حفظ شده‌اند #}
+                        {# --- تغییر اصلی: شناسه تقویم اصلاح شد --- #}
+                        <div id="booking-calendar-wrapper" class="booking-calendar-wrapper">
                             <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
                                 <button type="button" class="btn btn-outline-secondary" id="calendar-prev-month" disabled>« ماه قبل</button>
                                 <h5 id="calendar-month-label" class="fw-bold m-0"></h5>
