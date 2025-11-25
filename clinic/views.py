@@ -1,23 +1,25 @@
 # clinic/views.py
 """
 ویوهای صفحات عمومی (استاتیک و داینامیک) سایت.
-بهینه‌سازی کوئری‌ها برای افزایش سرعت لود صفحات و استفاده از کش.
+بهینه‌سازی کوئری‌ها برای افزایش سرعت لود صفحات.
 """
 
 from django.shortcuts import render
 from django.http import HttpRequest, HttpResponse
-from django.views.decorators.cache import cache_page
+from django.db.models import Prefetch
 from .models import Service, PortfolioItem, FAQ, Testimonial, ServiceGroup
+from django.core.paginator import Paginator
 
 def home_view(request: HttpRequest) -> HttpResponse:
     """
     نمایش صفحه اصلی.
     """
-    # دریافت گروه‌ها برای نمایش در صفحه اصلی
+    # واکشی گروه‌های خدماتی (معمولا نیازی به جوین سنگین ندارند مگر اینکه عکس یا دستگاه بخواهیم)
     service_groups = ServiceGroup.objects.all()[:6]
     
-    # دریافت نظرات مثبت برای بخش اعتماد سازی
+    # نظرات مشتریان: حتماً به سرویس نیاز داریم، پس select_related می‌زنیم
     testimonials = Testimonial.objects.select_related('service').filter(
+        # می‌توان شرط نمایش نظرات با امتیاز بالا را اضافه کرد
         rating__gte=4 
     ).order_by('-created_at')[:3]
     
@@ -27,26 +29,55 @@ def home_view(request: HttpRequest) -> HttpResponse:
     }
     return render(request, 'clinic/home.html', context)
 
-# کش کردن صفحه خدمات برای ۱۵ دقیقه (900 ثانیه)
-# تغییرات قیمت در ادمین تا ۱۵ دقیقه بعد اعمال نمی‌شود مگر کش پاک شود
-@cache_page(60 * 15)
 def service_list_view(request: HttpRequest) -> HttpResponse:
     """
-    نمایش تمام خدمات.
-    استفاده از prefetch_related برای دریافت خدمات زیرمجموعه هر گروه در یک کوئری بهینه.
+    نمایش لیست گروه‌بندی شده خدمات.
+    بهینه‌سازی: استفاده از prefetch_related برای جلوگیری از مشکل N+1 Query در تمپلیت.
     """
-    # به جای دریافت سرویس‌ها و گروه بندی در تمپلیت، گروه‌ها را می‌گیریم و سرویس‌ها را به آن‌ها می‌چسبانیم
-    # این کار ساختار تمپلیت را منطقی‌تر می‌کند
-    groups = ServiceGroup.objects.prefetch_related('services').all()
+    # دریافت گروه‌ها و پیش‌بارگذاری سرویس‌های فعال هر گروه
+    # این کار باعث می‌شود بجای N کوئری، فقط 2 کوئری به دیتابیس زده شود.
+    groups = ServiceGroup.objects.prefetch_related(
+        Prefetch('services', queryset=Service.objects.all().order_by('price'))
+    ).all()
     
-    return render(request, 'clinic/service_list.html', {'groups': groups})
+    context = {
+        'groups': groups, # نام متغیر با تمپلیت هماهنگ شد
+    }
+    return render(request, 'clinic/service_list.html', context)
 
 def portfolio_gallery_view(request: HttpRequest) -> HttpResponse:
     """
     گالری نمونه کارها.
+    بهبودها:
+    1. افزودن فیلتر بر اساس گروه خدمات (group_id).
+    2. افزودن صفحه‌بندی (Pagination) برای افزایش سرعت لود.
+    3. واکشی گروه‌ها برای نمایش در تب‌های فیلتر.
     """
-    portfolio_items = PortfolioItem.objects.select_related('service').order_by('-created_at')
-    return render(request, 'clinic/portfolio_gallery.html', {'portfolio_items': portfolio_items})
+    # دریافت پارامتر فیلتر
+    group_id = request.GET.get('group')
+    
+    # کوئری پایه
+    queryset = PortfolioItem.objects.select_related('service__group').order_by('-created_at')
+    
+    # اعمال فیلتر اگر انتخاب شده باشد
+    if group_id:
+        queryset = queryset.filter(service__group_id=group_id)
+    
+    # صفحه‌بندی (نمایش 9 آیتم در هر صفحه)
+    paginator = Paginator(queryset, 9)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # دریافت گروه‌هایی که حداقل یک نمونه‌کار دارند (برای نمایش در لیست فیلتر)
+    # از distinct استفاده می‌کنیم تا گروه‌های تکراری نیاید
+    groups = ServiceGroup.objects.filter(services__portfolio_items__isnull=False).distinct()
+    
+    context = {
+        'portfolio_items': page_obj, # ارسال آبجکت صفحه بجای کل لیست
+        'groups': groups,
+        'current_group_id': int(group_id) if group_id and group_id.isdigit() else None
+    }
+    return render(request, 'clinic/portfolio_gallery.html', context)
 
 def faq_view(request: HttpRequest) -> HttpResponse:
     """

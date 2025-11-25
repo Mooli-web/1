@@ -1,49 +1,237 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}گالری نمونه کارها{% endblock %}
+{% block title %}گالری نمونه کارها | تغییرات واقعی{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* استایل‌های اختصاصی اسلایدر مقایسه */
+    .comparison-slider-wrapper {
+        position: relative;
+        width: 100%;
+        height: 300px; /* ارتفاع ثابت برای کارت‌ها */
+        overflow: hidden;
+        border-radius: 12px 12px 0 0;
+        cursor: ew-resize;
+    }
+    
+    .comparison-slider-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    
+    /* تصویر "بعد" که روی تصویر "قبل" قرار می‌گیرد */
+    .img-after-overlay {
+        width: 50%; /* مقدار اولیه */
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0; /* در حالت RTL باید Left باشد چون اورلی است */
+        overflow: hidden;
+        border-right: 2px solid white; /* خط جداکننده */
+        z-index: 2;
+    }
+    
+    .img-after-overlay img {
+        /* نکته مهم: عرض تصویر داخل اورلی باید برابر با عرض والد اصلی باشد تا کراپ نشود */
+        width: calc(100% / 0.5); /* معکوس مقدار width والد */
+        max-width: none;
+    }
+
+    /* هندل (دسته) اسلایدر */
+    .slider-handle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        pointer-events: none; /* تاثیری روی موس نداشته باشد */
+    }
+    
+    .slider-handle i {
+        color: var(--text-dark);
+    }
+
+    /* برچسب‌های قبل و بعد */
+    .label-badge {
+        position: absolute;
+        bottom: 15px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        z-index: 4;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .label-before { right: 15px; background: rgba(0, 0, 0, 0.6); color: white; }
+    .label-after { left: 15px; background: rgba(255, 255, 255, 0.8); color: black; }
+
+    /* بهبود ریسپانسیو */
+    @media (max-width: 768px) {
+        .comparison-slider-wrapper { height: 250px; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold text-dark">گالری نمونه کارها</h1>
-        <p class="lead text-muted">مشاهده نتایج درخشان و تغییرات واقعی مراجعین ما.</p>
+        <h1 class="display-4 fw-bold text-dark">نتایج درخشان مراجعین</h1>
+        <p class="lead text-muted">کیفیت خدمات ما را در تغییرات واقعی ببینید.</p>
     </div>
 
-    <div class="row row-cols-1 row-cols-md-2 g-4">
+    {# --- بخش فیلتر --- #}
+    <div class="d-flex justify-content-center flex-wrap gap-2 mb-5">
+        <a href="{% url 'clinic:portfolio_gallery' %}" 
+           class="btn rounded-pill px-4 {% if not current_group_id %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+           همه
+        </a>
+        {% for group in groups %}
+        <a href="?group={{ group.id }}" 
+           class="btn rounded-pill px-4 {% if current_group_id == group.id %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+           {{ group.name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for item in portfolio_items %}
         <div class="col">
-            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
-                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 fw-bold text-primary">{{ item.title }}</h5>
-                    <span class="badge bg-light text-dark border">{{ item.service.name|default:"عمومی" }}</span>
-                </div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="position-relative">
-                                <img src="{{ item.before_image.url }}" alt="قبل از {{ item.title }}" class="img-fluid rounded-3 w-100 shadow-sm" style="height: 250px; object-fit: cover;">
-                                <span class="position-absolute bottom-0 start-0 bg-dark text-white px-2 py-1 m-2 rounded small opacity-75">قبل</span>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="position-relative">
-                                <img src="{{ item.after_image.url }}" alt="بعد از {{ item.title }}" class="img-fluid rounded-3 w-100 shadow-sm" style="height: 250px; object-fit: cover;">
-                                <span class="position-absolute bottom-0 start-0 bg-success text-white px-2 py-1 m-2 rounded small opacity-90">بعد</span>
-                            </div>
-                        </div>
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden hover-shadow transition-all">
+                
+                {# --- اسلایدر مقایسه‌ای --- #}
+                <div class="comparison-slider-wrapper" id="slider-{{ item.id }}" onmousemove="moveSlider(event, this)" ontouchmove="moveSlider(event, this)">
+                    {# تصویر پس‌زمینه (قبل) #}
+                    <img src="{{ item.before_image.url }}" alt="قبل از {{ item.title }}" loading="lazy">
+                    <span class="label-badge label-before">قبل</span>
+                    
+                    {# لایه رویی (بعد) #}
+                    <div class="img-after-overlay" style="width: 50%;">
+                        {# عرض تصویر باید داینامیک ست شود تا اسکیل نشود #}
+                        <img src="{{ item.after_image.url }}" alt="بعد از {{ item.title }}" loading="lazy" style="width: 200%;"> 
                     </div>
-                    {% if item.description %}
-                        <p class="card-text mt-3 text-muted small">{{ item.description }}</p>
+                    <span class="label-badge label-after">بعد</span>
+
+                    {# هندل متحرک #}
+                    <div class="slider-handle" style="left: 50%;">
+                        <i class="bi bi-arrows-expand-vertical" style="transform: rotate(90deg);"></i>
+                    </div>
+                </div>
+
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title fw-bold text-dark mb-0">{{ item.title }}</h5>
+                        {% if item.service %}
+                            <span class="badge bg-light text-secondary border">{{ item.service.name }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="card-text text-muted small mb-4 flex-grow-1">{{ item.description|truncatechars:100 }}</p>
+                    
+                    {# --- دکمه بازاریابی (رزرو همین خدمت) --- #}
+                    {% if item.service %}
+                        <a href="{% url 'booking:create_booking' %}?service_id={{ item.service.id }}" class="btn btn-outline-primary w-100 rounded-pill">
+                            <i class="bi bi-calendar-check me-2"></i>رزرو این خدمت
+                        </a>
+                    {% else %}
+                        <a href="{% url 'booking:create_booking' %}" class="btn btn-outline-secondary w-100 rounded-pill">
+                            <i class="bi bi-calendar-plus me-2"></i>رزرو وقت مشاوره
+                        </a>
                     {% endif %}
                 </div>
             </div>
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <div class="alert alert-info d-inline-block px-5"><i class="bi bi-images me-2"></i>هیچ نمونه کاری برای نمایش وجود ندارد.</div>
+            <div class="alert alert-light d-inline-block px-5 border border-dashed">
+                <i class="bi bi-images display-4 text-muted mb-3 d-block"></i>
+                هنوز نمونه کاری برای این دسته ثبت نشده است.
+            </div>
         </div>
         {% endfor %}
     </div>
+
+    {# --- Pagination --- #}
+    {% if portfolio_items.has_other_pages %}
+    <nav class="mt-5" aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if portfolio_items.has_previous %}
+                <li class="page-item">
+                    <a class="page-link rounded-end-pill" href="?page={{ portfolio_items.previous_page_number }}{% if current_group_id %}&group={{ current_group_id }}{% endif %}">قبلی</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link rounded-end-pill">قبلی</span></li>
+            {% endif %}
+
+            {% for i in portfolio_items.paginator.page_range %}
+                {% if portfolio_items.number == i %}
+                    <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}{% if current_group_id %}&group={{ current_group_id }}{% endif %}">{{ i }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if portfolio_items.has_next %}
+                <li class="page-item">
+                    <a class="page-link rounded-start-pill" href="?page={{ portfolio_items.next_page_number }}{% if current_group_id %}&group={{ current_group_id }}{% endif %}">بعدی</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link rounded-start-pill">بعدی</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    /**
+     * منطق اسلایدر قبل/بعد
+     * این تابع بر اساس موقعیت ماوس/تاچ عرض لایه رویی را تغییر می‌دهد.
+     */
+    function moveSlider(e, container) {
+        // محاسبه موقعیت x نسبت به کانتینر
+        const rect = container.getBoundingClientRect();
+        let x = (e.type === 'touchmove' ? e.touches[0].clientX : e.clientX) - rect.left;
+        
+        // محدود کردن به داخل کادر
+        if (x < 0) x = 0;
+        if (x > rect.width) x = rect.width;
+        
+        // محاسبه درصد
+        const percentage = (x / rect.width) * 100;
+        
+        // یافتن عناصر فرزند
+        const overlay = container.querySelector('.img-after-overlay');
+        const handle = container.querySelector('.slider-handle');
+        const imgInOverlay = overlay.querySelector('img');
+        
+        // در حالت RTL، چون اورلی absolute left:0 است، با افزایش عرض از چپ به راست پر می‌شود (تصویر بعد)
+        // ما می‌خواهیم هندل زیر موس باشد.
+        
+        overlay.style.width = percentage + "%";
+        handle.style.left = percentage + "%";
+        
+        // اصلاح کشیدگی تصویر داخل اورلی: عرض تصویر باید معکوس عرض اورلی باشد
+        // اگر عرض اورلی 50% باشد، عرض عکس باید 200% باشد تا سایز واقعی دیده شود
+        if (percentage > 0) {
+            imgInOverlay.style.width = (10000 / percentage) + "%";
+        }
+    }
+</script>
 {% endblock %}

@@ -1,4 +1,6 @@
 # clinic/models.py
+import os
+import uuid
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -160,10 +162,19 @@ class Service(models.Model):
         if self.old_price and self.old_price > self.price:
             return int(((self.old_price - self.price) / self.old_price) * 100)
         return 0
+    
+def get_portfolio_image_path(instance, filename):
+    """
+    تولید مسیر امن برای تصاویر نمونه‌کار با استفاده از UUID.
+    جلوگیری از تداخل نام فایل‌ها و افشای نام اصلی فایل.
+    """
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4()}.{ext}"
+    return os.path.join('portfolio/images/', filename)
 
 class PortfolioItem(models.Model):
     service = models.ForeignKey(
-        Service, 
+        'Service', # ارجاع رشته‌ای برای جلوگیری از خطای ایمپورت
         on_delete=models.SET_NULL, 
         null=True, blank=True, 
         related_name='portfolio_items', 
@@ -171,13 +182,17 @@ class PortfolioItem(models.Model):
     )
     title = models.CharField(max_length=200, verbose_name=_("عنوان"))
     description = models.TextField(blank=True, verbose_name=_("توضیحات"))
-    before_image = models.ImageField(upload_to='portfolio/before/', verbose_name=_("تصویر قبل"))
-    after_image = models.ImageField(upload_to='portfolio/after/', verbose_name=_("تصویر بعد"))
+    
+    # مسیر آپلود اصلاح شد
+    before_image = models.ImageField(upload_to=get_portfolio_image_path, verbose_name=_("تصویر قبل"))
+    after_image = models.ImageField(upload_to=get_portfolio_image_path, verbose_name=_("تصویر بعد"))
+    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("تاریخ ایجاد"))
     
     class Meta:
         verbose_name = _("نمونه کار")
         verbose_name_plural = _("نمونه کارها")
+        ordering = ['-created_at'] # مرتب‌سازی پیش‌فرض
         
     def __str__(self): 
         return self.title
