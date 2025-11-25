@@ -1,7 +1,7 @@
 /* static/js/booking-calendar.js */
 /**
  * مدیریت تقویم شمسی.
- * استفاده از moment-jalaali برای محاسبات تاریخ.
+ * اصلاح نهایی: هماهنگی کامل فرمت تاریخ (شمسی + اعداد انگلیسی)
  */
 
 const BookingCalendar = {
@@ -26,12 +26,12 @@ const BookingCalendar = {
         this.elements.nextBtn = document.getElementById('calendar-next-month');
         this.onDateSelect = onDateSelect;
 
-        // مطمئن شویم moment وجود دارد
         if (typeof moment === 'undefined') {
             console.error('Jalali Moment library missing!');
             return;
         }
 
+        // زبان پیش‌فرض برای نمایش (هدر ماه و...) فارسی باشد
         this.currentMonth = moment().locale('fa').startOf('jMonth');
 
         if (this.elements.prevBtn) {
@@ -59,16 +59,16 @@ const BookingCalendar = {
 
         const startOfMonth = this.currentMonth.clone().startOf('jMonth');
         
+        // نمایش عنوان ماه (مثلاً: آذر ۱۴۰۴)
         if (this.elements.monthLabel) {
             this.elements.monthLabel.textContent = startOfMonth.format('jMMMM jYYYY');
         }
 
         this.elements.gridBody.innerHTML = '';
 
-        // شنبه=0 در تقویم شمسی
         const startDayOfWeek = startOfMonth.weekday(); 
 
-        // خانه‌های خالی
+        // خانه‌های خالی اول ماه
         for (let i = 0; i < startDayOfWeek; i++) {
             const empty = document.createElement('div');
             empty.className = 'calendar-day calendar-day-empty';
@@ -76,17 +76,24 @@ const BookingCalendar = {
         }
 
         const daysInMonth = moment.jDaysInMonth(startOfMonth.jYear(), startOfMonth.jMonth());
-        const todayStr = moment().format('YYYY-MM-DD');
+        
+        // اصلاح مهم ۱: تولید تاریخ امروز به صورت "شمسی" و با "اعداد انگلیسی" برای مقایسه
+        const todayStr = moment().locale('en').format('jYYYY-jMM-jDD');
 
         for (let i = 1; i <= daysInMonth; i++) {
             const dayDate = startOfMonth.clone().jDate(i);
-            const dateKey = dayDate.format('YYYY-MM-DD');
+            
+            // اصلاح مهم ۲: استفاده از jYYYY برای تاریخ شمسی + locale('en') برای اعداد انگلیسی
+            // خروجی این خط دقیقاً مثل سرور می‌شود: "1404-09-04"
+            const dateKey = dayDate.clone().locale('en').format('jYYYY-jMM-jDD');
             
             const cell = document.createElement('div');
             cell.className = 'calendar-day';
-            cell.textContent = i;
+            cell.textContent = i; // عدد روز برای نمایش به کاربر
 
             const hasSlots = this.availableDatesMap[dateKey] && this.availableDatesMap[dateKey].length > 0;
+            
+            // مقایسه رشته‌ای تاریخ‌ها (چون هر دو فرمت یکسان YYYY-MM-DD دارند، مقایسه صحیح است)
             const isPast = dateKey < todayStr;
 
             if (isPast) {
@@ -100,6 +107,7 @@ const BookingCalendar = {
                 cell.addEventListener('click', () => {
                     this.elements.gridBody.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
                     cell.classList.add('selected');
+                    // ارسال دیتای انتخاب شده
                     if (this.onDateSelect) this.onDateSelect(dayDate.toDate(), dateKey);
                 });
             } else {
@@ -109,7 +117,6 @@ const BookingCalendar = {
             this.elements.gridBody.appendChild(cell);
         }
         
-        // مدیریت دکمه "ماه قبل"
         if (this.elements.prevBtn) {
             const prevMonthEnd = startOfMonth.clone().subtract(1, 'jMonth').endOf('jMonth');
             this.elements.prevBtn.disabled = prevMonthEnd.isBefore(moment(), 'day');

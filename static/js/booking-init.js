@@ -2,6 +2,7 @@
 /**
  * نقطه شروع سیستم رزرو.
  * اتصال رویدادها و مدیریت جریان داده‌ها.
+ * نسخه نهایی: شامل اصلاحات تقویم و فعال‌سازی دکمه پرداخت.
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -26,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     BookingState.init();
     
     // راه‌اندازی تقویم (بدون وابستگی به FullCalendar)
+    // نکته: در اینجا از همان ID اصلاح شده در مراحل قبل استفاده می‌کنیم
     const calendarWrapper = document.getElementById('booking-calendar-wrapper');
     if (window.BookingCalendar && calendarWrapper) {
         BookingCalendar.init(calendarWrapper, (dateObj, dateKey) => {
@@ -40,11 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // پر کردن فیلد مخفی
                     document.getElementById('selectedSlot').value = selectedSlot.start;
                     
-                    // فعال کردن دکمه تایید
+                    // فعال کردن دکمه "ادامه و پرداخت" (دکمه‌ای که مودال را باز می‌کند)
                     const confirmBtn = document.getElementById('confirmBtn');
                     if (confirmBtn) {
                         confirmBtn.disabled = false;
-                        // اگر مودال تایید دارید، اینجا اتریبیوت دیتا-bs-toggle اضافه کنید یا مستقیم سابمیت
+                        // اضافه کردن اتریبیوت‌های لازم برای بوت‌استرپ جهت باز کردن مودال
                         confirmBtn.setAttribute('data-bs-toggle', 'modal');
                         confirmBtn.setAttribute('data-bs-target', '#confirmationModal');
                     }
@@ -84,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 4. رویداد تغییر در لیست خدمات (Delegate Event)
-    // چون چک‌باکس‌ها بعداً اضافه می‌شوند، ایونت را به کانتینر پدر می‌دهیم
     document.getElementById('servicesContainer').addEventListener('change', (e) => {
         if (e.target.classList.contains('service-input')) {
             handleSelectionChange();
@@ -152,11 +153,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    // 6. هندل کردن دکمه تایید نهایی (سابمیت فرم)
+    // 6. هندل کردن دکمه تایید نهایی (سابمیت فرم) و چک‌باکس قوانین
     const submitBtn = document.getElementById('submitBtn'); // دکمه داخل مودال
-    if (submitBtn) {
+    const confirmCheckbox = document.getElementById('infoConfirmationCheck'); // چک‌باکس تایید اطلاعات در مودال
+
+    if (submitBtn && confirmCheckbox) {
+        // وضعیت اولیه: دکمه بر اساس وضعیت اولیه چک‌باکس تنظیم می‌شود
+        submitBtn.disabled = !confirmCheckbox.checked;
+
+        // اضافه کردن شنونده رویداد برای تغییر وضعیت چک‌باکس
+        confirmCheckbox.addEventListener('change', function() {
+            // اگر چک‌باکس تیک خورده باشد، دکمه فعال می‌شود (disabled = false)
+            // اگر تیک برداشته شود، دکمه غیرفعال می‌شود (disabled = true)
+            submitBtn.disabled = !this.checked;
+        });
+
+        // ارسال فرم با کلیک روی دکمه نهایی
         submitBtn.addEventListener('click', () => {
-            document.getElementById('bookingForm').submit();
+            if (!submitBtn.disabled) {
+                document.getElementById('bookingForm').submit();
+            }
         });
     }
 });
