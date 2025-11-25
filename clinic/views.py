@@ -81,7 +81,20 @@ def portfolio_gallery_view(request: HttpRequest) -> HttpResponse:
 
 def faq_view(request: HttpRequest) -> HttpResponse:
     """
-    سوالات متداول.
+    صفحه سوالات متداول.
+    شامل: لیست سوالات، دسته‌بندی‌ها و داده‌های ساختاریافته (SEO).
     """
-    faqs = FAQ.objects.filter(is_active=True)
-    return render(request, 'clinic/faq.html', {'faqs': faqs})
+    # دریافت تمام سوالات فعال، مرتب شده بر اساس اولویت
+    # استفاده از select_related برای جلوگیری از N+1 Query هنگام دسترسی به category
+    faqs = FAQ.objects.select_related('category').filter(is_active=True).order_by('sort_order')
+    
+    # استخراج دسته‌بندی‌هایی که حداقل یک سوال فعال دارند (برای ساختن تب‌ها)
+    # ما از set comprehension پایتون استفاده می‌کنیم تا دیتابیس را دوباره درگیر نکنیم
+    # چون faqs را قبلا واکشی کردیم.
+    categories = set(faq.category for faq in faqs if faq.category)
+    
+    context = {
+        'faqs': faqs,
+        'categories': sorted(list(categories), key=lambda c: c.id), # مرتب‌سازی دسته‌ها
+    }
+    return render(request, 'clinic/faq.html', context)

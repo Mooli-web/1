@@ -79,9 +79,11 @@ class PortfolioItemAdmin(admin.ModelAdmin):
 
 @admin.register(FAQ)
 class FAQAdmin(admin.ModelAdmin):
-    list_display = ('question', 'is_active')
-    list_filter = ('is_active',)
+    list_display = ('question', 'category', 'sort_order', 'is_active')
+    list_filter = ('is_active', 'category')
     search_fields = ('question', 'answer')
+    list_editable = ('sort_order', 'is_active') # ویرایش سریع اولویت و وضعیت
+    list_select_related = ('category',) # بهینه‌سازی کوئری
 
 @admin.register(Testimonial)
 class TestimonialAdmin(admin.ModelAdmin):

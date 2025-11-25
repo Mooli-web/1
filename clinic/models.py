@@ -198,16 +198,27 @@ class PortfolioItem(models.Model):
         return self.title
 
 class FAQ(models.Model):
+    """
+    مدل سوالات متداول با قابلیت دسته‌بندی و ترتیب‌دهی.
+    """
     question = models.CharField(max_length=255, verbose_name=_("سوال"))
     answer = models.TextField(verbose_name=_("پاسخ"))
-    is_active = models.BooleanField(default=True, verbose_name=_("فعال"))
     
-    class Meta:
-        verbose_name = _("سوال متداول")
-        verbose_name_plural = _("سوالات متداول")
-        
-    def __str__(self): 
-        return self.question
+    # فیلد جدید: اتصال به گروه خدماتی برای دسته‌بندی (مثلاً سوالات مربوط به لیزر)
+    category = models.ForeignKey(
+        ServiceGroup, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='faqs',
+        verbose_name=_("دسته‌بندی (گروه خدمت)"),
+        help_text=_("اگر خالی باشد، در دسته عمومی نمایش داده می‌شود.")
+    )
+    
+    # فیلد جدید: اولویت نمایش
+    sort_order = models.PositiveIntegerField(default=0, verbose_name=_("اولویت نمایش"))
+    
+    is_active = models.BooleanField(default=True, verbose_name=_("فعال"))
 
 class Testimonial(models.Model):
     patient_name = models.CharField(max_length=100, verbose_name=_("نام بیمار"))
@@ -223,6 +234,7 @@ class Testimonial(models.Model):
     class Meta:
         verbose_name = _("نظر مشتری")
         verbose_name_plural = _("نظرات مشتریان")
+        # خط ordering = ['sort_order'] را از اینجا حذف کنید اگر وجود دارد
         
     def __str__(self): 
         return f"{self.patient_name} ({self.service.name})"

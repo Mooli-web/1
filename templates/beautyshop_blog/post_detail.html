@@ -1,66 +1,153 @@
 {% extends "base.html" %}
 {% load static %}
 {% load jalali_tags %}
+{% load humanize %}
 
 {% block title %}{{ post.title }} | وبلاگ{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Progress Bar */
+    .reading-progress-container {
+        position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: transparent; z-index: 1031;
+    }
+    .reading-progress-bar {
+        height: 100%; background: var(--bs-primary); width: 0%; transition: width 0.1s;
+    }
+    
+    /* Content Typography */
+    .blog-content { font-size: 1.1rem; line-height: 2; color: #444; }
+    .blog-content h2 { font-weight: bold; margin-top: 2rem; margin-bottom: 1rem; color: #222; }
+    .blog-content h3 { font-weight: bold; margin-top: 1.5rem; margin-bottom: 1rem; color: #444; }
+    .blog-content ul, .blog-content ol { margin-bottom: 1.5rem; padding-right: 2rem; }
+    .blog-content img { max-width: 100%; height: auto; border-radius: 10px; margin: 1.5rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    
+    /* CTA Box */
+    .cta-box { background: linear-gradient(135deg, #fdfbf7 0%, #fff 100%); border: 1px solid var(--bs-warning); }
+</style>
+{% endblock %}
+
 {% block content %}
+<div class="reading-progress-container">
+    <div class="reading-progress-bar" id="progressBar"></div>
+</div>
+
 <div class="container py-5">
+    
+    {# --- Breadcrumb --- #}
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'clinic:home' %}" class="text-decoration-none text-muted">خانه</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'beautyshop_blog:post_list' %}" class="text-decoration-none text-muted">وبلاگ</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ post.title|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+
     <div class="row justify-content-center">
         <div class="col-lg-9">
             
+            {# --- Header --- #}
             <div class="text-center mb-4">
-                <span class="badge bg-primary-subtle text-primary mb-2">{{ post.category.name|default:"عمومی" }}</span>
-                <h1 class="fw-bold mb-3">{{ post.title }}</h1>
-                <div class="text-muted small d-flex justify-content-center align-items-center gap-3">
-                    <span><i class="bi bi-calendar-event me-1"></i> {{ post.created_at|to_jalali:'%Y/%m/%d' }}</span>
+                {% if post.category %}
+                    <a href="{% url 'beautyshop_blog:post_list' %}?category={{ post.category.slug }}" class="badge bg-primary-subtle text-primary mb-2 text-decoration-none">
+                        {{ post.category.name }}
+                    </a>
+                {% endif %}
+                <h1 class="fw-bold mb-3 lh-base">{{ post.title }}</h1>
+                <div class="text-muted small d-flex justify-content-center align-items-center gap-3 flex-wrap">
+                    <span><i class="bi bi-calendar-event me-1"></i> {{ post.created_at|to_jalali:'%d %B %Y' }}</span>
                     <span><i class="bi bi-person me-1"></i> {{ post.author.get_full_name|default:post.author.username }}</span>
-                    <span><i class="bi bi-eye me-1"></i> {{ post.view_count }} بازدید</span>
+                    <span><i class="bi bi-clock me-1"></i> زمان مطالعه: {{ post.reading_time }} دقیقه</span>
+                    <span><i class="bi bi-eye me-1"></i> {{ post.view_count|intcomma }} بازدید</span>
                 </div>
             </div>
 
-            <div class="mb-5">
+            {# --- Featured Image --- #}
+            <div class="mb-5 position-relative">
                 {% if post.image %}
                     <img src="{{ post.image.url }}" class="img-fluid rounded-4 shadow w-100" alt="{{ post.title }}" style="max-height: 500px; object-fit: cover;">
                 {% else %}
-                    <img src="{% static 'images/blog-placeholder.jpg' %}" class="img-fluid rounded-4 shadow w-100" alt="تصویر مقاله" style="max-height: 400px; object-fit: cover; background-color: #f8f9fa;">
+                    <img src="{% static 'images/blog-placeholder.jpg' %}" class="img-fluid rounded-4 shadow w-100" alt="تصویر" style="max-height: 400px; object-fit: cover; background-color: #f8f9fa;">
                 {% endif %}
             </div>
 
-            <article class="blog-content fs-5 lh-lg text-justify mb-5">
+            {# --- Content --- #}
+            <article class="blog-content text-justify mb-5">
                 {{ post.content|linebreaks }}
             </article>
 
+            {# --- Marketing CTA: Linked Service --- #}
+            {% if post.related_service %}
+            <div class="cta-box rounded-4 p-4 mb-5 shadow-sm position-relative overflow-hidden">
+                <div class="row align-items-center position-relative z-2">
+                    <div class="col-md-8">
+                        <h4 class="fw-bold text-dark mb-2">علاقه‌مند به انجام <span class="text-primary">{{ post.related_service.name }}</span> هستید؟</h4>
+                        <p class="text-muted mb-3 mb-md-0">همین حالا نوبت خود را رزرو کنید و از مشاوره تخصصی ما بهره‌مند شوید.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="{% url 'booking:create_booking' %}?service_id={{ post.related_service.id }}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm animate-pulse">
+                            رزرو نوبت آنلاین <i class="bi bi-calendar-check ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                <i class="bi bi-stars position-absolute top-0 end-0 text-warning opacity-25" style="font-size: 8rem; transform: translate(30%, -30%);"></i>
+            </div>
+            {% endif %}
+
+            {# --- Actions (Like & Share) --- #}
             <div class="card border-0 bg-light rounded-4 p-4 mb-5">
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    
                     <div class="d-flex align-items-center gap-3">
-                        {% if user.is_authenticated %}
-                            <button id="like-btn" 
-                                    class="btn btn-lg d-flex align-items-center gap-2 {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %} rounded-pill px-4"
-                                    data-url="{% url 'beautyshop_blog:like_toggle' post.pk %}">
-                                <i class="bi {% if is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}" id="like-icon"></i>
-                                <span id="like-text" class="fs-6">{% if is_liked %}پسندیدم{% else %}لایک{% endif %}</span>
-                            </button>
-                        {% else %}
-                            <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary rounded-pill px-4">
-                                <i class="bi bi-heart me-1"></i> برای لایک وارد شوید
-                            </a>
-                        {% endif %}
+                        <button id="like-btn" 
+                                class="btn btn-lg d-flex align-items-center gap-2 {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %} rounded-pill px-4 transition-all"
+                                data-url="{% url 'beautyshop_blog:like_toggle' post.pk %}"
+                                {% if not user.is_authenticated %}onclick="window.location.href='{% url 'login' %}?next={{ request.path }}'; return false;"{% endif %}>
+                            <i class="bi {% if is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}" id="like-icon"></i>
+                            <span id="like-text" class="fs-6 d-none d-sm-inline">{% if is_liked %}پسندیدم{% else %}مفید بود{% endif %}</span>
+                        </button>
                         
-                        <div class="text-muted">
+                        <div class="text-muted border-start ps-3 border-secondary">
                             <span class="fw-bold fs-5" id="like-count">{{ post.total_likes }}</span> 
                             <span class="small">لایک</span>
                         </div>
                     </div>
 
-                    <div>
-                        <button class="btn btn-link text-muted text-decoration-none" onclick="navigator.clipboard.writeText(window.location.href); alert('لینک کپی شد!');">
-                            <i class="bi bi-share me-1"></i> اشتراک‌گذاری
+                    <div class="d-flex gap-2">
+                        <span class="text-muted align-self-center small me-2">اشتراک‌گذاری:</span>
+                        <a href="https://telegram.me/share/url?url={{ request.build_absolute_uri }}&text={{ post.title }}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-circle" title="تلگرام"><i class="bi bi-telegram"></i></a>
+                        <a href="https://wa.me/?text={{ post.title }} {{ request.build_absolute_uri }}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-circle" title="واتساپ"><i class="bi bi-whatsapp"></i></a>
+                        <button class="btn btn-outline-secondary btn-sm rounded-circle" onclick="navigator.clipboard.writeText(window.location.href); alert('لینک کپی شد!');" title="کپی لینک">
+                            <i class="bi bi-link-45deg"></i>
                         </button>
                     </div>
                 </div>
             </div>
+
+            {# --- Related Posts --- #}
+            {% if related_posts %}
+            <div class="mt-5 pt-4 border-top">
+                <h4 class="fw-bold mb-4">مقالات پیشنهادی</h4>
+                <div class="row g-4">
+                    {% for r_post in related_posts %}
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm hover-lift rounded-3">
+                            <a href="{{ r_post.get_absolute_url }}">
+                                {% if r_post.image %}
+                                    <img src="{{ r_post.image.url }}" class="card-img-top" alt="{{ r_post.title }}" style="height: 150px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light card-img-top" style="height: 150px;"></div>
+                                {% endif %}
+                            </a>
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold mb-2"><a href="{{ r_post.get_absolute_url }}" class="text-dark text-decoration-none stretched-link">{{ r_post.title|truncatechars:40 }}</a></h6>
+                                <small class="text-muted"><i class="bi bi-calendar me-1"></i> {{ r_post.created_at|to_jalali:'%d %B' }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
 
         </div>
     </div>
@@ -75,22 +162,18 @@
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 1. Like System (Updated)
     const likeBtn = document.getElementById('like-btn');
-    
-    if (likeBtn) {
+    if (likeBtn && !likeBtn.hasAttribute('onclick')) { // Check if not guarded by login redirect
         likeBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            // دریافت ایمن توکن CSRF از ورودی مخفی که توسط تگ {% csrf_token %} ساخته شده
             const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
             const csrfToken = csrfInput ? csrfInput.value : '';
-            
             const url = this.dataset.url;
             const icon = document.getElementById('like-icon');
             const text = document.getElementById('like-text');
             const countSpan = document.getElementById('like-count');
 
-            // استفاده از Fetch API (مدرن و بدون نیاز به jQuery)
             fetch(url, {
                 method: 'POST',
                 headers: {
@@ -100,36 +183,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) throw new Error('Network error');
                 return response.json();
             })
             .then(data => {
                 if (data.status === 'success') {
-                    // آپدیت تعداد لایک
                     countSpan.textContent = data.count;
-                    
-                    // آپدیت وضعیت دکمه
                     if (data.liked) {
-                        likeBtn.classList.remove('btn-outline-danger');
-                        likeBtn.classList.add('btn-danger');
-                        icon.classList.remove('bi-heart');
-                        icon.classList.add('bi-heart-fill');
+                        likeBtn.classList.replace('btn-outline-danger', 'btn-danger');
+                        icon.classList.replace('bi-heart', 'bi-heart-fill');
                         text.textContent = 'پسندیدم';
+                        // افکت تپش قلب کوچک
+                        icon.style.transform = 'scale(1.3)';
+                        setTimeout(() => icon.style.transform = 'scale(1)', 200);
                     } else {
-                        likeBtn.classList.remove('btn-danger');
-                        likeBtn.classList.add('btn-outline-danger');
-                        icon.classList.remove('bi-heart-fill');
-                        icon.classList.add('bi-heart');
-                        text.textContent = 'لایک';
+                        likeBtn.classList.replace('btn-danger', 'btn-outline-danger');
+                        icon.classList.replace('bi-heart-fill', 'bi-heart');
+                        text.textContent = 'مفید بود';
                     }
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('خطایی رخ داد. لطفا مجدد تلاش کنید.');
-            });
+            .catch(console.error);
         });
     }
+
+    // 2. Reading Progress Bar
+    window.addEventListener('scroll', () => {
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        document.getElementById("progressBar").style.width = scrolled + "%";
+    });
 });
 </script>
 {% endblock %}

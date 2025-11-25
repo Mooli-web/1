@@ -15,6 +15,7 @@ class PostAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
         'title', 
         'author', 
         'category', 
+        'related_service',
         'created_at', 
         'is_published', 
         'view_count', 
@@ -24,15 +25,25 @@ class PostAdmin(ModelAdminJalaliMixin, admin.ModelAdmin):
     search_fields = ('title', 'content', 'author__username')
     prepopulated_fields = {'slug': ('title',)}
     date_hierarchy = 'created_at'
-    raw_id_fields = ('author', 'category')
+    raw_id_fields = ('author', 'category', 'related_service')
     
-    # فیلد کش شده را فقط نمایش می‌دهیم (چون خودکار آپدیت می‌شود)
-    readonly_fields = ('cached_like_count', 'total_likes_display')
+    readonly_fields = ('cached_like_count', 'total_likes_display', 'reading_time', 'updated_at')
     exclude = ('likes',) 
+    
+    fieldsets = (
+        ('محتوا اصلی', {
+            'fields': ('title', 'slug', 'content', 'image', 'category')
+        }),
+        ('تنظیمات انتشار و نویسنده', {
+            'fields': ('author', 'is_published', 'created_at', 'updated_at')
+        }),
+        ('سئو و بازاریابی', {
+            'fields': ('meta_description', 'related_service', 'reading_time', 'view_count', 'fake_like_count')
+        }),
+    )
 
     def total_likes_display(self, obj):
         return obj.total_likes
     
     total_likes_display.short_description = "مجموع لایک‌ها"
-    # حالا می‌توانیم بر اساس تعداد واقعی لایک سورت کنیم (چیزی که قبلاً سخت بود)
     total_likes_display.admin_order_field = 'cached_like_count'

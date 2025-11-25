@@ -3,16 +3,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.contrib import messages
-from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from datetime import datetime, timedelta
 
-from clinic.models import Service, ServiceGroup, Device, Testimonial
+from clinic.models import Service, ServiceGroup, Device
 from .models import Appointment
 from .forms import RatingForm
-from users.models import CustomUser
-from reception_panel.models import Notification
 from site_settings.models import SiteSettings
 from .utils import _get_patient_for_booking, _calculate_discounts
 
@@ -20,7 +17,7 @@ from .utils import _get_patient_for_booking, _calculate_discounts
 def create_booking_view(request):
     """
     ویو ایجاد نوبت جدید.
-    مدیریت همزمانی: استفاده از select_for_update برای جلوگیری از رزرو تکراری.
+    نسخه بهبود یافته با پرفورمنس بالاتر و داده‌های بیشتر برای فرانت‌اند.
     """
     patient_user, is_reception_booking, tmpl_patient = _get_patient_for_booking(request)
     
@@ -28,34 +25,37 @@ def create_booking_view(request):
         messages.error(request, "کاربر نامعتبر است.")
         return redirect('reception_panel:dashboard')
     
-    # دریافت نرخ تبدیل امتیاز
+    # دریافت تنظیمات سایت
     try:
-        points_rate = SiteSettings.load().price_to_points_rate
+        settings_obj = SiteSettings.load()
+        points_rate = settings_obj.price_to_points_rate
     except:
         points_rate = 0
 
     if request.method == 'POST':
-        # دریافت داده‌ها
+        # --- دریافت داده‌ها ---
         service_ids = request.POST.getlist('services[]') 
         start_time_str = request.POST.get('slot')
-        apply_points = request.POST.get('apply_points') == 'on' # هندل کردن چک‌باکس HTML
+        apply_points = request.POST.get('apply_points') == 'on'
         discount_code = request.POST.get('discount_code', '').strip()
         device_id = request.POST.get('device_id')
         manual_confirm = request.POST.get('manual_confirm')
 
-        # اعتبارسنجی اولیه
+        # --- اعتبارسنجی اولیه ---
         if not all([service_ids, start_time_str]):
             messages.error(request, 'لطفا سرویس و زمان را انتخاب کنید.')
             return redirect('booking:create_booking')
         
+        # استفاده از prefetch برای کاهش کوئری در صورت نیاز به دسترسی‌های بعدی
         selected_services = Service.objects.select_related('group').filter(id__in=service_ids)
         if not selected_services.exists():
-            messages.error(request, 'سرویس نامعتبر.')
+            messages.error(request, 'سرویس انتخابی نامعتبر است.')
             return redirect('booking:create_booking')
             
         group = selected_services.first().group
         selected_device = None
         
+        # اعتبارسنجی دستگاه
         if group.has_devices:
             if not device_id:
                 messages.error(request, 'انتخاب دستگاه الزامی است.')
@@ -63,31 +63,36 @@ def create_booking_view(request):
             try:
                 selected_device = group.available_devices.get(id=device_id)
             except Device.DoesNotExist:
-                messages.error(request, 'دستگاه نامعتبر.')
+                messages.error(request, 'دستگاه نامعتبر است.')
                 return redirect('booking:create_booking')
         
-        # محاسبات مالی
+        # --- محاسبات مالی ---
         total_price = sum(s.price for s in selected_services)
         total_duration = sum(s.duration for s in selected_services)
 
         p_disc, p_used, c_disc, c_obj, err_msg = _calculate_discounts(
             patient_user, total_price, apply_points, discount_code
         )
+        
         if err_msg:
-            messages.warning(request, err_msg) # Warning بجای Error که فرم نپرد
+            messages.warning(request, err_msg)
 
         try:
             aware_start = datetime.fromisoformat(start_time_str)
             aware_end = aware_start + timedelta(minutes=total_duration)
+            
+            # جلوگیری از رزرو در گذشته
+            if aware_start < timezone.now():
+                raise ValueError('زمان انتخاب شده منقضی شده است.')
+                
         except ValueError:
-            messages.error(request, 'فرمت زمان نامعتبر.')
+            messages.error(request, 'فرمت زمان یا تاریخ نامعتبر است.')
             return redirect('booking:create_booking')
 
-        # --- تراکنش اتمیک برای جلوگیری از Race Condition ---
+        # --- تراکنش اتمیک و قفل رکورد ---
         try:
             with transaction.atomic():
-                # قفل کردن ردیف‌های مرتبط برای خواندن
-                # ما نوبت‌هایی که در این بازه هستند را چک می‌کنیم
+                # بررسی تداخل زمانی با قفل کردن رکوردها
                 collision_qs = Appointment.objects.select_for_update().filter(
                     start_time__lt=aware_end,
                     end_time__gt=aware_start,
@@ -96,10 +101,12 @@ def create_booking_view(request):
 
                 if group.has_devices:
                     if collision_qs.filter(selected_device=selected_device).exists():
-                        raise ValueError('این زمان پر شده است.')
+                        raise ValueError('متاسفانه این زمان همین الان پر شد. لطفا زمان دیگری را انتخاب کنید.')
                 else:
+                    # برای سرویس‌های بدون دستگاه، ظرفیت را بر اساس تعداد یونیت‌ها یا منطق دیگری چک می‌کنیم
+                    # فعلاً فرض بر تک‌ظرفیتی بودن است
                     if collision_qs.filter(selected_device__isnull=True).exists():
-                         raise ValueError('این زمان پر شده است.')
+                         raise ValueError('متاسفانه این زمان پر شده است.')
 
                 status = 'CONFIRMED' if (is_reception_booking and manual_confirm) else 'PENDING'
 
@@ -116,21 +123,22 @@ def create_booking_view(request):
                 )
                 appt.services.set(selected_services)
                 
-                # کسر امتیاز در صورت استفاده (باید اینجا انجام شود تا اتمیک باشد)
+                # کسر امتیاز
                 if p_used > 0:
                     patient_user.profile.points -= p_used
                     patient_user.profile.save()
 
+                # مصرف کد تخفیف یکبار مصرف
                 if c_obj and c_obj.is_one_time:
                     c_obj.is_used = True
                     c_obj.save()
 
             # --- پایان تراکنش ---
             
-            # ریدایرکت‌ها و نوتیفیکیشن‌ها (خارج از بلوک اتمیک بهتر است)
             if is_reception_booking:
-                del request.session['reception_acting_as_patient_id']
-                messages.success(request, f"نوبت برای {patient_user.username} ثبت شد.")
+                if 'reception_acting_as_patient_id' in request.session:
+                    del request.session['reception_acting_as_patient_id']
+                messages.success(request, f"نوبت برای {patient_user.get_full_name()} با موفقیت ثبت شد.")
                 return redirect('reception_panel:dashboard')
 
             return redirect(reverse('payment:start_payment', args=[appt.id]))
@@ -138,22 +146,34 @@ def create_booking_view(request):
         except ValueError as e:
             messages.error(request, str(e))
         except Exception as e:
+            # لاگ کردن خطای واقعی در سرور
+            print(f"Booking System Error: {e}")
             messages.error(request, 'خطای سیستمی رخ داد. لطفا مجدد تلاش کنید.')
-            print(f"Booking Error: {e}") # Log در پروداکشن
 
         return redirect('booking:create_booking')
 
-    # GET Request
+    # --- GET Request ---
+    
+    # دریافت گروه‌های خدماتی به همراه سرویس‌ها برای کاهش کوئری در تمپلیت
+    groups = ServiceGroup.objects.prefetch_related('services').all()
+    
+    # پیشنهاد ویژه (Marketing): مثلاً ارزان‌ترین سرویس که کاربر تا حالا نگرفته
+    # اینجا ساده‌سازی شده: یک سرویس تصادفی یا ارزان
+    suggested_service = Service.objects.filter(price__lte=500000).first()
+
     context = {
-        'groups': ServiceGroup.objects.prefetch_related('services').all(),
+        'groups': groups,
         'user_points': patient_user.profile.points,
         'patient_user_for_template': tmpl_patient,
-        'price_to_points_rate': points_rate, 
+        'price_to_points_rate': points_rate,
+        'today_date_server': timezone.now().strftime("%Y-%m-%d"),
+        'suggested_service': suggested_service, # برای نمایش در سایدبار
     }
     return render(request, 'booking/create_booking.html', context)
 
 @login_required
 def rate_appointment_view(request, appointment_id):
+    """ثبت نظر برای نوبت انجام شده."""
     appointment = get_object_or_404(
         Appointment.objects.prefetch_related('services'),
         id=appointment_id,
@@ -173,7 +193,7 @@ def rate_appointment_view(request, appointment_id):
             appointment.is_rated = True
             appointment.save(update_fields=['is_rated'])
             
-            messages.success(request, "نظر شما ثبت شد.")
+            messages.success(request, "نظر شما با موفقیت ثبت شد. با تشکر از بازخورد شما.")
             return redirect('users:dashboard')
     else:
         form = RatingForm()

@@ -1,44 +1,227 @@
+{# templates/clinic/faq.html #}
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}سوالات متداول{% endblock %}
+{% block title %}سوالات متداول | راهنمای خدمات{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="text-center mb-5">
-                <h1 class="display-4 fw-bold text-dark">سوالات متداول</h1>
-                <p class="lead text-muted">پاسخ سوالات پرتکرار شما را اینجا گردآوری کرده‌ایم.</p>
+{# --- 1. Hero Section & Search --- #}
+<section class="bg-primary bg-opacity-10 py-5 mb-5 rounded-bottom-4 position-relative overflow-hidden">
+    <div class="container position-relative z-2 text-center">
+        <h1 class="display-5 fw-bold text-dark mb-3">چطور می‌توانیم کمکتان کنیم؟</h1>
+        <p class="lead text-muted mb-4">پاسخ پرتکرارترین سوالات مراجعین ما اینجاست.</p>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="position-relative shadow-sm rounded-pill bg-white">
+                    <span class="position-absolute top-50 start-0 translate-middle-y ps-4 text-muted">
+                        <i class="bi bi-search fs-5"></i>
+                    </span>
+                    <input type="text" id="faqSearch" class="form-control form-control-lg border-0 rounded-pill ps-5 py-3" 
+                           placeholder="مثلا: هزینه لیزر، مراقبت بعد از بوتاکس...">
+                </div>
             </div>
+        </div>
+    </div>
+    {# المان‌های تزئینی #}
+    <i class="bi bi-question-circle position-absolute top-0 end-0 text-primary opacity-10 me-n5 mt-n5" style="font-size: 15rem;"></i>
+</section>
+
+<div class="container mb-5" style="min-height: 500px;">
+    
+    {# --- 2. Filter Tabs --- #}
+    <div class="d-flex justify-content-center flex-wrap gap-2 mb-5" id="faqFilters">
+        <button class="btn btn-outline-primary rounded-pill px-4 active fw-bold" data-filter="all">
+            همه سوالات
+        </button>
+        
+        {# تب عمومی (سوالات بدون دسته) #}
+        <button class="btn btn-outline-primary rounded-pill px-4 fw-bold" data-filter="category-none">
+            عمومی
+        </button>
+
+        {% for cat in categories %}
+        <button class="btn btn-outline-primary rounded-pill px-4 fw-bold" data-filter="category-{{ cat.id }}">
+            {{ cat.name }}
+        </button>
+        {% endfor %}
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
             
-            <div class="accordion shadow-sm rounded-3 overflow-hidden" id="faqAccordion">
+            {# --- 3. FAQ Accordion --- #}
+            <div class="accordion accordion-flush" id="faqAccordion">
                 {% for faq in faqs %}
-                <div class="accordion-item border-0 border-bottom">
-                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %} fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
-                            <i class="bi bi-question-circle-fill text-primary me-2 opacity-75"></i> {{ faq.question }}
+                <div class="accordion-item border-0 mb-3 shadow-sm rounded-3 overflow-hidden faq-item" 
+                     data-category="{% if faq.category %}category-{{ faq.category.id }}{% else %}category-none{% endif %}"
+                     data-text="{{ faq.question }} {{ faq.answer }}">
+                    
+                    <h2 class="accordion-header" id="heading{{ faq.id }}">
+                        <button class="accordion-button collapsed py-4 fw-bold bg-white text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ faq.id }}" aria-expanded="false" aria-controls="collapse{{ faq.id }}">
+                            <span class="me-3 text-primary"><i class="bi bi-question-circle-fill"></i></span>
+                            {{ faq.question }}
                         </button>
                     </h2>
-                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body text-muted lh-lg bg-light bg-opacity-50">
-                            {{ faq.answer|linebreaks }}
+                    
+                    <div id="collapse{{ faq.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ faq.id }}" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body bg-light lh-lg text-muted p-4">
+                            <div class="mb-3">
+                                {{ faq.answer|linebreaks }}
+                            </div>
+                            
+                            {# لینک‌سازی داخلی هوشمند (Marketing) #}
+                            {% if faq.category %}
+                                <div class="d-flex justify-content-end border-top pt-3 mt-3">
+                                    <a href="{% url 'clinic:service_list' %}#v-pills-{{ faq.category.id }}" class="btn btn-sm btn-link text-decoration-none">
+                                        مشاهده خدمات {{ faq.category.name }} <i class="bi bi-arrow-left"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 {% empty %}
                 <div class="text-center py-5">
+                    <img src="{% static 'images/empty-state.svg' %}" alt="خالی" style="max-width: 150px; opacity: 0.5;" class="mb-3">
                     <p class="text-muted">هنوز سوالی ثبت نشده است.</p>
                 </div>
                 {% endfor %}
             </div>
-            
-            <div class="text-center mt-5">
-                <p class="text-muted">پاسخ خود را پیدا نکردید؟</p>
-                <a href="{% url 'consultation:create_request' %}" class="btn btn-outline-primary rounded-pill px-4">
-                    <i class="bi bi-chat-dots me-2"></i>ارسال پیام به پشتیبانی
-                </a>
+
+            {# پیام "یافت نشد" برای سرچ #}
+            <div id="noResults" class="text-center py-5 d-none">
+                <i class="bi bi-search display-4 text-muted mb-3 d-block"></i>
+                <p class="text-muted">نتیجه‌ای برای جستجوی شما یافت نشد.</p>
+            </div>
+
+        </div>
+    </div>
+
+    {# --- 4. CTA Section --- #}
+    <div class="row justify-content-center mt-5">
+        <div class="col-lg-8">
+            <div class="card bg-dark text-white rounded-4 border-0 overflow-hidden">
+                <div class="card-body p-5 text-center position-relative">
+                    <div class="position-relative z-2">
+                        <h3 class="fw-bold mb-3">هنوز سوالی دارید؟</h3>
+                        <p class="text-white-50 mb-4">متخصصین ما آماده پاسخگویی به سوالات تخصصی شما هستند. مشاوره رایگان است.</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            <a href="{% url 'consultation:create_request' %}" class="btn btn-primary rounded-pill px-4 py-2">
+                                <i class="bi bi-chat-text-fill me-2"></i>ارسال پیام به پزشک
+                            </a>
+                            <a href="tel:02112345678" class="btn btn-outline-light rounded-pill px-4 py-2">
+                                <i class="bi bi-telephone-fill me-2"></i>تماس تلفنی
+                            </a>
+                        </div>
+                    </div>
+                    <i class="bi bi-headset position-absolute top-50 start-0 translate-middle text-white opacity-10" style="font-size: 15rem;"></i>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+{# --- 5. Schema.org JSON-LD (SEO Boost) --- #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for faq in faqs %}
+    {
+      "@type": "Question",
+      "name": "{{ faq.question|escapejs }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ faq.answer|striptags|escapejs }}"
+      }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('faqSearch');
+    const faqItems = document.querySelectorAll('.faq-item');
+    const filterButtons = document.querySelectorAll('#faqFilters button');
+    const noResultsMsg = document.getElementById('noResults');
+
+    // تابع فیلتر کردن
+    function filterFAQs() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const activeCategory = document.querySelector('#faqFilters button.active').dataset.filter;
+        let visibleCount = 0;
+
+        faqItems.forEach(item => {
+            const itemCategory = item.dataset.category;
+            const itemText = item.dataset.text.toLowerCase();
+            
+            // شرط دسته‌بندی
+            const categoryMatch = (activeCategory === 'all') || (itemCategory === activeCategory);
+            
+            // شرط جستجو
+            const searchMatch = itemText.includes(searchTerm);
+
+            if (categoryMatch && searchMatch) {
+                item.classList.remove('d-none');
+                visibleCount++;
+            } else {
+                item.classList.add('d-none');
+            }
+        });
+
+        // نمایش پیام "یافت نشد"
+        if (visibleCount === 0) {
+            noResultsMsg.classList.remove('d-none');
+        } else {
+            noResultsMsg.classList.add('d-none');
+        }
+    }
+
+    // رویداد جستجو
+    searchInput.addEventListener('keyup', filterFAQs);
+
+    // رویداد کلیک روی تب‌ها
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // تغییر کلاس active
+            filterButtons.forEach(b => {
+                b.classList.remove('active');
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-outline-primary');
+            });
+            this.classList.add('active');
+            this.classList.remove('btn-outline-primary');
+            this.classList.add('btn-primary');
+
+            filterFAQs();
+        });
+    });
+});
+</script>
+
+<style>
+    /* استایل‌های تکمیلی */
+    .accordion-button:not(.collapsed) {
+        color: var(--bs-primary);
+        background-color: #fff; /* حذف پس‌زمینه پیش‌فرض بوت‌استرپ */
+        box-shadow: inset 0 -1px 0 rgba(0,0,0,.125);
+    }
+    .accordion-button:focus {
+        box-shadow: none; /* حذف حاشیه آبی فوکوس */
+        border-color: rgba(0,0,0,.125);
+    }
+    .accordion-item {
+        transition: transform 0.2s ease;
+    }
+    .accordion-item:hover {
+        transform: translateY(-2px);
+    }
+</style>
 {% endblock %}
