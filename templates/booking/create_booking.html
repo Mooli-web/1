@@ -1,12 +1,13 @@
 {# mooli-web/templates/booking/create_booking.html #}
-{# --- نسخه v7.0 (Added Reward Display) --- #}
+{# --- نسخه اصلاح شده (Fix: CSS Block & Calendar ID) --- #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
 {% block title %}رزرو نوبت جدید{% endblock %}
 
-{% block extra_head %}
+{# --- اصلاح ۱: تغییر نام بلاک از extra_head به extra_css --- #}
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/booking-calendar.css' %}">
 <style>
     /* استایل مخصوص باکس جایزه */
@@ -54,11 +55,11 @@
                       data-csrf-token="{{ csrf_token }}"
                       data-max-discount="{{ max_discount|default:0 }}"
                       data-today-date="{{ today_date_server }}"
-                      data-points-rate="{{ price_to_points_rate|default:0 }}"> {# <-- *** نرخ امتیاز اضافه شد *** #}
+                      data-points-rate="{{ price_to_points_rate|default:0 }}">
                     
                     {% csrf_token %}
                     
-                    {# --- مراحل انتخاب (بدون تغییر) --- #}
+                    {# --- مراحل انتخاب --- #}
                     <div class="mb-3">
                         <label for="serviceGroup" class="form-label fs-5">۱. انتخاب گروه خدمت:</label>
                         <select name="service_group" id="serviceGroup" class="form-select form-select-lg" required>
@@ -71,14 +72,17 @@
                     <div id="servicesContainer" class="mb-3"></div>
                     <div id="devicesContainer" class="mb-3"></div>
 
-                    {# --- تقویم (بدون تغییر) --- #}
+                    {# --- تقویم --- #}
                     <div id="slotsContainer" class="mb-4" style="display: none;">
                         <div id="first-available-slot-container" class="alert alert-info d-none" role="alert">
                             ⚡️ اولین نوبت موجود: <strong id="first-slot-label"></strong>
                             <button type="button" class="btn btn-primary btn-sm ms-3" id="book-first-slot-btn">رزرو فوری این زمان</button>
                         </div>
                         <label class="form-label fs-5 mb-2" id="calendar-step-label"></label>
-                        <div id="booking-calendar-wrapper">
+                        
+                        {# --- اصلاح ۲: افزودن id="calendar" برای شناسایی توسط JS --- #}
+                        <div id="calendar" class="booking-calendar-wrapper">
+                            {# محتویات داخلی (هدر و بادی) ممکن است توسط FullCalendar جایگزین شوند، اما برای استایل‌دهی اولیه حفظ شده‌اند #}
                             <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
                                 <button type="button" class="btn btn-outline-secondary" id="calendar-prev-month" disabled>« ماه قبل</button>
                                 <h5 id="calendar-month-label" class="fw-bold m-0"></h5>
@@ -89,6 +93,7 @@
                             </div>
                             <div id="calendar-grid-body" class="calendar-grid-body"></div>
                         </div>
+
                         <div id="slots-loader" class="text-center p-4" style="display: none;">
                             <div class="spinner-border text-primary" role="status"></div>
                             <p class="mt-2">در حال جستجوی زمان‌های خالی...</p>
@@ -121,12 +126,11 @@
                     
                     <hr class="my-4">
                     
-                    {# --- بخش جدید: باکس پاداش --- #}
+                    {# --- باکس پاداش --- #}
                     <div id="rewardBox" class="reward-box text-center">
                         <i class="bi bi-gift-fill"></i>
                         <span id="rewardText" class="fs-5 fw-bold"></span>
                     </div>
-                    {# --------------------------- #}
 
                     <div class="text-center mt-4">
                         <h4 class="mb-3">مبلغ نهایی قابل پرداخت:</h4>
@@ -156,7 +160,7 @@
     </div>
 </div>
 
-{# --- مودال تایید (بدون تغییر) --- #}
+{# --- مودال تایید --- #}
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
