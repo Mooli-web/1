@@ -1,45 +1,29 @@
 {# mooli-web/templates/clinic/home.html #}
-{# --- FIX v4: Implementation of Idea 1 (Minimalist Split Hero) --- #}
 {% extends "base.html" %}
 {% load static %}
-{% block extra_css %}
-<style>
-    .hero-split-image {
-        /* جنگو اینجا را درست رندر می‌کند و ویرایشگر هم کمتر ایراد می‌گیرد */
-        background-image: url("{% static 'images/clinic-hero-background.jpg' %}");
-    }
-</style>
-{% endblock %}
 
 {% block title %}صفحه اصلی{% endblock %}
 
-{# نکته: حذف کلاس navbar-transparent برای خوانایی بهتر روی طرح مینیمال جدید #}
 {% block navbar_extra_class %}{% endblock %}
 {% block main_container_class %}container-fluid p-0{% endblock %}
 
 {% block content %}
-{# --- 1. New Minimalist Split Hero Section --- #}
+{# --- 1. بخش هیرو (Hero Section) اصلاح شده --- #}
 <section class="hero-split-wrapper">
-    <div class="row g-0 min-vh-100 flex-row-reverse">
-        {# بخش تصویر (سمت چپ در دسکتاپ) #}
+    {# تغییر مهم: flex-lg-row-reverse باعث می‌شود فقط در دسکتاپ جای عکس و متن عوض شود #}
+    {# در موبایل، ترتیب طبیعی (اول عکس، بعد متن) حفظ می‌شود #}
+    <div class="row g-0 min-vh-100 flex-lg-row-reverse">
+        
+        {# بخش تصویر #}
         <div class="col-lg-6 position-relative">
+            {# استایل‌های مزاحم حذف شدند و به CSS منتقل شدند #}
             <div class="hero-split-image" 
-                style="background-image: url('{% static 'images/clinic-hero-background.jpg' %}');
-                        background-size: cover;
-                        background-repeat: no-repeat;
-                        background-position: center center;
-                        width: 100%;
-                        height: 100%;
-                        min-height: 500px;
-                        position: absolute;
-                        top: 0;
-                        left: 0;">
+                 style="background-image: url('{% static 'images/clinic-hero-background.jpg' %}');">
             </div>
-            {# یک تگ تزیینی برای اتصال بصری #}
             <div class="hero-decoration d-none d-lg-block"></div>
         </div>
 
-        {# بخش متن (سمت راست در دسکتاپ) #}
+        {# بخش متن #}
         <div class="col-lg-6 d-flex align-items-center bg-white">
             <div class="hero-content-box px-4 px-md-5 py-5 mx-auto" style="max-width: 650px;">
                 <span class="badge bg-light text-dark mb-3 px-3 py-2 rounded-pill fw-light border">
@@ -68,7 +52,6 @@
                     </a>
                 </div>
 
-                {# بخش اعتماد سازی کوچک (Social Proof) #}
                 <div class="mt-5 pt-4 border-top">
                     <p class="text-muted small mb-2">مورد اعتماد بیش از ۲۰۰۰ زیباجو</p>
                     <div class="d-flex align-items-center opacity-50">
@@ -85,15 +68,11 @@
     </div>
 </section>
 
-{# mooli-web/templates/clinic/home.html #}
-
+{# --- بخش‌های دیگر بدون تغییر باقی می‌مانند --- #}
 {% for group in service_groups %}
 <section class="feature-block bg-white overflow-hidden">
     <div class="container py-4">
-        {# کلاس flex-lg-row-reverse باعث می‌شود جای تصویر و متن یکی در میان عوض شود #}
         <div class="row align-items-center g-5 {% if forloop.counter|divisibleby:2 %}flex-lg-row-reverse{% endif %}">
-            
-            {# --- ستون تصویر --- #}
             <div class="col-lg-6">
                 <div class="position-relative">
                     {% if group.home_page_image %}
@@ -105,19 +84,13 @@
                     {% endif %}
                 </div>
             </div>
-
-            {# --- ستون متن --- #}
             <div class="col-lg-6">
                 <div class="p-lg-4">
                     <h2 class="display-5 fw-bold mb-3 text-dark">{{ group.name }}</h2>
-                    
-                    {# یک خط تزیینی طلایی زیر تیتر #}
                     <div class="separator-line mb-4"></div>
-                    
                     <p class="lead text-muted mb-5 lh-lg">
                         {{ group.description|truncatewords:35 }}
                     </p>
-                    
                     <div class="d-flex gap-3 flex-wrap">
                         <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
                             رزرو نوبت
@@ -128,7 +101,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </section>

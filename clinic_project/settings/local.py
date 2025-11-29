@@ -11,7 +11,7 @@ from .base import *
 DEBUG = True
 
 # --- Allowed Hosts ---
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['*']
 
 # --- Database ---
 # اگر دیتابیس اصلی (PostgreSQL) در .env تنظیم نشده بود، از SQLite استفاده کن
