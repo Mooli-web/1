@@ -1,73 +1,109 @@
 /* static/css/booking-calendar.css */
 
-/* کانتینر اصلی تقویم */
+/* --- کانتینر اصلی تقویم --- */
 #booking-calendar-wrapper {
     direction: rtl;
     font-family: inherit;
     background: #fff;
-    border-radius: 10px;
-    padding: 10px;
+    border-radius: 12px;
+    padding: 15px;
+    /* سایه نرم برای جداسازی از زمینه */
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
-/* هدر و بدنه تقویم را شبکه‌ای کن */
+/* --- سیستم شبکه‌ای (گرید) --- */
 .calendar-grid-header, .calendar-grid-body {
     display: grid;
-    grid-template-columns: repeat(7, 1fr); /* ۷ ستون مساوی */
-    gap: 8px;
+    grid-template-columns: repeat(7, 1fr); /* همیشه ۷ ستون */
+    gap: 8px; /* فاصله استاندارد در دسکتاپ */
     text-align: center;
     margin-bottom: 10px;
 }
 
-/* استایل روزهای هفته (شنبه، یکشنبه...) */
+/* --- هدر روزهای هفته (شنبه، یکشنبه...) --- */
 .calendar-grid-header div {
-    font-weight: bold;
+    font-weight: 700;
     color: #6c757d;
     font-size: 0.9rem;
+    padding-bottom: 5px;
 }
 
-/* استایل خانه‌های روزها */
+/* --- خانه‌های روزها --- */
 .calendar-day {
-    aspect-ratio: 1; /* مربع کامل */
+    aspect-ratio: 1; /* مربع کامل بماند */
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
+    border-radius: 12px; /* گردی گوشه‌ها */
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    user-select: none; /* جلوگیری از انتخاب متن در موبایل */
+    cursor: default;
 }
 
-/* روزهای خالی (فاصله اول ماه) */
+/* --- حالت‌های مختلف روزها --- */
+
+/* 1. روزهای خالی (شروع ماه) */
 .calendar-day-empty {
     background-color: transparent;
     pointer-events: none;
 }
 
-/* روزهای غیرفعال (گذشته یا بدون نوبت) */
+/* 2. روزهای غیرفعال (گذشته یا پر) */
 .calendar-day.disabled, .calendar-day.unavailable {
-    color: #dee2e6;
+    color: #adb5bd;
     background-color: #f8f9fa;
-    cursor: not-allowed;
+    border: 1px solid transparent;
+    opacity: 0.6;
 }
 
-/* روزهای دارای نوبت (سبز) */
+/* 3. روزهای دارای نوبت (قابل رزرو) - سبز ملایم */
 .calendar-day.available {
-    background-color: #d1e7dd;
-    color: #0f5132;
-    font-weight: bold;
+    background-color: #f0fff4; /* سبز خیلی کمرنگ */
+    color: #198754;
+    border: 1px solid #d1e7dd;
     cursor: pointer;
-    border: 1px solid #badbcc;
+    font-weight: 700;
 }
 
-.calendar-day.available:hover {
-    background-color: #a3cfbb;
-    transform: scale(1.1);
+/* هاور دسکتاپ */
+@media (hover: hover) {
+    .calendar-day.available:hover {
+        background-color: #198754;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(25, 135, 84, 0.2);
+    }
 }
 
-/* روز انتخاب شده (آبی) */
+/* 4. روز انتخاب شده (توسط کاربر) - آبی اختصاصی */
 .calendar-day.selected {
-    background-color: #0d6efd !important;
+    background-color: var(--bs-primary, #0d6efd) !important;
     color: #fff !important;
-    border-color: #0d6efd !important;
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+    border-color: var(--bs-primary, #0d6efd) !important;
+    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+    transform: scale(1.05);
+    z-index: 2;
+}
+
+/* --- استایل‌های مخصوص موبایل (Responsive) --- */
+@media (max-width: 576px) {
+    #booking-calendar-wrapper {
+        padding: 10px 5px; /* کاهش پدینگ کناری */
+    }
+
+    .calendar-grid-header, .calendar-grid-body {
+        gap: 4px; /* کاهش فاصله بین خانه‌ها در موبایل */
+    }
+
+    .calendar-day {
+        font-size: 0.85rem; /* فونت کمی کوچکتر */
+        border-radius: 8px; /* گوشه‌های تیزتر برای فضای کم */
+    }
+    
+    .calendar-grid-header div {
+        font-size: 0.75rem; /* فونت روزهای هفته کوچکتر */
+    }
 }

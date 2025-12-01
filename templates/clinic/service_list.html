@@ -3,40 +3,34 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}لیست خدمات و تعرفه‌ها | رزرو آنلاین{% endblock %}
+{% block title %}لیست خدمات و تعرفه‌ها | کلینیک ونوس تبریز{% endblock %}
+
+{% block meta_description %}لیست کامل خدمات کلینیک زیبایی و لاغری ونوس تبریز (دکتر مریم مولوی). تعرفه لیزر موهای زائد، خدمات لاغری، پوست و مو در سه راهی ولیعصر. رزرو نوبت آنلاین.{% endblock %}
 
 {% block content %}
-{# --- 1. Header Section with Search --- #}
 <section class="bg-primary bg-opacity-10 py-5 mb-4 position-relative overflow-hidden">
     <div class="container position-relative z-2 text-center">
-        <h1 class="fw-bold text-dark mb-3">خدمات زیبایی و درمانی</h1>
-        <p class="lead text-muted mb-4">شفافیت در قیمت، کیفیت در خدمات. بهترین گزینه را انتخاب کنید.</p>
+        <h1 class="fw-bold text-dark mb-3">خدمات تخصصی کلینیک ونوس</h1>
+        <p class="lead text-muted mb-4">شفافیت در قیمت، کیفیت در خدمات. زیر نظر دکتر مریم مولوی.</p>
         
-        {# باکس جستجوی زنده #}
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="input-group shadow-sm rounded-pill bg-white p-1">
                     <span class="input-group-text border-0 bg-white ps-3 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" id="serviceSearchInput" class="form-control border-0 shadow-none" placeholder="جستجو در خدمات (مثلا: بوتاکس، لیزر...)">
+                    <input type="text" id="serviceSearchInput" class="form-control border-0 shadow-none" placeholder="جستجو در خدمات (مثلا: لیزر، لاغری...)">
                 </div>
             </div>
         </div>
     </div>
-    {# المان تزئینی پس‌زمینه #}
     <i class="bi bi-stars position-absolute top-0 start-0 text-primary opacity-25" style="font-size: 10rem; transform: translate(-30%, -30%);"></i>
 </section>
 
 <div class="container mb-5" style="min-height: 600px;">
     <div class="row g-4">
         
-        {# --- 2. Sidebar Navigation (Sticky) --- #}
         <div class="col-lg-3">
             <div class="sticky-lg-top" style="top: 100px; z-index: 10;">
-                
-                {# عنوان برای دسکتاپ #}
                 <h6 class="d-none d-lg-block text-uppercase text-muted small fw-bold ms-2 mb-3">دسته‌بندی‌ها</h6>
-                
-                {# نویگیشن: در موبایل افقی اسکرول می‌شود، در دسکتاپ عمودی است #}
                 <div class="nav nav-pills flex-lg-column flex-nowrap overflow-auto pb-2 pb-lg-0" id="v-pills-tab" role="tablist" aria-orientation="vertical">
                     {% for group in groups %}
                     <button class="nav-link text-start py-3 px-4 d-flex justify-content-between align-items-center text-nowrap mb-2 me-2 me-lg-0 {% if forloop.first %}active{% endif %}" 
@@ -53,7 +47,6 @@
                     {% endfor %}
                 </div>
 
-                {# بنر تبلیغاتی کوچک فقط در دسکتاپ #}
                 <div class="card border-0 bg-warning bg-opacity-10 mt-4 d-none d-lg-block rounded-4">
                     <div class="card-body text-center">
                         <i class="bi bi-headset fs-1 text-warning mb-2"></i>
@@ -65,7 +58,6 @@
             </div>
         </div>
 
-        {# --- 3. Content Area --- #}
         <div class="col-lg-9">
             <div class="tab-content" id="v-pills-tabContent">
                 {% for group in groups %}
@@ -74,26 +66,22 @@
                      role="tabpanel" 
                      aria-labelledby="v-pills-{{ group.id }}-tab">
                     
-                    {# هدر گروه #}
                     <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
                         <h2 class="h4 fw-bold text-dark mb-0 border-start border-4 border-primary ps-3">{{ group.name }}</h2>
                         <span class="ms-auto badge bg-light text-muted border rounded-pill">{{ group.services.count }} خدمت</span>
                     </div>
 
-                    {# توضیحات گروه (اختیاری) #}
                     {% if group.description %}
                     <div class="alert alert-light border-0 shadow-sm mb-4">
                         <p class="mb-0 text-muted small lh-lg">{{ group.description }}</p>
                     </div>
                     {% endif %}
                     
-                    {# لیست خدمات #}
                     <div class="row g-3" id="services-container-{{ group.id }}">
                         {% for service in group.services.all %}
                         <div class="col-md-6 service-item" data-name="{{ service.name }}">
                             <div class="card h-100 border-0 shadow-sm hover-lift service-card">
                                 <div class="card-body p-4 d-flex flex-column">
-                                    
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="fw-bold text-dark fs-5 mb-0">{{ service.name }}</h5>
                                         {% if service.badge != 'NONE' %}
@@ -157,41 +145,67 @@
     </div>
 </div>
 
-{# --- 4. SEO Schema (JSON-LD) --- #}
+{# --- SCHEMA MARKUP --- #}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "MedicalClinic",
-  "name": "کلینیک زیبایی مولی",
-  "description": "ارائه دهنده خدمات زیبایی، پوست و مو",
+  "name": "کلینیک زیبایی و لاغری ونوس - دکتر مریم مولوی",
+  "image": "https://example.com/logo.jpg", 
+  "@id": "{{ request.build_absolute_uri }}",
+  "url": "{{ request.build_absolute_uri }}",
+  "telephone": "04136677435",
   "priceRange": "$$",
-  "hasOfferCatalog": {
-    "@type": "OfferCatalog",
-    "name": "خدمات زیبایی",
-    "itemListElement": [
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "سه راهی ولیعصر، برج سینا، طبقه ۵",
+    "addressLocality": "Tabriz",
+    "addressRegion": "East Azerbaijan",
+    "postalCode": "",
+    "addressCountry": "IR"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 38.050278,
+    "longitude": 46.363722
+  },
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": [
+      "Saturday",
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday"
+    ],
+    "opens": "09:00",
+    "closes": "21:00"
+  },
+  "sameAs": [
+    "https://instagram.com/laservenus_tabriz",
+    "https://t.me/laservenus_tabriz",
+    "https://wa.me/989369981448"
+  ],
+  "medicalSpecialty": ["Dermatology", "PlasticSurgery", "CosmeticSurgery"],
+  "availableService": [
       {% for group in groups %}
         {% for service in group.services.all %}
         {
-          "@type": "Offer",
-          "itemOffered": {
-            "@type": "Service",
-            "name": "{{ service.name }}",
-            "description": "{{ service.description|escapejs }}",
-            "category": "{{ group.name }}"
-          },
-          "price": "{{ service.price }}",
-          "priceCurrency": "IRR"
+          "@type": "MedicalProcedure",
+          "name": "{{ service.name }}",
+          "description": "{{ service.description|striptags|escapejs }}",
+          "category": "{{ group.name }}"
         }{% if not forloop.last or not forloop.parentloop.last %},{% endif %}
         {% endfor %}
       {% endfor %}
-    ]
-  }
+  ]
 }
 </script>
+{% endblock %}
 
-{# --- 5. Styles & Scripts --- #}
+{% block extra_js %}
 <style>
-    /* نویگیشن رسپانسیو */
     .nav-pills .nav-link {
         color: #555;
         background-color: #fff;
@@ -211,34 +225,25 @@
         box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.3);
         transform: translateX(-5px);
     }
-    
-    /* کارت سرویس */
     .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
     .hover-lift:hover {
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
         border-color: var(--bs-primary) !important;
     }
-    
-    /* رنگ طلایی */
     .bg-gold { background-color: #ffd700; }
-    
-    /* انیمیشن */
     @keyframes pulse-red {
         0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
         70% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
         100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
     }
     .animate-pulse { animation: pulse-red 2s infinite; }
-
-    /* اسکرول موبایل */
     @media (max-width: 992px) {
         .nav-pills {
             display: flex;
             flex-direction: row !important;
             flex-wrap: nowrap;
             white-space: nowrap;
-            /* مخفی کردن اسکرول بار */
             -ms-overflow-style: none;  
             scrollbar-width: none;  
         }
@@ -248,7 +253,6 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // 1. مدیریت تب‌ها و URL Hash
         const hash = window.location.hash;
         if (hash) {
             const triggerEl = document.querySelector('button[data-bs-target="' + hash + '"]');
@@ -265,7 +269,6 @@
             });
         });
 
-        // 2. سیستم جستجوی زنده (Live Search)
         const searchInput = document.getElementById('serviceSearchInput');
         searchInput.addEventListener('keyup', function() {
             const filter = this.value.toLowerCase();
@@ -284,9 +287,6 @@
                     item.style.display = 'none';
                 }
             });
-            
-            // اگر در تب فعلی پیدا نشد، کاربر را راهنمایی کنیم (می‌توان توسعه داد که کل تب‌ها را بگردد)
-            // فعلا برای سادگی در تب فعال جستجو می‌کند
         });
     });
 </script>

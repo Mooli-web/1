@@ -37,4 +37,19 @@
         </div>
     </div>
 </div>
+
+{# --- استایل اختصاصی برای موبایل در این صفحه --- #}
+<style>
+    @media (max-width: 768px) {
+        /* مخفی کردن دکمه‌های شناور واتساپ و تماس */
+        .position-fixed.bottom-0.end-0 {
+            display: none !important;
+        }
+        
+        /* تنظیم دقیق فاصله از بالا برای دید بهتر */
+        .row.justify-content-center.align-items-center {
+            margin-top: 1rem !important;
+        }
+    }
+</style>
 {% endblock %}

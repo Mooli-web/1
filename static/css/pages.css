@@ -48,7 +48,7 @@
     color: var(--text-dark, #343a40);
 }
 
-/* استایل‌های اضافی برای بلاک‌های تصویری قدیمی (اگر استفاده می‌شوند) */
+/* استایل‌های اضافی برای بلاک‌های تصویری قدیمی */
 .home-image-wrapper-overlay {
     position: relative;
     width: 100%;
@@ -98,4 +98,24 @@
     object-fit: cover;
     border-radius: 15px;
     margin-bottom: 2rem;
+}
+
+
+@media (max-width: 992px) {
+    /* 1. غیرفعال کردن وسط‌چین عمودی */
+    .row.align-items-center {
+        align-items: flex-start !important; 
+        margin-top: 3rem !important;      
+        padding-bottom: 300px !important;   
+    }
+
+    /* 2. غیرفعال کردن ارتفاع اجباری (مخصوص صفحه لاگین) */
+    .row[style*="min-height"] {
+        min-height: auto !important;
+    }
+    
+    /* 3. اطمینان از اسکرول شدن صفحه */
+    body, html {
+        overflow-y: auto !important;
+    }
 }

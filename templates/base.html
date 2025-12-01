@@ -4,24 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}کلینیک زیبایی{% endblock %}</title>
     
+    {# --- سئو: تایتل بهینه شده برای تبریز --- #}
+    <title>{% block title %}کلینیک زیبایی ونوس تبریز | دکتر مریم مولوی{% endblock %}</title>
+    
+    {# --- سئو: متای توضیحات --- #}
+    <meta name="description" content="{% block meta_description %}کلینیک زیبایی و لاغری ونوس در تبریز (دکتر مریم مولوی). مرکز تخصصی لیزر موهای زائد، خدمات پوست و لاغری در سه راهی ولیعصر تبریز. مشاوره رایگان: ۰۹۳۶۹۹۸۱۴۴۸{% endblock %}">
+    
+    <meta name="keywords" content="کلینیک زیبایی تبریز, لیزر مو تبریز, لاغری تبریز, دکتر مریم مولوی, کلینیک ونوس, تزریق ژل تبریز, بوتاکس تبریز">
+
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/dist/font-face.css" rel="stylesheet" type="text/css" />
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     
     {% block extra_css %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-    <nav class="navbar navbar-expand-lg {% block navbar_extra_class %}navbar-light bg-white{% endblock %} sticky-top">
+    <nav class="navbar navbar-expand-lg {% block navbar_extra_class %}navbar-light bg-white{% endblock %} sticky-top shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold fs-3" href="{% url 'clinic:home' %}">
-                <i class="bi bi-gem text-primary me-2"></i>کلینیک زیبایی
+                <i class="bi bi-gem text-primary me-2"></i>کلینیک ونوس
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -29,9 +33,9 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item"><a class="nav-link" href="{% url 'clinic:home' %}">صفحه اصلی</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'clinic:service_list' %}">خدمات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'clinic:service_list' %}">خدمات و تعرفه‌ها</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'clinic:portfolio_gallery' %}">نمونه کارها</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'beautyshop_blog:post_list' %}">وبلاگ</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'beautyshop_blog:post_list' %}">مجله زیبایی</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'clinic:faq' %}">سوالات متداول</a></li>
                 </ul>
                 
@@ -42,17 +46,17 @@
                                 <i class="bi bi-person-circle me-1"></i> {{ user.get_full_name|default:user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2">
-                                <li><a class="dropdown-item" href="{% url 'users:dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>داشبورد</a></li>
-                                <li><a class="dropdown-item" href="{% url 'consultation:request_list' %}"><i class="bi bi-chat-text me-2"></i>مشاوره‌ها</a></li>
+                                <li><a class="dropdown-item" href="{% url 'users:dashboard' %}">داشبورد</a></li>
+                                <li><a class="dropdown-item" href="{% url 'consultation:request_list' %}">مشاوره‌های من</a></li>
                                 {% if user.is_staff %}
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="{% url 'reception_panel:dashboard' %}"><i class="bi bi-shield-lock me-2"></i>پنل مدیریت</a></li>
+                                    <li><a class="dropdown-item text-danger" href="{% url 'reception_panel:dashboard' %}">پنل ادمین</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form action="{% url 'logout' %}" method="post" class="d-inline">
                                         {% csrf_token %}
-                                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-left me-2"></i>خروج</button>
+                                        <button type="submit" class="dropdown-item text-danger">خروج</button>
                                     </form>
                                 </li>
                             </ul>
@@ -62,7 +66,7 @@
                         <a href="{% url 'users:signup' %}" class="btn btn-primary rounded-pill px-4 shadow-sm">ثبت‌نام</a>
                     {% endif %}
                     
-                    <a href="{% url 'booking:create_booking' %}" class="btn btn-warning text-dark rounded-circle p-2 ms-2 shadow-sm" title="رزرو سریع">
+                    <a href="{% url 'booking:create_booking' %}" class="btn btn-warning text-dark rounded-circle p-2 ms-2 shadow-sm animate-pulse" title="رزرو آنلاین">
                         <i class="bi bi-calendar-plus fs-5"></i>
                     </a>
                 </div>
@@ -89,54 +93,73 @@
         <div class="container">
             <div class="row g-4">
                 <div class="col-lg-4 mb-4 mb-lg-0">
-                    <h5 class="fw-bold text-white mb-3"><i class="bi bi-gem me-2"></i>کلینیک زیبایی</h5>
+                    <h5 class="fw-bold text-white mb-3">کلینیک زیبایی و لاغری ونوس</h5>
                     <p class="text-white-50 small lh-lg">
-                        ارائه دهنده برترین خدمات زیبایی و پوست و مو با استفاده از جدیدترین تکنولوژی‌های روز دنیا.
-                        زیبایی حق شماست و ما در این مسیر همراه شما هستیم.
+                        ارائه دهنده تخصصی‌ترین خدمات پوست، مو، لاغری و لیزر در تبریز تحت نظر دکتر مریم مولوی.
+                        با جدیدترین تکنولوژی‌های روز دنیا، زیبایی طبیعی خود را بازیابید.
                     </p>
+                    
+                    {# --- بخش شبکه‌های اجتماعی (اصلاح شده) --- #}
                     <div class="d-flex gap-3 mt-3">
-                        <a href="#" class="text-white-50 hover-white fs-5"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="text-white-50 hover-white fs-5"><i class="bi bi-telegram"></i></a>
-                        <a href="#" class="text-white-50 hover-white fs-5"><i class="bi bi-whatsapp"></i></a>
+                        <a href="https://instagram.com/laservenus_tabriz" target="_blank" class="text-white-50 hover-white fs-5" title="اینستاگرام"><i class="bi bi-instagram"></i></a>
+                        <a href="https://t.me/laservenus_tabriz" target="_blank" class="text-white-50 hover-white fs-5" title="تلگرام"><i class="bi bi-telegram"></i></a>
+                        <a href="https://wa.me/989369981448" target="_blank" class="text-white-50 hover-white fs-5" title="واتساپ"><i class="bi bi-whatsapp"></i></a>
+                        <a href="tel:09369981448" class="text-white-50 hover-white fs-5" title="تماس"><i class="bi bi-telephone"></i></a>
                     </div>
                 </div>
+                
                 <div class="col-6 col-lg-2 offset-lg-1">
                     <h6 class="fw-bold text-white mb-3">دسترسی سریع</h6>
                     <ul class="list-unstyled text-white-50 small d-flex flex-column gap-2">
-                        <li><a href="{% url 'clinic:home' %}" class="text-reset text-decoration-none">صفحه اصلی</a></li>
-                        <li><a href="{% url 'clinic:service_list' %}" class="text-reset text-decoration-none">خدمات</a></li>
-                        <li><a href="{% url 'beautyshop_blog:post_list' %}" class="text-reset text-decoration-none">وبلاگ</a></li>
-                        <li><a href="{% url 'clinic:faq' %}" class="text-reset text-decoration-none">سوالات متداول</a></li>
+                        <li><a href="{% url 'clinic:service_list' %}" class="text-reset text-decoration-none">لیست خدمات</a></li>
+                        <li><a href="{% url 'booking:create_booking' %}" class="text-reset text-decoration-none">نوبت دهی آنلاین</a></li>
+                        <li><a href="{% url 'beautyshop_blog:post_list' %}" class="text-reset text-decoration-none">مقالات آموزشی</a></li>
+                        <li><a href="{% url 'clinic:portfolio_gallery' %}" class="text-reset text-decoration-none">گالری تصاویر</a></li>
                     </ul>
                 </div>
-                <div class="col-6 col-lg-2">
-                    <h6 class="fw-bold text-white mb-3">خدمات پرطرفدار</h6>
-                    <ul class="list-unstyled text-white-50 small d-flex flex-column gap-2">
-                        <li><a href="#" class="text-reset text-decoration-none">لیزر موهای زائد</a></li>
-                        <li><a href="#" class="text-reset text-decoration-none">جوانسازی پوست</a></li>
-                        <li><a href="#" class="text-reset text-decoration-none">تزریق ژل و بوتاکس</a></li>
-                        <li><a href="#" class="text-reset text-decoration-none">فیشیال تخصصی</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3">
-                    <h6 class="fw-bold text-white mb-3">تماس با ما</h6>
-                    <ul class="list-unstyled text-white-50 small d-flex flex-column gap-2">
-                        <li><i class="bi bi-geo-alt me-2"></i> تهران، خیابان ولیعصر...</li>
-                        <li><i class="bi bi-telephone me-2"></i> ۰۲۱-۱۲۳۴۵۶۷۸</li>
-                        <li><i class="bi bi-envelope me-2"></i> info@clinic.com</li>
-                        <li><i class="bi bi-clock me-2"></i> شنبه تا پنجشنبه: ۱۰ تا ۲۰</li>
+                
+                <div class="col-lg-5">
+                    <h6 class="fw-bold text-white mb-3">اطلاعات تماس و مسیریابی</h6>
+                    <ul class="list-unstyled text-white-50 small d-flex flex-column gap-3">
+                        <li class="d-flex align-items-start">
+                            <i class="bi bi-geo-alt me-2 text-warning fs-5"></i>
+                            <div>
+                                <strong class="d-block text-white mb-1">آدرس مطب:</strong>
+                                تبریز، سه راهی ولیعصر، برج سینا، طبقه ۵، مطب دکتر مریم مولوی
+                                <br>
+                                <a href="https://www.google.com/maps/search/?api=1&query=38.050278,46.363722" target="_blank" class="text-warning text-decoration-none mt-1 d-inline-block border-bottom border-warning">
+                                    <i class="bi bi-map me-1"></i>مسیریابی روی نقشه
+                                </a>
+                            </div>
+                        </li>
+                        <li>
+                            <i class="bi bi-telephone me-2 text-warning fs-5"></i>
+                            <a href="tel:04136677435" class="text-white text-decoration-none dir-ltr d-inline-block">041-36677435</a>
+                            <span class="mx-2">|</span>
+                            <a href="tel:09369981448" class="text-white text-decoration-none dir-ltr d-inline-block">0936-998-1448</a>
+                        </li>
+                        <li>
+                            <i class="bi bi-clock me-2 text-warning fs-5"></i>
+                            شنبه تا پنجشنبه: ۹ صبح الی ۹ شب
+                        </li>
                     </ul>
                 </div>
             </div>
+            
             <div class="border-top border-secondary mt-5 pt-4 text-center text-white-50 small">
-                &copy; ۱۴۰۳ تمامی حقوق برای کلینیک زیبایی محفوظ است.
+                © ۱۴۰۳ تمامی حقوق محفوظ است | کلینیک ونوس
             </div>
         </div>
     </footer>
 
-    <a href="{% url 'consultation:create_request' %}" class="sticky-consultation-btn shadow-lg d-md-none">
-        <i class="bi bi-headset fs-4"></i>
-    </a>
+    <div class="d-md-none position-fixed bottom-0 end-0 m-3 d-flex flex-column gap-2" style="z-index: 1050;">
+        <a href="https://wa.me/989369981448" class="btn btn-success rounded-circle shadow-lg d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <i class="bi bi-whatsapp fs-3"></i>
+        </a>
+        <a href="tel:09369981448" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center animate-pulse" style="width: 50px; height: 50px;">
+            <i class="bi bi-telephone-fill fs-4"></i>
+        </a>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
