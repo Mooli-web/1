@@ -1,121 +1,117 @@
 /* static/css/pages.css */
 
-/* --- تنظیمات کلی Hero Section (بخش بالای صفحه) --- */
+/* --- Hero Section (Grid Layout) --- */
+.hero-split-wrapper {
+    position: relative;
+    width: 100%;
+    background-color: var(--bg-main);
+    overflow: hidden;
+}
 
-/* 1. استایل پیش‌فرض (مخصوص موبایل و تبلت) */
+.hero-split-wrapper .row {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile first: 1 column */
+    min-height: auto;
+}
+
+/* Image Container */
+.hero-split-wrapper .col-lg-6:first-child {
+    height: 400px; /* Fixed height for mobile */
+    position: relative;
+    order: 1; /* Image first on mobile */
+}
+
+/* Text Container */
+.hero-split-wrapper .col-lg-6:last-child {
+    padding: 3rem 1.5rem;
+    order: 2; /* Text second on mobile */
+    background-color: var(--bg-main);
+}
+
 .hero-split-image {
     width: 100%;
-    height: 50vh;       /* ارتفاع نصف صفحه در موبایل */
-    min-height: 300px;  /* حداقل ارتفاع برای گوشی‌های خیلی کوچک */
-    position: relative; /* پوزیشن نسبی تا روی متن نیفتد */
+    height: 100%;
     background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center center;
+    background-position: center top;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg); /* Soft look on mobile */
 }
 
-/* حذف ارتفاع اجباری 100vh والد در موبایل تا اسکرول نخورد */
-.hero-split-wrapper .row {
-    min-height: auto; 
-}
-
-/* 2. استایل مخصوص دسکتاپ (صفحه‌های بزرگتر از 992px) */
+/* Desktop Styles */
 @media (min-width: 992px) {
+    .hero-split-wrapper .row {
+        grid-template-columns: 1fr 1fr; /* 2 columns */
+        min-height: 90vh; /* Full height minus header */
+    }
+
+    .hero-split-wrapper .col-lg-6:first-child {
+        height: auto;
+        order: 2; /* Image on right/left based on RTL */
+    }
+
+    .hero-split-wrapper .col-lg-6:last-child {
+        order: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem;
+    }
+
     .hero-split-image {
-        position: absolute; /* برگرداندن به حالت تمام‌صفحه */
+        position: absolute;
         top: 0;
         left: 0;
-        height: 100%;
-        width: 100%;
-    }
-
-    /* در دسکتاپ ارتفاع باید تمام صفحه باشد */
-    .hero-split-wrapper .row {
-        min-height: 100vh;
-    }
-}
-
-/* --- سایر استایل‌های صفحه (Feature Blocks & Blog) --- */
-.feature-block { width: 100%; }
-.bg-light-gray { background-color: var(--bg-main, #f8f9fa); }
-
-.feature-block .display-4 {
-    font-family: var(--heading-font, 'Playfair Display', serif);
-    font-weight: 700;
-    color: var(--text-dark, #343a40);
-}
-.feature-block .blockquote .fs-5 {
-    font-family: var(--heading-font, 'Playfair Display', serif);
-    color: var(--text-dark, #343a40);
-}
-
-/* استایل‌های اضافی برای بلاک‌های تصویری قدیمی */
-.home-image-wrapper-overlay {
-    position: relative;
-    width: 100%;
-    min-height: 100vh; 
-    display: flex;
-    align-items: center; 
-    justify-content: center; 
-    overflow: hidden;
-    padding: 5rem 0; 
-}
-
-.feature-block-bg-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-    z-index: 1;
-}
-
-.feature-block-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5); 
-    z-index: 2;
-}
-
-.feature-block-content {
-    position: relative;
-    z-index: 3;
-    color: #FFFFFF;
-}
-
-/* Blog Cards */
-.blog-card img {
-    border-radius: 12px 12px 0 0;
-    max-height: 250px;
-    object-fit: cover;
-}
-.post-detail-img {
-    max-height: 450px;
-    width: 100%;
-    object-fit: cover;
-    border-radius: 15px;
-    margin-bottom: 2rem;
-}
-
-
-@media (max-width: 992px) {
-    /* 1. غیرفعال کردن وسط‌چین عمودی */
-    .row.align-items-center {
-        align-items: flex-start !important; 
-        margin-top: 3rem !important;      
-        padding-bottom: 300px !important;   
-    }
-
-    /* 2. غیرفعال کردن ارتفاع اجباری (مخصوص صفحه لاگین) */
-    .row[style*="min-height"] {
-        min-height: auto !important;
+        right: 0;
+        bottom: 0;
+        border-radius: 0;
+        /* Clip path for modern look (Optional) */
+        clip-path: polygon(10% 0, 100% 0, 100% 100%, 0% 100%); 
     }
     
-    /* 3. اطمینان از اسکرول شدن صفحه */
-    body, html {
-        overflow-y: auto !important;
+    /* RTL Specific fix for clip-path if needed, or keeping it simple square */
+    [dir="rtl"] .hero-split-image {
+       clip-path: none; /* Reset for simplicity or adjust geometry */
+       border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+       margin: 1rem 0 1rem 1rem;
+       height: calc(100% - 2rem);
     }
+}
+
+/* --- Cards (Modern & Clean) --- */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary);
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+/* --- Feature Blocks --- */
+.feature-block {
+    padding: 5rem 0;
+}
+
+.feature-block img {
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.display-3, .display-4, .display-5 {
+    font-weight: 800;
+    color: var(--secondary);
+    letter-spacing: -1px;
+}
+
+.lead {
+    color: var(--text-light);
+    font-weight: 400;
 }

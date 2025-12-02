@@ -1,101 +1,76 @@
 /* static/css/layout.css */
-/* --- Navbar --- */
+
+/* --- Navbar (Clean & Sticky) --- */
 .navbar {
-    background-color: var(--bg-card);
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border-light);
-    padding: 1.2rem 2rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 1rem 0;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
 }
 
 .navbar-brand {
     font-family: var(--heading-font);
-    font-size: 1.8rem;
-    color: var(--accent-darker);
-    font-weight: bold;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary) !important;
+    letter-spacing: -0.5px;
 }
 
 .nav-link {
-    color: var(--text-dark);
+    color: var(--secondary) !important;
     font-weight: 500;
-    transition: color 0.3s ease;
-    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
 }
 
 .nav-link:hover, .nav-link.active {
-    color: var(--accent);
+    color: var(--primary) !important;
+    background-color: var(--bg-light);
 }
 
-/* --- Transparent & Scrolled Navbar --- */
-.navbar-transparent-on-top {
-    background-color: transparent !important;
-    border-bottom: none;
-    box-shadow: none;
-    transition: background-color 0.3s ease-in-out;
-    z-index: 100; 
-    position: fixed; 
-    width: 100%;
-    top: 0;
-}
-
-.navbar-transparent-on-top.navbar-scrolled {
-    background-color: transparent !important;
-    border-bottom: none;
-    box-shadow: none;
-}
-
-.navbar-transparent-on-top.navbar-scrolled .nav-link,
-.navbar-transparent-on-top.navbar-scrolled .navbar-brand {
-    color: #FFFFFF;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+/* Remove old transparent classes to enforce consistency */
+.navbar-transparent-on-top,
+.navbar-scrolled {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: var(--shadow-sm) !important;
+    border-bottom: 1px solid var(--border-light) !important;
 }
 
 .navbar-transparent-on-top .nav-link,
 .navbar-transparent-on-top .navbar-brand {
-    color: #FFFFFF;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+    color: var(--secondary) !important;
+    text-shadow: none !important;
 }
 
-.navbar-transparent-on-top .dropdown-menu .dropdown-item {
-    color: var(--text-dark); 
-    text-shadow: none;
-}
-
-.navbar-transparent-on-top .nav-link:hover,
-.navbar-transparent-on-top .navbar-brand:hover {
-    color: #f0f0f0; 
-}
-
-.navbar-scrolled {
-    background-color: var(--bg-card) !important; 
-    border-bottom: 1px solid var(--border-light);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    transition: background-color 0.3s ease-in-out;
-    z-index: 100;
-}
-
-.navbar-scrolled .nav-link,
-.navbar-scrolled .navbar-brand {
-    color: var(--text-dark);
-    text-shadow: none;
-}
-
-.navbar-scrolled .nav-link:hover {
-    color: var(--accent);
-}
-
-.navbar-scrolled .navbar-brand {
-    color: var(--accent-darker);
-}
-
-/* --- Footer --- */
+/* --- Footer (Simple & Modern) --- */
 .footer {
-    background-color: var(--text-dark);
-    color: var(--bg-main);
-    text-align: center;
-    padding: 3rem 0;
-    margin-top: 4rem;
-    font-size: 0.95rem;
-    flex-shrink: 0;
+    background-color: var(--bg-card);
+    border-top: 1px solid var(--border-light);
+    color: var(--text-light);
+    padding: 4rem 0 2rem;
+    margin-top: auto;
 }
-.footer a { color: var(--accent); text-decoration: none; }
-.footer a:hover { text-decoration: underline; }
+
+.footer h5, .footer h6 {
+    color: var(--secondary);
+    font-weight: 700;
+    margin-bottom: 1.2rem;
+}
+
+.footer a {
+    color: var(--text-light);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.footer a:hover {
+    color: var(--primary);
+}
+
+.footer .text-white-50 {
+    color: var(--text-light) !important; /* Override Bootstrap utility */
+}

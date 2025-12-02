@@ -1,53 +1,94 @@
-{# mooli-web/templates/booking/create_booking.html #}
+{# templates/booking/create_booking.html #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
-{% block title %}رزرو نوبت آنلاین | کلینیک ونوس{% endblock %}
+{% block title %}رزرو نوبت | کلینیک ونوس{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/booking-calendar.css' %}">
 <style>
-    /* استایل‌های اختصاصی صفحه رزرو */
-    .reward-box {
-        background: linear-gradient(135deg, #fff3cd 0%, #ffecb3 100%);
-        border: 1px solid #ffe082;
-        color: #856404;
-        border-radius: 12px;
-        padding: 15px;
-        margin-top: 20px;
-        display: none;
-        animation: fadeIn 0.5s ease-in-out;
+    /* Steps Progress Bar */
+    .booking-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2.5rem;
+        position: relative;
     }
-    .reward-box i {
-        font-size: 1.5rem;
-        color: #ffca28;
-        vertical-align: middle;
+    .booking-steps::before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--border-light);
+        z-index: 0;
     }
-    
-    /* دکمه‌های اسلات ساعت */
-    .slot-btn {
-        min-width: 80px;
-        transition: all 0.2s;
+    .step-item {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        width: 33.33%;
     }
-    
-    /* دکمه‌های مسیریابی */
-    .map-btn {
-        font-size: 0.9rem;
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        background: white;
+        border: 2px solid var(--border-light);
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
+        margin: 0 auto 8px;
+        font-weight: bold;
+        color: var(--text-light);
+        transition: all 0.3s ease;
     }
-    .map-btn img {
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
+    .step-item.active .step-circle {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.2);
+    }
+    .step-text {
+        font-size: 0.85rem;
+        color: var(--text-light);
+        font-weight: 500;
+    }
+    .step-item.active .step-text {
+        color: var(--primary);
+        font-weight: 700;
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
+    /* Success Message Box (Replacing Reward Box) */
+    .reward-box {
+        background-color: #ECFDF5; /* Emerald 50 */
+        border: 1px solid #10B981;
+        color: #065F46;
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-top: 1.5rem;
+        display: none; /* Toggled by JS */
+        align-items: center;
+        gap: 10px;
+        animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-5px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Slot Buttons */
+    .slot-btn {
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        color: var(--text-dark);
+    }
+    .slot-btn:hover, .slot-btn.active {
+        background-color: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: white !important;
     }
 </style>
 {% endblock %}
@@ -55,16 +96,32 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8 col-md-10">
-        <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
-            <div class="bg-primary h-1" style="height: 6px;"></div>
-            
-            <div class="card-body p-3 p-md-5">
-                <h1 class="h3 mb-4 text-center fw-bold text-dark">رزرو نوبت آنلاین</h1>
+        
+        {# --- Booking Steps Indicator --- #}
+        <div class="booking-steps">
+            <div class="step-item active" id="step1">
+                <div class="step-circle">1</div>
+                <div class="step-text">انتخاب خدمت</div>
+            </div>
+            <div class="step-item" id="step2">
+                <div class="step-circle">2</div>
+                <div class="step-text">زمان مراجعه</div>
+            </div>
+            <div class="step-item" id="step3">
+                <div class="step-circle">3</div>
+                <div class="step-text">تایید نهایی</div>
+            </div>
+        </div>
+
+        <div class="card shadow-md border-0 rounded-4 overflow-hidden">
+            <div class="card-body p-4 p-md-5">
+                
+                <h4 class="fw-bold mb-4 text-secondary">رزرو نوبت جدید</h4>
                 
                 {% if request.user.is_staff and patient_user_for_template %}
-                    <div class="alert alert-info shadow-sm rounded-3">
-                        <i class="bi bi-person-gear me-2"></i>
-                        رزرو برای بیمار: <strong>{{ patient_user_for_template.get_full_name|default:patient_user_for_template.username }}</strong>
+                    <div class="alert alert-primary bg-primary bg-opacity-10 border-0 rounded-3 mb-4 text-primary">
+                        <i class="bi bi-person-badge-fill me-2"></i>
+                        در حال رزرو برای: <strong>{{ patient_user_for_template.get_full_name|default:patient_user_for_template.username }}</strong>
                     </div>
                 {% endif %}
                 
@@ -79,126 +136,104 @@
                     
                     {% csrf_token %}
                     
-                    {# --- مرحله ۱: انتخاب گروه خدمت --- #}
+                    {# --- 1. Service Selection --- #}
                     <div class="mb-4">
-                        <label for="serviceGroup" class="form-label fs-5 fw-bold text-primary">۱. چه خدمتی نیاز دارید؟</label>
-                        <select name="service_group" id="serviceGroup" class="form-select form-select-lg shadow-sm" required>
-                            <option value="">--- انتخاب گروه خدمات ---</option>
+                        <label class="form-label fw-bold text-dark">دسته بندی خدمات</label>
+                        <select name="service_group" id="serviceGroup" class="form-select form-select-lg bg-light border-0" required>
+                            <option value="">انتخاب کنید...</option>
                             {% for group in groups %}
                                 <option value="{{ group.id }}">{{ group.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    {# --- کانتینر چک‌باکس‌های سرویس (توسط JS پر می‌شود) --- #}
                     <div id="servicesContainer" class="mb-4"></div>
-                    
-                    {# --- کانتینر انتخاب دستگاه (توسط JS پر می‌شود) --- #}
                     <div id="devicesContainer" class="mb-4"></div>
 
-                    {# --- مرحله ۲: تقویم --- #}
+                    {# --- 2. Calendar --- #}
                     <div id="slotsContainer" class="mb-4" style="display: none;">
-                        <hr class="border-secondary opacity-10 my-4">
-                        <label class="form-label fs-5 fw-bold text-primary mb-3">۲. انتخاب روز مراجعه:</label>
+                        <hr class="border-light my-4">
+                        <h6 class="fw-bold text-dark mb-3">انتخاب روز و ساعت</h6>
                         
-                        <div id="first-available-slot-container" class="alert alert-success d-none shadow-sm" role="alert">
-                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i> 
-                            اولین نوبت موجود: <strong id="first-slot-label" class="mx-1"></strong>
-                            <button type="button" class="btn btn-success btn-sm mt-2 mt-sm-0 w-100 w-sm-auto" id="book-first-slot-btn">انتخاب سریع</button>
+                        <div id="first-available-slot-container" class="alert alert-success bg-opacity-25 border-0 d-none shadow-none rounded-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <span><i class="bi bi-calendar-check me-1"></i> اولین وقت خالی: <strong id="first-slot-label"></strong></span>
+                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3" id="book-first-slot-btn">انتخاب</button>
                         </div>
                         
-                        <div id="booking-calendar-wrapper">
-                            <div class="calendar-header d-flex justify-content-between align-items-center mb-3 px-2">
-                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle" id="calendar-prev-month" disabled>
+                        <div id="booking-calendar-wrapper" class="border rounded-4 p-3 bg-white">
+                            <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
+                                <button type="button" class="btn btn-light btn-sm rounded-circle" id="calendar-prev-month" disabled>
                                     <i class="bi bi-chevron-right"></i>
                                 </button>
-                                <h5 id="calendar-month-label" class="fw-bold m-0 text-dark"></h5>
-                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle" id="calendar-next-month">
+                                <span id="calendar-month-label" class="fw-bold text-secondary"></span>
+                                <button type="button" class="btn btn-light btn-sm rounded-circle" id="calendar-next-month">
                                     <i class="bi bi-chevron-left"></i>
                                 </button>
                             </div>
-                            <div class="calendar-grid-header">
+                            <div class="calendar-grid-header text-muted small mb-2">
                                 <div>ش</div><div>ی</div><div>د</div><div>س</div><div>چ</div><div>پ</div><div>ج</div>
                             </div>
                             <div id="calendar-grid-body" class="calendar-grid-body"></div>
                         </div>
 
                         <div id="slots-loader" class="text-center p-4" style="display: none;">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <p class="mt-2 small text-muted">در حال بررسی وقت‌های خالی...</p>
+                            <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                            <span class="ms-2 small text-muted">بارگذاری تقویم...</span>
                         </div>
                     </div>
                     
-                    {# --- مرحله ۳: انتخاب ساعت --- #}
-                    <div id="time-selection-container" class="mt-4" style="display: none;">
-                        </div>
+                    <div id="time-selection-container" class="mt-4" style="display: none;"></div>
+                    <div id="fomo-timer-message" class="text-center text-accent fw-bold mt-3 small" style="display: none;"></div>
 
-                    <div id="fomo-timer-message" class="text-center text-danger fw-bold mt-3" style="display: none;"></div>
-
-                    {# --- بخش تخفیف --- #}
-                    <div class="card bg-light border-0 rounded-3 p-3 mt-4">
-                        <label for="discountCode" class="form-label fw-bold small text-muted">کد تخفیف / معرف</label>
-                        <div class="input-group">
-                            <input type="text" name="discount_code" class="form-control" id="discountCode" placeholder="کد را وارد کنید">
-                            <button class="btn btn-outline-secondary" type="button" id="applyDiscountBtn">اعمال</button>
+                    {# --- 3. Discount & Finalize --- #}
+                    <div class="card bg-light border-0 rounded-3 p-4 mt-5">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-tag-fill text-primary me-2 fs-5"></i>
+                            <span class="fw-bold text-dark">کد تخفیف</span>
                         </div>
-                        <div id="discountMessage" class="form-text mt-2"></div>
+                        
+                        <div class="input-group mb-2">
+                            <input type="text" name="discount_code" class="form-control border-0 shadow-sm" id="discountCode" placeholder="کد را اینجا وارد کنید...">
+                            <button class="btn btn-primary shadow-sm" type="button" id="applyDiscountBtn">اعمال کد</button>
+                        </div>
+                        <div id="discountMessage" class="form-text"></div>
                         
                         {% if user_points > 0 %}
-                        <div class="form-check mt-3">
+                        <div class="form-check mt-3 ps-4">
                             <input class="form-check-input" type="checkbox" name="apply_points" id="apply_points">
-                            <label class="form-check-label small" for="apply_points">
-                                استفاده از <strong>{{ user_points }}</strong> امتیاز وفاداری (تبدیل به تخفیف ریالی)
+                            <label class="form-check-label small text-secondary" for="apply_points">
+                                کسر از امتیازات (موجودی: <strong>{{ user_points }}</strong>)
                             </label>
                         </div>
                         {% endif %}
                     </div>
                     
-                    {# --- باکس پاداش --- #}
-                    <div id="rewardBox" class="reward-box text-center">
-                        <i class="bi bi-gift-fill"></i>
-                        <span id="rewardText" class="fs-6 fw-bold"></span>
+                    <div id="rewardBox" class="reward-box">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                        <span id="rewardText" class="fw-bold small"></span>
                     </div>
 
-                    {# --- فاکتور نهایی --- #}
-                    <div class="text-center mt-5 p-3 rounded-3 border border-success bg-success bg-opacity-10">
-                        <h5 class="mb-2 text-muted small">مبلغ قابل پرداخت</h5>
-                        <h2 id="finalPrice" class="text-success fw-bold display-6 mb-0">۰ تومان</h2>
+                    <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                        <div class="text-start">
+                            <small class="text-muted d-block">مبلغ نهایی</small>
+                            <span id="finalPrice" class="fs-4 fw-bolder text-dark">۰ تومان</span>
+                        </div>
+                        <button type="button" id="confirmBtn" class="btn btn-primary rounded-pill px-5 py-2 fw-bold shadow-md" disabled>
+                            ادامه و پرداخت <i class="bi bi-arrow-left ms-2"></i>
+                        </button>
                     </div>
 
-                    {# --- فیلدهای مخفی --- #}
                     <input type="hidden" name="slot" id="selectedSlot">
                     <input type="hidden" id="basePrice" value="0">
                     <input type="hidden" id="totalDuration" value="0">
                     <input type="hidden" name="device_id" id="selectedDevice">
                     
                     {% if request.user.is_staff and patient_user_for_template %}
-                    <div class="form-check fs-5 my-3 alert alert-warning">
+                    <div class="form-check mt-3">
                         <input class="form-check-input" type="checkbox" name="manual_confirm" id="manual_confirm">
-                        <label class="form-check-label fw-bold" for="manual_confirm">
-                            تایید دستی (بدون پرداخت)
-                        </label>
+                        <label class="form-check-label small" for="manual_confirm">ثبت دستی بدون پرداخت</label>
                     </div>
                     {% endif %}
-                    
-                    <div class="d-grid mt-4">
-                        <button type="button" id="confirmBtn" class="btn btn-primary btn-lg shadow rounded-pill py-3 fw-bold" disabled>
-                            تایید نهایی و پرداخت
-                        </button>
-                    </div>
-
-                    {# --- مسیریابی (مفید برای موبایل) --- #}
-                    <div class="mt-4 pt-3 border-top text-center">
-                        <p class="small text-muted mb-2">آدرس: تبریز، سه راهی ولیعصر، برج سینا</p>
-                        <div class="d-flex justify-content-center gap-2">
-                            <a href="https://nshn.ir/your_neshan_link" target="_blank" class="btn btn-light btn-sm border rounded-pill map-btn">
-                                مسیریابی با نشان <i class="bi bi-geo-alt-fill text-primary"></i>
-                            </a>
-                            <a href="https://balad.ir/your_balad_link" target="_blank" class="btn btn-light btn-sm border rounded-pill map-btn">
-                                مسیریابی با بلد <i class="bi bi-map-fill text-success"></i>
-                            </a>
-                        </div>
-                    </div>
 
                 </form>
             </div>
@@ -206,39 +241,34 @@
     </div>
 </div>
 
-{# --- مودال تایید اطلاعات --- #}
-<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content rounded-4 border-0">
-            <div class="modal-header bg-light border-0">
-                <h5 class="modal-title fw-bold" id="confirmationModalLabel">تایید اطلاعات</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+{# --- Confirmation Modal --- #}
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">تایید نهایی رزرو</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-warning small border-0 shadow-sm">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    لطفاً اطلاعات زیر را با دقت بررسی کنید. امکان تغییر نوبت پس از پرداخت وجود ندارد.
+            <div class="modal-body pt-4">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="bg-light rounded-circle p-3 text-primary">
+                        <i class="bi bi-calendar-event fs-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">شما در حال رزرو نوبت برای</div>
+                        <div class="fw-bold fs-5 text-dark">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    </div>
                 </div>
-                <ul class="list-group list-group-flush mb-3">
-                    <li class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-muted">نام بیمار:</span>
-                        <span class="fw-bold">{{ request.user.get_full_name|default:request.user.username }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-muted">شماره تماس:</span>
-                        <span class="fw-bold dir-ltr">{{ request.user.phone_number }}</span>
-                    </li>
-                </ul>
+                
                 <div class="form-check bg-light p-3 rounded-3">
-                    <input class="form-check-input" type="checkbox" value="" id="infoConfirmationCheck">
-                    <label class="form-check-label small lh-sm" for="infoConfirmationCheck">
-                        اینجانب صحت اطلاعات فوق را تایید کرده و قوانین کنسلی کلینیک ونوس را می‌پذیرم.
+                    <input class="form-check-input" type="checkbox" id="infoConfirmationCheck">
+                    <label class="form-check-label small text-secondary" for="infoConfirmationCheck">
+                        قوانین کنسلی و زمان مراجعه را مطالعه کرده و می‌پذیرم.
                     </label>
                 </div>
             </div>
             <div class="modal-footer border-0">
-                <button type="button" class="btn btn-link text-muted text-decoration-none" data-bs-dismiss="modal">بازگشت</button>
-                <button type="button" id="submitBtn" class="btn btn-success px-4 rounded-pill shadow-sm" disabled>
+                <button type="button" id="submitBtn" class="btn btn-success w-100 rounded-pill py-2" disabled>
                     انتقال به درگاه پرداخت
                 </button>
             </div>
@@ -248,7 +278,7 @@
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }} 
+{{ block.super }}
 <script src="{% static 'js/jalali-moment.browser.js' %}"></script>
 <script src="{% static 'js/booking-state.js' %}"></script>
 <script src="{% static 'js/booking-calendar.js' %}"></script>
@@ -256,23 +286,12 @@
 <script src="{% static 'js/booking-api.js' %}"></script>
 <script src="{% static 'js/booking-init.js' %}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // تغییر شفافیت نوبار در اسکرول
-    const navbar = document.querySelector('.navbar.sticky-top');
-    if (navbar && navbar.classList.contains('navbar-transparent-on-top')) {
-        const scrollTrigger = 50; 
-        const handleScroll = () => {
-            if (window.scrollY > scrollTrigger) {
-                navbar.classList.add('navbar-scrolled');
-                navbar.classList.remove('navbar-transparent-on-top');
-            } else {
-                navbar.classList.remove('navbar-scrolled');
-                navbar.classList.add('navbar-transparent-on-top');
-            }
-        };
-        handleScroll(); 
-        window.addEventListener('scroll', handleScroll);
-    }
-});
+    // Simple script to update progress bar based on user interaction (Optional enhancement)
+    document.getElementById('serviceGroup').addEventListener('change', function() {
+        if(this.value) {
+            document.getElementById('step1').classList.add('active');
+            // Logic to move to step 2 visually when calendar loads can be added here
+        }
+    });
 </script>
 {% endblock %}

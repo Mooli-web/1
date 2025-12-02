@@ -1,18 +1,19 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}گالری نمونه کارها | تغییرات واقعی{% endblock %}
+{% block title %}نمونه کارهای درمانی | کلینیک ونوس{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* استایل‌های اختصاصی اسلایدر مقایسه */
+    /* Modern Slider Styles */
     .comparison-slider-wrapper {
         position: relative;
         width: 100%;
-        height: 300px; /* ارتفاع ثابت برای کارت‌ها */
+        height: 320px;
         overflow: hidden;
-        border-radius: 12px 12px 0 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         cursor: ew-resize;
+        background-color: var(--bg-light);
     }
     
     .comparison-slider-wrapper img {
@@ -22,65 +23,71 @@
         position: absolute;
         top: 0;
         left: 0;
+        pointer-events: none; /* Prevent drag issues */
     }
     
-    /* تصویر "بعد" که روی تصویر "قبل" قرار می‌گیرد */
     .img-after-overlay {
-        width: 50%; /* مقدار اولیه */
+        width: 50%;
         height: 100%;
         position: absolute;
         top: 0;
-        left: 0; /* در حالت RTL باید Left باشد چون اورلی است */
+        left: 0; 
         overflow: hidden;
-        border-right: 2px solid white; /* خط جداکننده */
+        border-right: 2px solid white;
         z-index: 2;
+        background-color: white; /* Fallback */
     }
     
     .img-after-overlay img {
-        /* نکته مهم: عرض تصویر داخل اورلی باید برابر با عرض والد اصلی باشد تا کراپ نشود */
-        width: calc(100% / 0.5); /* معکوس مقدار width والد */
+        /* Correct width for revealing logic */
+        width: calc(100% / 0.5); 
         max-width: none;
     }
 
-    /* هندل (دسته) اسلایدر */
+    /* Minimalist Handle */
     .slider-handle {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        background: rgba(255, 255, 255, 0.9);
+        width: 44px;
+        height: 44px;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        border: 2px solid white;
         border-radius: 50%;
         z-index: 3;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 0 10px rgba(0,0,0,0.3);
-        pointer-events: none; /* تاثیری روی موس نداشته باشد */
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        pointer-events: none;
+        transition: background 0.2s;
     }
     
+    /* Icon Fix: Left/Right arrows */
     .slider-handle i {
-        color: var(--text-dark);
+        color: white;
+        font-size: 1.2rem;
     }
 
-    /* برچسب‌های قبل و بعد */
+    /* Badges */
     .label-badge {
         position: absolute;
         bottom: 15px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: bold;
+        padding: 6px 14px;
+        border-radius: var(--radius-pill);
+        font-size: 0.75rem;
+        font-weight: 700;
         z-index: 4;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        letter-spacing: 0.5px;
     }
     .label-before { right: 15px; background: rgba(0, 0, 0, 0.6); color: white; }
-    .label-after { left: 15px; background: rgba(255, 255, 255, 0.8); color: black; }
+    .label-after { left: 15px; background: rgba(255, 255, 255, 0.9); color: var(--primary); }
 
-    /* بهبود ریسپانسیو */
     @media (max-width: 768px) {
-        .comparison-slider-wrapper { height: 250px; }
+        .comparison-slider-wrapper { height: 280px; }
+        .slider-handle { width: 36px; height: 36px; }
     }
 </style>
 {% endblock %}
@@ -88,19 +95,19 @@
 {% block content %}
 <div class="container py-5">
     <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold text-dark">نتایج درخشان مراجعین</h1>
-        <p class="lead text-muted">کیفیت خدمات ما را در تغییرات واقعی ببینید.</p>
+        <h1 class="display-5 fw-bold text-dark mb-3">نتایج درمانی</h1>
+        <p class="lead text-muted">تغییرات واقعی مراجعین کلینیک ونوس</p>
     </div>
 
-    {# --- بخش فیلتر --- #}
+    {# --- Filter Pills --- #}
     <div class="d-flex justify-content-center flex-wrap gap-2 mb-5">
         <a href="{% url 'clinic:portfolio_gallery' %}" 
-           class="btn rounded-pill px-4 {% if not current_group_id %}btn-dark{% else %}btn-outline-secondary{% endif %}">
-           همه
+           class="btn rounded-pill px-4 py-2 fw-bold {% if not current_group_id %}btn-primary text-white shadow-sm{% else %}btn-white border text-muted{% endif %}">
+           همه موارد
         </a>
         {% for group in groups %}
         <a href="?group={{ group.id }}" 
-           class="btn rounded-pill px-4 {% if current_group_id == group.id %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+           class="btn rounded-pill px-4 py-2 fw-bold {% if current_group_id == group.id %}btn-primary text-white shadow-sm{% else %}btn-white border text-muted{% endif %}">
            {{ group.name }}
         </a>
         {% endfor %}
@@ -109,45 +116,40 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         {% for item in portfolio_items %}
         <div class="col">
-            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden hover-shadow transition-all">
+            <div class="card h-100 border-0 shadow-sm overflow-hidden">
                 
-                {# --- اسلایدر مقایسه‌ای --- #}
-                <div class="comparison-slider-wrapper" id="slider-{{ item.id }}" onmousemove="moveSlider(event, this)" ontouchmove="moveSlider(event, this)">
-                    {# تصویر پس‌زمینه (قبل) #}
-                    <img src="{{ item.before_image.url }}" alt="قبل از {{ item.title }}" loading="lazy">
+                {# --- Slider --- #}
+                <div class="comparison-slider-wrapper" id="slider-{{ item.id }}" 
+                     onmousemove="moveSlider(event, this)" 
+                     ontouchmove="moveSlider(event, this)">
+                    
+                    <img src="{{ item.before_image.url }}" alt="Before">
                     <span class="label-badge label-before">قبل</span>
                     
-                    {# لایه رویی (بعد) #}
                     <div class="img-after-overlay" style="width: 50%;">
-                        {# عرض تصویر باید داینامیک ست شود تا اسکیل نشود #}
-                        <img src="{{ item.after_image.url }}" alt="بعد از {{ item.title }}" loading="lazy" style="width: 200%;"> 
+                        <img src="{{ item.after_image.url }}" alt="After" style="width: 200%;"> 
                     </div>
                     <span class="label-badge label-after">بعد</span>
 
-                    {# هندل متحرک #}
                     <div class="slider-handle" style="left: 50%;">
-                        <i class="bi bi-arrows-expand-vertical" style="transform: rotate(90deg);"></i>
+                        {# Fix: Use correct left-right icon #}
+                        <i class="bi bi-arrow-left-right"></i>
                     </div>
                 </div>
 
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title fw-bold text-dark mb-0">{{ item.title }}</h5>
+                <div class="card-body d-flex flex-column p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-dark mb-0">{{ item.title }}</h6>
                         {% if item.service %}
-                            <span class="badge bg-light text-secondary border">{{ item.service.name }}</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border-0">{{ item.service.name }}</span>
                         {% endif %}
                     </div>
                     
-                    <p class="card-text text-muted small mb-4 flex-grow-1">{{ item.description|truncatechars:100 }}</p>
+                    <p class="text-muted small mb-4 flex-grow-1 lh-lg">{{ item.description|truncatechars:90 }}</p>
                     
-                    {# --- دکمه بازاریابی (رزرو همین خدمت) --- #}
                     {% if item.service %}
-                        <a href="{% url 'booking:create_booking' %}?service_id={{ item.service.id }}" class="btn btn-outline-primary w-100 rounded-pill">
-                            <i class="bi bi-calendar-check me-2"></i>رزرو این خدمت
-                        </a>
-                    {% else %}
-                        <a href="{% url 'booking:create_booking' %}" class="btn btn-outline-secondary w-100 rounded-pill">
-                            <i class="bi bi-calendar-plus me-2"></i>رزرو وقت مشاوره
+                        <a href="{% url 'booking:create_booking' %}?service_id={{ item.service.id }}" class="btn btn-outline-primary w-100 rounded-pill py-2">
+                            رزرو این خدمت
                         </a>
                     {% endif %}
                 </div>
@@ -155,42 +157,21 @@
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <div class="alert alert-light d-inline-block px-5 border border-dashed">
-                <i class="bi bi-images display-4 text-muted mb-3 d-block"></i>
-                هنوز نمونه کاری برای این دسته ثبت نشده است.
-            </div>
+            <p class="text-muted">موردی یافت نشد.</p>
         </div>
         {% endfor %}
     </div>
 
-    {# --- Pagination --- #}
+    {# --- Pagination (Styled) --- #}
     {% if portfolio_items.has_other_pages %}
-    <nav class="mt-5" aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
+    <nav class="mt-5">
+        <ul class="pagination justify-content-center gap-1">
             {% if portfolio_items.has_previous %}
-                <li class="page-item">
-                    <a class="page-link rounded-end-pill" href="?page={{ portfolio_items.previous_page_number }}{% if current_group_id %}&group={{ current_group_id }}{% endif %}">قبلی</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled"><span class="page-link rounded-end-pill">قبلی</span></li>
+                <li class="page-item"><a class="page-link rounded-circle border-0 bg-light text-dark" href="?page={{ portfolio_items.previous_page_number }}"><i class="bi bi-chevron-right"></i></a></li>
             {% endif %}
-
-            {% for i in portfolio_items.paginator.page_range %}
-                {% if portfolio_items.number == i %}
-                    <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-                {% else %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ i }}{% if current_group_id %}&group={{ current_group_id }}{% endif %}">{{ i }}</a>
-                    </li>
-                {% endif %}
-            {% endfor %}
-
+            <li class="page-item disabled"><span class="page-link border-0 bg-transparent fw-bold text-dark">صفحه {{ portfolio_items.number }}</span></li>
             {% if portfolio_items.has_next %}
-                <li class="page-item">
-                    <a class="page-link rounded-start-pill" href="?page={{ portfolio_items.next_page_number }}{% if current_group_id %}&group={{ current_group_id }}{% endif %}">بعدی</a>
-                </li>
-            {% else %}
-                <li class="page-item disabled"><span class="page-link rounded-start-pill">بعدی</span></li>
+                <li class="page-item"><a class="page-link rounded-circle border-0 bg-light text-dark" href="?page={{ portfolio_items.next_page_number }}"><i class="bi bi-chevron-left"></i></a></li>
             {% endif %}
         </ul>
     </nav>
@@ -200,35 +181,22 @@
 
 {% block extra_js %}
 <script>
-    /**
-     * منطق اسلایدر قبل/بعد
-     * این تابع بر اساس موقعیت ماوس/تاچ عرض لایه رویی را تغییر می‌دهد.
-     */
     function moveSlider(e, container) {
-        // محاسبه موقعیت x نسبت به کانتینر
         const rect = container.getBoundingClientRect();
         let x = (e.type === 'touchmove' ? e.touches[0].clientX : e.clientX) - rect.left;
         
-        // محدود کردن به داخل کادر
         if (x < 0) x = 0;
         if (x > rect.width) x = rect.width;
         
-        // محاسبه درصد
         const percentage = (x / rect.width) * 100;
         
-        // یافتن عناصر فرزند
         const overlay = container.querySelector('.img-after-overlay');
         const handle = container.querySelector('.slider-handle');
         const imgInOverlay = overlay.querySelector('img');
         
-        // در حالت RTL، چون اورلی absolute left:0 است، با افزایش عرض از چپ به راست پر می‌شود (تصویر بعد)
-        // ما می‌خواهیم هندل زیر موس باشد.
-        
         overlay.style.width = percentage + "%";
         handle.style.left = percentage + "%";
         
-        // اصلاح کشیدگی تصویر داخل اورلی: عرض تصویر باید معکوس عرض اورلی باشد
-        // اگر عرض اورلی 50% باشد، عرض عکس باید 200% باشد تا سایز واقعی دیده شود
         if (percentage > 0) {
             imgInOverlay.style.width = (10000 / percentage) + "%";
         }
