@@ -1,69 +1,59 @@
 # site_settings/models.py
-"""
-مدل‌های داده برای تنظیمات سایت با قابلیت کش‌گذاری (Caching).
-"""
-
 from django.db import models
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
 
 class SingletonModel(models.Model):
-    """
-    مدل انتزاعی برای پیاده‌سازی الگوی Singleton در دیتابیس.
-    """
     class Meta:
         abstract = True
 
     def save(self, *args, **kwargs):
-        """
-        ذخیره با شناسه ثابت 1 و پاک‌سازی کش.
-        """
         self.pk = 1
         super(SingletonModel, self).save(*args, **kwargs)
-        self.set_cache() # آپدیت کش بعد از ذخیره
+        self.set_cache()
 
     def delete(self, *args, **kwargs):
-        """
-        جلوگیری از حذف فیزیکی.
-        """
         pass
 
     @classmethod
     def load(cls):
-        """
-        بارگذاری تنظیمات.
-        اولویت: 1. کش -> 2. دیتابیس -> 3. ایجاد پیش‌فرض
-        """
-        # 1. تلاش برای خواندن از کش
         if cache.get(cls.__name__):
             return cache.get(cls.__name__)
-        
-        # 2. تلاش برای خواندن از دیتابیس یا ایجاد
         obj, created = cls.objects.get_or_create(pk=1)
-        
-        # 3. ذخیره در کش
-        obj.set_cache()
+        if created:
+            obj.set_cache()
         return obj
 
     def set_cache(self):
-        """
-        ذخیره آبجکت فعلی در کش سیستم.
-        """
-        # کش را برای مدت طولانی (مثلا 24 ساعت) نگه می‌داریم
-        # چون با هر بار save، کش آپدیت می‌شود، نگرانی بابت قدیمی بودن نداریم.
         cache.set(self.__class__.__name__, self, 60 * 60 * 24)
 
 class SiteSettings(SingletonModel):
-    """
-    تنظیمات عمومی سایت.
-    """
+    # --- تنظیمات عمومی ---
     price_to_points_rate = models.PositiveIntegerField(
         default=1000, 
-        verbose_name=_("نرخ تبدیل پرداخت به امتیاز"), 
-        help_text=_("به ازای هر X تومان، 1 امتیاز تعلق می‌گیرد (مثال: 1000)")
+        verbose_name=_("نرخ تبدیل پرداخت به امتیاز"),
+        help_text=_("به ازای هر X تومان، 1 امتیاز تعلق می‌گیرد")
     )
     
-    # سایر تنظیمات سراسری...
+    # --- تنظیمات صفحه اصلی (Hero Section) ---
+    hero_title = models.CharField(
+        max_length=200, 
+        default="تجربه درخشش و جوانی؛ حرفه‌ای‌تر از همیشه",
+        verbose_name=_("عنوان اصلی صفحه خانه")
+    )
+    hero_subtitle = models.TextField(
+        default="ما با ترکیب تکنولوژی روز و تخصص پزشکی، بهترین نسخه از زیبایی طبیعی شما را نمایان می‌کنیم.",
+        verbose_name=_("زیرعنوان صفحه خانه")
+    )
+    hero_image = models.ImageField(
+        upload_to='site/hero/',
+        null=True, blank=True,
+        verbose_name=_("تصویر اصلی (Hero)")
+    )
+    
+    # --- آمارها ---
+    happy_clients_count = models.CharField(max_length=50, default="2000+", verbose_name=_("تعداد مشتریان راضی"))
+    years_experience = models.CharField(max_length=50, default="10+", verbose_name=_("سال تجربه"))
 
     class Meta:
         verbose_name = _("تنظیمات سایت")

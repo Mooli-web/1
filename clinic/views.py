@@ -9,23 +9,31 @@ from django.http import HttpRequest, HttpResponse
 from django.db.models import Prefetch
 from .models import Service, PortfolioItem, FAQ, Testimonial, ServiceGroup
 from django.core.paginator import Paginator
+from site_settings.models import SiteSettings
 
 def home_view(request: HttpRequest) -> HttpResponse:
     """
-    نمایش صفحه اصلی.
+    نمایش صفحه اصلی با تمام امکانات جدید.
     """
-    # واکشی گروه‌های خدماتی (معمولا نیازی به جوین سنگین ندارند مگر اینکه عکس یا دستگاه بخواهیم)
-    service_groups = ServiceGroup.objects.all()[:6]
+    # 1. تنظیمات سایت (متن‌های هیرو و...)
+    settings = SiteSettings.load()
+
+    # 2. خدمات (برای نمایش تمام عرض)
+    service_groups = ServiceGroup.objects.prefetch_related('services').all()
     
-    # نظرات مشتریان: حتماً به سرویس نیاز داریم، پس select_related می‌زنیم
+    # 3. نظرات مشتریان (برای اسلایدر)
     testimonials = Testimonial.objects.select_related('service').filter(
-        # می‌توان شرط نمایش نظرات با امتیاز بالا را اضافه کرد
         rating__gte=4 
-    ).order_by('-created_at')[:3]
+    ).order_by('-created_at')[:10] # تعداد بیشتر برای اسلایدر
+
+    # 4. نمونه کارهای منتخب (برای اسلایدر قبل و بعد در صفحه اصلی)
+    portfolio_samples = PortfolioItem.objects.select_related('service').order_by('-created_at')[:5]
     
     context = {
+        'site_settings': settings,
         'service_groups': service_groups, 
-        'testimonials': testimonials
+        'testimonials': testimonials,
+        'portfolio_samples': portfolio_samples,
     }
     return render(request, 'clinic/home.html', context)
 

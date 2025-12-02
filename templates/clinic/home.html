@@ -1,66 +1,66 @@
-{# mooli-web/templates/clinic/home.html #}
 {% extends "base.html" %}
 {% load static %}
+{% load humanize %}
 
-{% block title %}صفحه اصلی{% endblock %}
+{% block title %}صفحه اصلی | کلینیک ونوس{% endblock %}
 
-{% block navbar_extra_class %}{% endblock %}
+{# --- حذف کانتینر پیش‌فرض برای استفاده از تمام عرض --- #}
 {% block main_container_class %}container-fluid p-0{% endblock %}
 
 {% block content %}
-{# --- 1. بخش هیرو (Hero Section) اصلاح شده --- #}
-<section class="hero-split-wrapper">
-    {# تغییر مهم: flex-lg-row-reverse باعث می‌شود فقط در دسکتاپ جای عکس و متن عوض شود #}
-    {# در موبایل، ترتیب طبیعی (اول عکس، بعد متن) حفظ می‌شود #}
-    <div class="row g-0 min-vh-100 flex-lg-row-reverse">
+
+{# ================= SECTION 1: HERO (اصلاح شده) ================= #}
+<section class="split-section position-relative overflow-hidden">
+    {# تغییر: استفاده از align-items-stretch برای هم‌قد شدن عکس و متن #}
+    <div class="row g-0 align-items-stretch flex-lg-row-reverse min-vh-100">
         
-        {# بخش تصویر #}
-        <div class="col-lg-6 position-relative">
-            {# استایل‌های مزاحم حذف شدند و به CSS منتقل شدند #}
-            <div class="hero-split-image" 
-                 style="background-image: url('{% static 'images/clinic-hero-background.jpg' %}');">
-            </div>
-            <div class="hero-decoration d-none d-lg-block"></div>
+        {# ستون تصویر (سمت چپ در دسکتاپ) #}
+        <div class="col-lg-6 p-0 position-relative">
+            {% if site_settings.hero_image %}
+                <img src="{{ site_settings.hero_image.url }}" class="split-image animate-zoom" alt="Hero Image">
+            {% else %}
+                <img src="{% static 'images/clinic-hero-background.jpg' %}" class="split-image animate-zoom" alt="Hero Image">
+            {% endif %}
+            
+            {# لایه گرادینت فقط برای موبایل که متن روی عکس نیفتد ولی خوانا باشد #}
+            <div class="d-lg-none position-absolute bottom-0 start-0 w-100 h-25 bg-gradient-to-t from-white"></div>
         </div>
 
-        {# بخش متن #}
-        <div class="col-lg-6 d-flex align-items-center bg-white">
-            <div class="hero-content-box px-4 px-md-5 py-5 mx-auto" style="max-width: 650px;">
-                <span class="badge bg-light text-dark mb-3 px-3 py-2 rounded-pill fw-light border">
-                    ✨ زیبایی شما، تخصص ماست
+        {# ستون متن (سمت راست در دسکتاپ) #}
+        <div class="col-lg-6 d-flex align-items-center bg-white position-relative z-2">
+            <div class="content-box p-4 p-md-5 mx-auto">
+                <span class="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill border border-primary border-opacity-25">
+                    ✨ {{ site_settings.happy_clients_count }} زیباجوی راضی
                 </span>
-                <h1 class="display-3 fw-bold mb-4 text-dark lh-base">
-                    تجربه درخشش و جوانی؛ <br>
-                    <span class="text-accent">حرفه‌ای‌تر از همیشه</span>
+                
+                <h1 class="display-3 fw-bold mb-4 text-dark lh-sm">
+                    {{ site_settings.hero_title }}
                 </h1>
                 
-                <p class="lead fs-4 mb-5 text-muted fw-normal">
-                    ما با ترکیب تکنولوژی روز و تخصص پزشکی، بهترین نسخه از زیبایی طبیعی شما را نمایان می‌کنیم. 
-                    <br>
-                    <span class="fs-6 text-success mt-2 d-block">
-                        <i class="bi bi-check-circle-fill me-1"></i> 
-                        شامل ۵۰ هزار تومان اعتبار هدیه در اولین مراجعه
-                    </span>
+                <p class="lead fs-5 mb-5 text-muted fw-normal lh-lg text-justify">
+                    {{ site_settings.hero_subtitle }}
                 </p>
                 
                 <div class="d-flex flex-column flex-sm-row gap-3">
-                    <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg px-5 py-3 fs-5 shadow-custom">
+                    <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg rounded-pill px-5 py-3 shadow-lg hover-scale">
                         رزرو آنلاین نوبت
                     </a>
-                    <a href="{% url 'clinic:service_list' %}" class="btn btn-outline-dark btn-lg px-5 py-3 fs-5">
-                        مشاهده خدمات
+                    <a href="#why-us" class="btn btn-outline-dark btn-lg rounded-pill px-5 py-3">
+                        چرا کلینیک ونوس؟
                     </a>
                 </div>
 
-                <div class="mt-5 pt-4 border-top">
-                    <p class="text-muted small mb-2">مورد اعتماد بیش از ۲۰۰۰ زیباجو</p>
-                    <div class="d-flex align-items-center opacity-50">
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        <i class="bi bi-star-fill text-warning me-1"></i>
-                        <span class="ms-2 small fw-bold text-dark">۴.۹/۵ رضایت مشتریان</span>
+                {# آمار پایین #}
+                <div class="row mt-5 pt-4 border-top g-4">
+                    <div class="col-auto">
+                        <h4 class="fw-bold text-dark mb-0">{{ site_settings.years_experience }}</h4>
+                        <small class="text-muted">سال تجربه</small>
+                    </div>
+                    <div class="col-auto border-start ps-4">
+                        <div class="d-flex text-warning mb-1">
+                            <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                        </div>
+                        <small class="text-muted fw-bold">۴.۹ رضایت مشتریان</small>
                     </div>
                 </div>
             </div>
@@ -68,63 +68,198 @@
     </div>
 </section>
 
-{# --- بخش‌های دیگر بدون تغییر باقی می‌مانند --- #}
-{% for group in service_groups %}
-<section class="feature-block bg-white overflow-hidden">
-    <div class="container py-4">
-        <div class="row align-items-center g-5 {% if forloop.counter|divisibleby:2 %}flex-lg-row-reverse{% endif %}">
-            <div class="col-lg-6">
-                <div class="position-relative">
-                    {% if group.home_page_image %}
-                        <img src="{{ group.home_page_image.url }}" alt="{{ group.name }}" class="img-fluid rounded-4 shadow-lg service-card-img">
-                    {% else %}
-                        <div class="bg-light rounded-4 d-flex align-items-center justify-content-center service-placeholder">
-                            <span class="text-muted">تصویر بارگذاری نشده</span>
-                        </div>
-                    {% endif %}
+{# ================= SECTION 2: WHY CHOOSE US (ICONS) ================= #}
+<section id="why-us" class="py-5 bg-light">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold display-6">چرا ونوس را انتخاب کنید؟</h2>
+            <p class="text-muted">استانداردهای بین‌المللی در قلب تبریز</p>
+        </div>
+        <div class="row g-4 text-center">
+            <div class="col-md-3 col-6">
+                <div class="p-4 bg-white rounded-4 shadow-sm h-100 hover-lift">
+                    <div class="text-primary fs-1 mb-3"><i class="bi bi-patch-check-fill"></i></div>
+                    <h6 class="fw-bold">تجهیزات ۲۰۲۴</h6>
+                    <small class="text-muted">استفاده از جدیدترین لیزرهای دنیا</small>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="p-lg-4">
-                    <h2 class="display-5 fw-bold mb-3 text-dark">{{ group.name }}</h2>
-                    <div class="separator-line mb-4"></div>
-                    <p class="lead text-muted mb-5 lh-lg">
-                        {{ group.description|truncatewords:35 }}
-                    </p>
-                    <div class="d-flex gap-3 flex-wrap">
-                        <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">
-                            رزرو نوبت
-                        </a>
-                        <a href="{% url 'clinic:service_list' %}" class="btn btn-outline-dark btn-lg rounded-pill px-5">
-                            اطلاعات بیشتر
-                        </a>
+            <div class="col-md-3 col-6">
+                <div class="p-4 bg-white rounded-4 shadow-sm h-100 hover-lift">
+                    <div class="text-primary fs-1 mb-3"><i class="bi bi-shield-plus"></i></div>
+                    <h6 class="fw-bold">پزشک متخصص</h6>
+                    <small class="text-muted">نظارت مستقیم دکتر مریم مولوی</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-4 bg-white rounded-4 shadow-sm h-100 hover-lift">
+                    <div class="text-primary fs-1 mb-3"><i class="bi bi-wallet2"></i></div>
+                    <h6 class="fw-bold">قیمت منصفانه</h6>
+                    <small class="text-muted">تعرفه‌های رقابتی با بالاترین کیفیت</small>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-4 bg-white rounded-4 shadow-sm h-100 hover-lift">
+                    <div class="text-primary fs-1 mb-3"><i class="bi bi-clock-history"></i></div>
+                    <h6 class="fw-bold">نوبت‌دهی آسان</h6>
+                    <small class="text-muted">سیستم رزرو آنلاین ۲۴ ساعته</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ================= SECTION 3: SERVICES (MAGAZINE LAYOUT / SPLIT SCREEN) ================= #}
+{# این بخش دقیقاً طبق خواسته شما تمام خدمات را به صورت نیم‌صفحه نمایش می‌دهد #}
+
+{% for group in service_groups %}
+<section class="split-section border-top border-light position-relative overflow-hidden">
+    <div class="row g-0 align-items-stretch {% if forloop.counter|divisibleby:2 %}flex-lg-row-reverse{% endif %}">
+        
+        {# ستون تصویر #}
+        <div class="col-lg-6 p-0 position-relative" style="min-height: 500px;">
+            {% if group.home_page_image %}
+                <img src="{{ group.home_page_image.url }}" alt="{{ group.name }}" 
+                     class="w-100 h-100 object-fit-cover position-absolute top-0 start-0 transition-transform">
+            {% else %}
+                <div class="w-100 h-100 bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center text-muted">
+                    <i class="bi bi-image fs-1"></i>
+                </div>
+            {% endif %}
+            
+            {# افکت هاور روی عکس #}
+            <div class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-10 d-none d-lg-block"></div>
+        </div>
+
+        {# ستون متن #}
+        <div class="col-lg-6 d-flex align-items-center bg-white">
+            <div class="content-box p-5 mx-auto" style="max-width: 650px;">
+                <h2 class="display-4 fw-bold mb-3 text-dark">{{ group.name }}</h2>
+                <div class="separator-line bg-primary mb-4" style="width: 80px; height: 5px; border-radius: 5px;"></div>
+                
+                <p class="lead text-secondary mb-5 lh-lg text-justify">
+                    {{ group.description|truncatewords:60 }}
+                </p>
+                
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'booking:create_booking' %}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">
+                        رزرو نوبت <i class="bi bi-arrow-left ms-2"></i>
+                    </a>
+                    <a href="{% url 'clinic:service_list' %}" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                        مشاهده تعرفه‌ها
+                    </a>
+                </div>
+                
+                {# لیست کوتاه خدمات زیرمجموعه #}
+                {% if group.services.exists %}
+                <div class="mt-5 pt-4 border-top">
+                    <small class="text-uppercase text-muted fw-bold ls-1 mb-3 d-block">خدمات شامل:</small>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for s in group.services.all|slice:":4" %}
+                            <span class="badge bg-light text-dark border fw-normal py-2 px-3 rounded-pill">{{ s.name }}</span>
+                        {% endfor %}
+                        {% if group.services.count > 4 %}
+                            <span class="badge bg-white text-muted border fw-normal py-2 px-3 rounded-pill">+{{ group.services.count|add:"-4" }} مورد دیگر</span>
+                        {% endif %}
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </section>
 {% endfor %}
 
-<section class="feature-block bg-light-gray">
-   <div class="container-fluid py-5 my-4 px-md-5">
-       <h2 class="display-4 text-center mb-5">نظرات مراجعین ما</h2>
-       <div class="row g-5 justify-content-center">
-            {% for testimonial in testimonials %}
-            <div class="col-lg-4 col-md-6">
-                <figure class="text-center">
-                    <blockquote class="blockquote">
-                        <p class="fs-5 fst-italic">"{{ testimonial.comment }}"</p>
-                    </blockquote>
-                    <figcaption class="blockquote-footer">
-                        {{ testimonial.patient_name }} برای <cite title="Source Title">{{ testimonial.service.name }}</cite>
-                    </figcaption>
-                </figure>
-            </div>
-            {% empty %}
-             <p class="text-center text-muted">هنوز نظری ثبت نشده است.</p>
-            {% endfor %}
-       </div>
-   </div>
+{# ================= SECTION 4: CTA BANNER ================= #}
+<section class="py-5 bg-dark text-white text-center position-relative overflow-hidden">
+    <div class="container py-5 position-relative z-2">
+        <h2 class="display-5 fw-bold mb-3">هنوز مطمئن نیستید؟</h2>
+        <p class="lead text-white-50 mb-4">همین حالا مشاوره رایگان دریافت کنید تا بهترین راهکار را به شما پیشنهاد دهیم.</p>
+        <a href="{% url 'consultation:create_request' %}" class="btn btn-warning text-dark fw-bold btn-lg rounded-pill px-5 py-3 shadow-lg animate-pulse">
+            <i class="bi bi-chat-text-fill me-2"></i>درخواست مشاوره رایگان
+        </a>
+    </div>
+    {# پترن پس‌زمینه #}
+    <i class="bi bi-question-circle position-absolute top-50 start-0 translate-middle text-white opacity-05" style="font-size: 20rem;"></i>
 </section>
+
+{# ================= SECTION 5: PORTFOLIO SLIDER ================= #}
+{% if portfolio_samples %}
+<section class="py-5 bg-white">
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <h2 class="fw-bold display-6 mb-2">نتایج واقعی</h2>
+                <p class="text-muted mb-0">تغییراتی که مراجعین ما تجربه کرده‌اند</p>
+            </div>
+            <a href="{% url 'clinic:portfolio_gallery' %}" class="btn btn-outline-primary rounded-pill px-4">مشاهده گالری</a>
+        </div>
+
+        {# اسلایدر ساده با استفاده از اسکرول افقی #}
+        <div class="d-flex gap-4 overflow-auto pb-4 hide-scrollbar snap-x">
+            {% for item in portfolio_samples %}
+            <div class="card border-0 shadow-sm rounded-4 flex-shrink-0 snap-center" style="width: 300px;">
+                <div class="position-relative overflow-hidden rounded-top-4" style="height: 300px;">
+                    {# نمایش عکس بعد به عنوان پیش‌فرض #}
+                    <img src="{{ item.after_image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ item.title }}">
+                    <span class="position-absolute bottom-0 start-0 m-3 badge bg-success bg-opacity-75 backdrop-blur">نتیجه نهایی</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="fw-bold mb-1">{{ item.title }}</h6>
+                    <small class="text-muted">{{ item.service.name }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# ================= SECTION 6: TESTIMONIALS CAROUSEL ================= #}
+<section class="py-5 bg-light-gray position-relative">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold display-6">مراجعین ما چه می‌گویند؟</h2>
+        </div>
+
+        <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                {% for testimonial in testimonials %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+                                <div class="mb-4 text-warning fs-3">
+                                    {% with ''|center:testimonial.rating as range %}
+                                    {% for _ in range %}<i class="bi bi-star-fill mx-1"></i>{% endfor %}
+                                    {% endwith %}
+                                </div>
+                                <p class="fs-4 fst-italic text-dark lh-base mb-4">
+                                    "{{ testimonial.comment }}"
+                                </p>
+                                <div class="d-flex align-items-center justify-content-center gap-3">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">
+                                        {{ testimonial.patient_name|slice:":1" }}
+                                    </div>
+                                    <div class="text-start">
+                                        <h6 class="fw-bold mb-0">{{ testimonial.patient_name }}</h6>
+                                        <small class="text-muted">خدمت: {{ testimonial.service.name }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <button class="carousel-control-prev" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon bg-dark rounded-circle p-3" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#testimonialCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon bg-dark rounded-circle p-3" aria-hidden="true"></span>
+            </button>
+        </div>
+    </div>
+</section>
+
 {% endblock %}
