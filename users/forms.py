@@ -1,8 +1,4 @@
 # users/forms.py
-"""
-فرم‌های کاربری (ثبت‌نام و ویرایش).
-"""
-
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
@@ -10,29 +6,38 @@ from .models import CustomUser, Profile
 
 class CustomUserCreationForm(UserCreationForm):
     """
-    فرم ثبت‌نام کاربر جدید.
+    فرم ثبت‌نام ساده شده.
+    فقط نام کاربری، موبایل، جنسیت و رمز عبور (که خود جنگو اضافه می‌کند).
     """
     class Meta(UserCreationForm.Meta):
         model = CustomUser
-        fields = ('username', 'email', 'phone_number', 'first_name', 'last_name', 'gender')
-        widgets = {
-            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '09xxxxxxxxx'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'gender': forms.Select(attrs={'class': 'form-select'}),
-        }
-    
+        fields = ('username', 'phone_number', 'gender')
+        
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['email'].required = False
-        self.fields['phone_number'].required = True
+        
+        # 1. حذف متن‌های راهنمای پیش‌فرض جنگو
+        self.fields['username'].help_text = None
+        
+        # 2. اجباری کردن جنسیت
+        self.fields['gender'].required = True
+        
+        # 3. تنظیم کلاس‌ها و متن‌های جایگزین (Placeholder)
+        # عبارت (انگلیسی) طبق درخواست حذف شد
+        self.fields['username'].widget.attrs.update({
+            'class': 'form-control', 
+            'placeholder': 'نام کاربری'
+        })
+        self.fields['phone_number'].widget.attrs.update({
+            'class': 'form-control', 
+            'placeholder': '09xxxxxxxxx'
+        })
+        self.fields['gender'].widget.attrs.update({
+            'class': 'form-select'
+        })
 
+# سایر فرم‌ها بدون تغییر باقی می‌مانند
 class UserEditForm(forms.ModelForm):
-    """
-    فرم ویرایش اطلاعات پایه کاربر.
-    """
     class Meta:
         model = CustomUser
         fields = ['first_name', 'last_name', 'email', 'gender']
@@ -50,9 +55,6 @@ class UserEditForm(forms.ModelForm):
         }
 
 class ProfileEditForm(forms.ModelForm):
-    """
-    فرم ویرایش پروفایل (فقط عکس).
-    """
     class Meta:
         model = Profile
         fields = ['profile_picture']

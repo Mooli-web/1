@@ -1,7 +1,8 @@
+{# templates/registration/login.html #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 
-{% block title %}ورود به حساب کاربری{% endblock %}
+{% block title %}ورود به حساب{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
@@ -9,47 +10,56 @@
         <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="card-header bg-primary text-white text-center py-4 border-0">
                 <h4 class="fw-bold mb-0">خوش آمدید</h4>
-                <p class="small opacity-75 mb-0 mt-1">لطفاً برای ادامه وارد شوید</p>
+                <p class="small opacity-75 mb-0 mt-1">ورود به حساب کاربری</p>
             </div>
             <div class="card-body p-5">
                 <form method="post">
                     {% csrf_token %}
                     
-                    {{ form|crispy }}
-                    
-                    <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="rememberMe">
-                            <label class="form-check-label small text-muted" for="rememberMe">مرا به خاطر بسپار</label>
-                        </div>
-                        <a href="#" class="small text-decoration-none">رمز عبور را فراموش کردید؟</a>
+                    {# فیلد نام کاربری - ساختار استاندارد و هماهنگ #}
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">نام کاربری</label>
+                        <input type="text" name="username" class="form-control" placeholder="نام کاربری" required id="id_username">
                     </div>
 
-                    <div class="d-grid gap-2">
+                    {# فیلد رمز عبور با دکمه مشاهده - استاندارد بوت‌استرپ برای RTL #}
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">رمز عبور</label>
+                        <div class="input-group">
+                            {# در حالت RTL اینپوت سمت راست و دکمه سمت چپ قرار می‌گیرد #}
+                            <input type="password" name="password" class="form-control" placeholder="رمز عبور" required id="id_password">
+                            <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">ورود</button>
                         <a href="{% url 'users:signup' %}" class="btn btn-outline-secondary btn-lg rounded-pill">ثبت‌نام</a>
                     </div>
                 </form>
             </div>
-            <div class="card-footer bg-light text-center py-3 border-0">
-                <small class="text-muted">با ورود به سایت، <a href="#" class="text-decoration-none">قوانین و مقررات</a> را می‌پذیرم.</small>
-            </div>
         </div>
     </div>
 </div>
 
-{# --- استایل اختصاصی برای موبایل در این صفحه --- #}
-<style>
-    @media (max-width: 768px) {
-        /* مخفی کردن دکمه‌های شناور واتساپ و تماس */
-        .position-fixed.bottom-0.end-0 {
-            display: none !important;
-        }
+{% block extra_js %}
+<script>
+    document.getElementById('togglePassword').addEventListener('click', function (e) {
+        const passwordInput = document.getElementById('id_password');
+        const icon = this.querySelector('i');
         
-        /* تنظیم دقیق فاصله از بالا برای دید بهتر */
-        .row.justify-content-center.align-items-center {
-            margin-top: 1rem !important;
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
         }
-    }
-</style>
+    });
+</script>
+{% endblock %}
 {% endblock %}

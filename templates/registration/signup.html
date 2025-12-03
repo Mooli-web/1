@@ -1,7 +1,8 @@
+{# templates/registration/signup.html #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 
-{% block title %}ثبت‌نام کاربر جدید{% endblock %}
+{% block title %}ثبت‌نام سریع{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center align-items-center my-5">
@@ -10,12 +11,48 @@
             <div class="card-body p-5">
                 <div class="text-center mb-4">
                     <h3 class="fw-bold text-primary">ایجاد حساب کاربری</h3>
-                    <p class="text-muted">به جمع مراجعین ما بپیوندید و از خدمات آنلاین لذت ببرید.</p>
+                    <p class="text-muted small">فقط با چند کلیک عضو شوید</p>
                 </div>
 
                 <form method="post">
                     {% csrf_token %}
-                    {{ form|crispy }}
+                    
+                    {# 1. نام کاربری #}
+                    <div class="mb-3">
+                        {{ form.username|as_crispy_field }}
+                    </div>
+
+                    {# 2. شماره موبایل #}
+                    <div class="mb-3">
+                        {{ form.phone_number|as_crispy_field }}
+                    </div>
+
+                    {# 3. جنسیت #}
+                    <div class="mb-3">
+                        {{ form.gender|as_crispy_field }}
+                    </div>
+
+                    {# 4. رمز عبور اصلی #}
+                    <div class="mb-3">
+                        <label class="form-label" for="id_password1">رمز عبور</label>
+                        <div class="input-group">
+                            <input type="password" name="password1" class="form-control" id="id_password1" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary toggle-pass" data-target="id_password1">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {# 5. تکرار رمز عبور #}
+                    <div class="mb-3">
+                        <label class="form-label" for="id_password2">تکرار رمز عبور</label>
+                        <div class="input-group">
+                            <input type="password" name="password2" class="form-control" id="id_password2" autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary toggle-pass" data-target="id_password2">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
                     
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">ثبت‌نام و ادامه</button>
@@ -30,18 +67,26 @@
     </div>
 </div>
 
-{# --- استایل اختصاصی برای موبایل در این صفحه --- #}
-<style>
-    @media (max-width: 768px) {
-        /* مخفی کردن دکمه‌های شناور واتساپ و تماس */
-        .position-fixed.bottom-0.end-0 {
-            display: none !important;
-        }
-        
-        /* تنظیم دقیق فاصله از بالا برای دید بهتر */
-        .row.justify-content-center.align-items-center {
-            margin-top: 1rem !important;
-        }
-    }
-</style>
+{% block extra_js %}
+<script>
+    // اسکریپت سراسری برای تمام دکمه‌های toggle-pass
+    document.querySelectorAll('.toggle-pass').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %}
