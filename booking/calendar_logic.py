@@ -1,15 +1,9 @@
 # booking/calendar_logic.py
-"""
-Calendar Logic Core.
-Decoupled from User model to support Guest Gender selection.
-"""
-
 from datetime import datetime, time, timedelta, date
 from typing import List, Dict, Union
 import jdatetime
 from django.utils import timezone
 from django.db.models import Q
-
 from clinic.models import Service, WorkHours
 from .models import Appointment
 from users.models import CustomUser
@@ -26,13 +20,9 @@ def generate_available_slots_for_range(
     end_date: date, 
     service_ids: List[str], 
     device_id: Union[int, None], 
-    patient_user: Union[CustomUser, None] = None, # Optional now
-    gender_param: str = None # Explicit gender ('MALE', 'FEMALE')
+    patient_user: Union[CustomUser, None] = None,
+    gender_param: str = None
 ) -> Dict[str, List[Dict]]:
-    """
-    Generates available slots.
-    Prioritizes 'gender_param' if provided, otherwise falls back to 'patient_user.gender'.
-    """
     
     try:
         services = Service.objects.select_related('group').filter(id__in=service_ids)
@@ -45,21 +35,22 @@ def generate_available_slots_for_range(
     except Exception:
         return {}
 
-    # --- Gender Logic Refactor ---
-    # 1. Try explicit param (from Guest toggle)
-    # 2. Try User profile
-    # 3. Default to ALL
+    # --- منطق اصلاح شده جنسیت ---
     target_gender = 'ALL'
     if gender_param in ['MALE', 'FEMALE']:
         target_gender = gender_param
     elif patient_user and patient_user.gender:
         target_gender = patient_user.gender
+    else:
+        # تغییر مهم: پیش‌فرض برای مهمانان "بانوان" است
+        # چون اکثر خدمات کلینیک زیبایی زنانه است.
+        target_gender = 'FEMALE' 
         
     gender_filter = Q(gender_specific='ALL') 
     if target_gender != 'ALL':
         gender_filter = Q(gender_specific=target_gender) | Q(gender_specific='ALL')
     
-    # --- Work Hours ---
+    # --- ادامه کد بدون تغییر ---
     days_diff = (end_date - start_date).days
     weekday_range = set((start_date + timedelta(days=i)).weekday() for i in range(days_diff + 1))
     model_weekdays = [(d + 2) % 7 for d in weekday_range]
@@ -72,7 +63,6 @@ def generate_available_slots_for_range(
     for wh in work_hours_qs:
         work_hours_map.setdefault(wh.day_of_week, []).append(wh)
 
-    # --- Booked Slots ---
     aware_start_dt = timezone.make_aware(datetime.combine(start_date, time.min))
     aware_end_dt = timezone.make_aware(datetime.combine(end_date, time.max))
 
@@ -95,7 +85,6 @@ def generate_available_slots_for_range(
         date_key = local_start.date()
         booked_intervals_map.setdefault(date_key, set()).add((app.start_time, app.end_time))
 
-    # --- Generate Slots ---
     all_available_slots_map = {}
     today = timezone.now().date()
     now = timezone.now()

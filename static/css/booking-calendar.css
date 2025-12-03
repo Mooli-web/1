@@ -1,109 +1,81 @@
 /* static/css/booking-calendar.css */
 
-/* --- کانتینر اصلی تقویم --- */
 #booking-calendar-wrapper {
     direction: rtl;
-    font-family: inherit;
     background: #fff;
     border-radius: 12px;
     padding: 15px;
-    /* سایه نرم برای جداسازی از زمینه */
-    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
-/* --- سیستم شبکه‌ای (گرید) --- */
 .calendar-grid-header, .calendar-grid-body {
     display: grid;
-    grid-template-columns: repeat(7, 1fr); /* همیشه ۷ ستون */
-    gap: 8px; /* فاصله استاندارد در دسکتاپ */
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
     text-align: center;
     margin-bottom: 10px;
 }
 
-/* --- هدر روزهای هفته (شنبه، یکشنبه...) --- */
-.calendar-grid-header div {
-    font-weight: 700;
-    color: #6c757d;
-    font-size: 0.9rem;
-    padding-bottom: 5px;
-}
-
-/* --- خانه‌های روزها --- */
 .calendar-day {
-    aspect-ratio: 1; /* مربع کامل بماند */
+    aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px; /* گردی گوشه‌ها */
+    border-radius: 12px; /* گردی مدرن */
     font-size: 1rem;
     font-weight: 500;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    user-select: none; /* جلوگیری از انتخاب متن در موبایل */
+    transition: all 0.2s ease;
     cursor: default;
-}
-
-/* --- حالت‌های مختلف روزها --- */
-
-/* 1. روزهای خالی (شروع ماه) */
-.calendar-day-empty {
-    background-color: transparent;
-    pointer-events: none;
-}
-
-/* 2. روزهای غیرفعال (گذشته یا پر) */
-.calendar-day.disabled, .calendar-day.unavailable {
-    color: #adb5bd;
-    background-color: #f8f9fa;
     border: 1px solid transparent;
-    opacity: 0.6;
 }
 
-/* 3. روزهای دارای نوبت (قابل رزرو) - سبز ملایم */
+/* روزهای خالی */
+.calendar-day-empty { background: transparent; }
+
+/* روزهای غیرفعال */
+.calendar-day.disabled {
+    color: #ccc;
+    background-color: #f9f9f9;
+}
+
+/* روزهای سبز (دارای ظرفیت) */
 .calendar-day.available {
-    background-color: #f0fff4; /* سبز خیلی کمرنگ */
-    color: #198754;
-    border: 1px solid #d1e7dd;
+    background-color: #ecfdf5 !important; /* سبز خیلی روشن */
+    color: #059669 !important; /* متن سبز تیره */
+    border: 1px solid #10b981 !important;
     cursor: pointer;
-    font-weight: 700;
+    font-weight: bold;
 }
 
-/* هاور دسکتاپ */
-@media (hover: hover) {
-    .calendar-day.available:hover {
-        background-color: #198754;
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(25, 135, 84, 0.2);
-    }
+.calendar-day.available:hover {
+    background-color: #d1fae5 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-/* 4. روز انتخاب شده (توسط کاربر) - آبی اختصاصی */
+/* نشانگر کوچک زیر روزهای سبز (اختیاری) */
+.calendar-day.available::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    width: 4px;
+    height: 4px;
+    background-color: #059669;
+    border-radius: 50%;
+}
+
+/* روز انتخاب شده */
 .calendar-day.selected {
-    background-color: var(--bs-primary, #0d6efd) !important;
-    color: #fff !important;
-    border-color: var(--bs-primary, #0d6efd) !important;
-    box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+    background-color: var(--bs-primary) !important;
+    color: white !important;
+    border-color: var(--bs-primary) !important;
+    box-shadow: 0 5px 15px rgba(var(--bs-primary-rgb), 0.4);
     transform: scale(1.05);
     z-index: 2;
 }
+.calendar-day.selected::after { display: none; }
 
-/* --- استایل‌های مخصوص موبایل (Responsive) --- */
+/* ریسپانسیو */
 @media (max-width: 576px) {
-    #booking-calendar-wrapper {
-        padding: 10px 5px; /* کاهش پدینگ کناری */
-    }
-
-    .calendar-grid-header, .calendar-grid-body {
-        gap: 4px; /* کاهش فاصله بین خانه‌ها در موبایل */
-    }
-
-    .calendar-day {
-        font-size: 0.85rem; /* فونت کمی کوچکتر */
-        border-radius: 8px; /* گوشه‌های تیزتر برای فضای کم */
-    }
-    
-    .calendar-grid-header div {
-        font-size: 0.75rem; /* فونت روزهای هفته کوچکتر */
-    }
+    .calendar-grid-header, .calendar-grid-body { gap: 4px; }
+    .calendar-day { font-size: 0.9rem; border-radius: 8px; }
 }
