@@ -33,8 +33,6 @@ def all_available_slots_api(request: HttpRequest) -> JsonResponse:
         return JsonResponse({'error': 'Invalid device ID'}, status=400)
 
     patient_user, _, _ = _get_patient_for_booking(request)
-    if patient_user is None or not patient_user.is_authenticated:
-         return JsonResponse({'error': 'Authentication required'}, status=403)
 
     # تولید اسلات‌ها
     grouped_slots = generate_available_slots_for_range(
