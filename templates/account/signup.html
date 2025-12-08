@@ -1,51 +1,31 @@
-{# templates/account/signup.html #}
+{# templates/account/verification_sent.html #}
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
 {% load i18n %}
 
-{% block title %}{% trans "ثبت‌نام در کلینیک" %}{% endblock %}
+{% block title %}{% trans "تایید ایمیل" %}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center align-items-center my-5">
-    <div class="col-md-8 col-lg-5">
-        <div class="card border-0 shadow-lg rounded-4">
-            <div class="card-body p-5">
-                <div class="text-center mb-4">
-                    <h3 class="fw-bold text-primary">{% trans "ایجاد حساب کاربری" %}</h3>
-                    <p class="text-muted small">{% trans "برای دسترسی کامل به خدمات کلینیک عضو شوید" %}</p>
-                </div>
-
-                {# فرم ثبت‌نام استاندارد Allauth #}
-                <form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
-                    {% csrf_token %}
-                    
-                    {# نمایش فرم با استایل بوت‌استرپ #}
-                    {{ form|crispy }}
-                    
-                    {% if redirect_field_value %}
-                    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-                    {% endif %}
-                    
-                    <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
-                            {% trans "ثبت‌نام و ارسال ایمیل تایید" %}
-                        </button>
-                    </div>
-                </form>
-
-                <div class="text-center mt-4 pt-3 border-top">
-                    <p class="text-muted mb-0">
-                        {% trans "قبلاً ثبت‌نام کرده‌اید؟" %} 
-                        <a href="{% url 'account_login' %}" class="fw-bold text-decoration-none">{% trans "وارد شوید" %}</a>
-                    </p>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card border-0 shadow-lg rounded-4 p-5">
+                <div class="mb-4 text-success">
+                    <i class="bi bi-envelope-check-fill" style="font-size: 5rem;"></i>
                 </div>
                 
-                {# نمایش خطاهای احتمالی #}
-                {% if form.errors and not form.non_field_errors %}
-                <div class="alert alert-danger mt-3 small">
-                    لطفاً اطلاعات ورودی را بررسی کنید.
+                <h3 class="fw-bold text-dark mb-3">{% trans "ایمیل تایید ارسال شد" %}</h3>
+                
+                <p class="text-muted lh-lg mb-4">
+                    لینک فعال‌سازی حساب کاربری به آدرس ایمیل شما ارسال شد.
+                    <br>
+                    لطفاً صندوق ورودی (Inbox) یا پوشه اسپم (Spam) خود را چک کنید و روی لینک کلیک نمایید.
+                </p>
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-center">
+                    <a href="{% url 'clinic:home' %}" class="btn btn-outline-primary rounded-pill px-4">
+                        {% trans "بازگشت به صفحه اصلی" %}
+                    </a>
                 </div>
-                {% endif %}
             </div>
         </div>
     </div>

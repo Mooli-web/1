@@ -153,14 +153,19 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 ZARINPAL_MERCHANT_ID = os.environ.get("ZARINPAL_MERCHANT_ID", "sandbox")
 ZARINPAL_CALLBACK_URL = os.environ.get("ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8000/payment/callback/")
 
-# Email (تنظیمات حیاتی برای ارسال لینک تایید)
+# clinic_project/settings/base.py
+
+# تنظیمات ایمیل (Chapar / SMTP)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.chmail.ir')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 465))
+# اگر از پورت 465 استفاده می‌کنید، SSL باید روشن و TLS خاموش باشد
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'True') == 'True'
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'False') == 'True'
+
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.environ.get('clinicvenus.tabriz@gmail.com')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
 # Business Logic
 POINTS_TO_TOMAN_RATE = 100
