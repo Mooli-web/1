@@ -1,0 +1,33 @@
+{# templates/account/verification_sent.html #}
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "تایید ایمیل" %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card border-0 shadow-lg rounded-4 p-5">
+                <div class="mb-4 text-success">
+                    <i class="bi bi-envelope-check-fill" style="font-size: 5rem;"></i>
+                </div>
+                
+                <h3 class="fw-bold text-dark mb-3">{% trans "ایمیل تایید ارسال شد" %}</h3>
+                
+                <p class="text-muted lh-lg mb-4">
+                    لینک فعال‌سازی حساب کاربری به آدرس ایمیل شما ارسال شد.
+                    <br>
+                    لطفاً صندوق ورودی (Inbox) یا پوشه اسپم (Spam) خود را چک کنید و روی لینک کلیک نمایید.
+                </p>
+
+                <div class="d-grid gap-2 d-sm-flex justify-content-center">
+                    <a href="{% url 'clinic:home' %}" class="btn btn-outline-primary rounded-pill px-4">
+                        {% trans "بازگشت به صفحه اصلی" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

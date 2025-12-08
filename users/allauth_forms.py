@@ -12,16 +12,6 @@ class AllauthSignupForm(forms.Form): # تغییر ارث‌بری به فرم س
     """
     دریافت اطلاعات تکمیلی هنگام ثبت‌نام.
     """
-    first_name = forms.CharField(
-        label=_("نام"), 
-        max_length=30, 
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام خود را وارد کنید'})
-    )
-    last_name = forms.CharField(
-        label=_("نام خانوادگی"), 
-        max_length=30, 
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام خانوادگی'})
-    )
     phone_number = forms.CharField(
         label=_("شماره تلفن"), 
         max_length=15, 
