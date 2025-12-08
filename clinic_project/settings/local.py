@@ -25,7 +25,7 @@ if not DATABASES or 'default' not in DATABASES or not DATABASES['default']:
 
 # --- Email ---
 # چاپ ایمیل‌ها در کنسول به جای ارسال واقعی
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 # --- Debug Toolbar (Optional) ---
 # اگر نیاز به دیباگ تولبار داشتید، اینجا اضافه کنید

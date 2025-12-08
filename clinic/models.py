@@ -53,7 +53,7 @@ class WorkHours(models.Model):
         ordering = ['day_of_week', 'start_time']
         constraints = [
             models.CheckConstraint(
-                check=models.Q(service_group__isnull=False, service__isnull=True) | 
+                condition=models.Q(service_group__isnull=False, service__isnull=True) | 
                       models.Q(service_group__isnull=True, service__isnull=False),
                 name='either_group_or_service_workhour'
             )
