@@ -113,29 +113,30 @@ const BookingUI = {
         const container = document.getElementById('time-selection-container');
         if (!container) return;
 
-        container.innerHTML = '<h5 class="mb-3">زمان‌های موجود برای این روز:</h5>';
+        container.innerHTML = '<h5 class="mb-3 fw-bold text-dark">زمان مراجعه را انتخاب کنید:</h5>';
         container.style.display = 'block';
 
         const list = document.createElement('div');
-        list.className = 'd-flex flex-wrap gap-2';
+        // تغییر کلاس کانتینر برای چیدمان شبکه ای و مرتب
+        list.className = 'd-grid gap-3 grid-slots'; 
+        // استایل گرید در CSS تعریف می‌شود (مثلا ۴ ستون در دسکتاپ)
 
         slots.forEach(slot => {
-            // استخراج ساعت از فرمت ISO (مثلاً 2023-11-20T14:30:00)
-            // فرض: ماژول moment-jalaali یا تبدیل ساده
             const timePart = slot.start.split('T')[1].slice(0, 5); 
 
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'btn btn-outline-primary px-4 py-2 slot-btn';
-            btn.innerHTML = `<i class="bi bi-clock me-1"></i> ${timePart}`;
+            // حذف btn-outline-primary و اضافه کردن کلاس اختصاصی slot-btn
+            btn.className = 'btn slot-btn'; 
+            btn.innerHTML = `<i class="bi bi-clock"></i><span>${timePart}</span>`;
             
             btn.addEventListener('click', () => {
+                // حذف کلاس active از همه
                 document.querySelectorAll('.slot-btn').forEach(b => {
-                    b.classList.remove('active', 'btn-primary');
-                    b.classList.add('btn-outline-primary');
+                    b.classList.remove('active');
                 });
-                btn.classList.remove('btn-outline-primary');
-                btn.classList.add('active', 'btn-primary');
+                // افزودن به دکمه کلیک شده
+                btn.classList.add('active');
                 
                 if (onSlotSelect) onSlotSelect(slot);
             });
@@ -144,8 +145,6 @@ const BookingUI = {
         });
 
         container.appendChild(list);
-        
-        // اسکرول به بخش ساعت‌ها
         container.scrollIntoView({ behavior: 'smooth', block: 'center' });
     },
 

@@ -18,7 +18,7 @@ def all_available_slots_api(request: HttpRequest) -> JsonResponse:
     """
     # بازه زمانی (مثلاً تا ۴۵ روز آینده)
     start_date = timezone.now().date()
-    end_date = start_date + timedelta(days=45)
+    end_date = start_date + timedelta(days=365)
 
     service_ids = request.GET.getlist('service_ids[]')
     device_id = request.GET.get('device_id')

@@ -1,50 +1,69 @@
-/* static/css/booking.css */
-.fc .fc-toolbar-title {
-    font-family: var(--heading-font);
-    color: var(--text-dark);
-}
-.fc .fc-button-primary {
-    background-color: var(--accent);
-    border-color: var(--accent);
-}
-.fc .fc-button-primary:hover {
-    background-color: var(--accent-darker);
-    border-color: var(--accent-darker);
+/* --- Time Slot Buttons Styling --- */
+
+/* کانتینر شبکه‌ای برای نظم دکمه‌ها */
+.grid-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* واکنش‌گرا */
 }
 
-.fc-loading {
+.slot-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* فاصله آیکون و متن */
+    padding: 12px 15px;
+    border: 1px solid var(--border-light);
+    border-radius: 12px; /* گوشه‌های گرد */
+    background-color: #fff;
+    color: var(--text-dark);
+    font-family: var(--primary-font);
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* انیمیشن نرم */
+    position: relative;
+    overflow: hidden;
+}
+
+/* استایل آیکون ساعت */
+.slot-btn i {
+    font-size: 1.1rem;
+    color: var(--text-light); /* رنگ خنثی برای آیکون */
+    transition: color 0.2s;
+}
+
+/* افکت هاور (موس روی دکمه) */
+.slot-btn:hover {
+    border-color: var(--primary);
+    background-color: rgba(13, 148, 136, 0.05); /* هاله رنگ اصلی */
+    transform: translateY(-2px); /* کمی بالا بیاید */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    color: var(--primary);
+}
+
+.slot-btn:hover i {
+    color: var(--primary);
+}
+
+/* حالت فعال (انتخاب شده) */
+.slot-btn.active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(13, 148, 136, 0.3); /* سایه رنگی */
+    font-weight: 700;
+}
+
+.slot-btn.active i {
+    color: #fff;
+}
+
+/* افکت موج (اختیاری - برای زیبایی بیشتر) */
+.slot-btn.active::after {
+    content: '';
     position: absolute;
+    width: 100%;
+    height: 100%;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-}
-
-.fc-day-available {
-    background-color: #d4edda !important; 
-    cursor: pointer;
-}
-.fc-day-available:hover {
-    background-color: #c3e6cb !important; 
-}
-
-.fc-day-unavailable {
-    background-color: #e9ecef !important; 
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-.fc-day-past {
-    background-color: #f8f9fa !important;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
     opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.fc .fc-bg-event {
-    display: none;
 }

@@ -2,6 +2,8 @@
 {% load static %}
 {% load jalali_tags %}
 {% load humanize %}
+{# اضافه کردن لود تگ‌های اختصاصی #}
+{% load reception_tags %}
 
 {% block title %}داشبورد من | کلینیک زیبایی{% endblock %}
 
@@ -44,8 +46,9 @@
                     {% if appointments and appointments.0.status != 'DONE' and appointments.0.status != 'CANCELED' %}
                         <div class="text-primary mb-2"><i class="bi bi-calendar-check fs-1"></i></div>
                         <h6 class="fw-bold text-dark">نوبت بعدی شما</h6>
-                        <p class="text-primary fs-5 mb-1 fw-bold">{{ appointments.0.start_time|to_jalali:'%A %d %B' }}</p>
-                        <span class="badge bg-light text-dark border">{{ appointments.0.start_time|to_jalali:'%H:%M' }}</span>
+                        {# اصلاح شده: استفاده از jalali_format برای نمایش فارسی کامل #}
+                        <p class="text-primary fs-5 mb-1 fw-bold">{{ appointments.0.start_time|jalali_format:'%A %d %B' }}</p>
+                        <span class="badge bg-light text-dark border">{{ appointments.0.start_time|jalali_format:'%H:%M' }}</span>
                     {% else %}
                         <div class="text-muted mb-2"><i class="bi bi-calendar-plus fs-1"></i></div>
                         <h6 class="text-dark">نوبت فعالی ندارید</h6>
@@ -68,7 +71,8 @@
                             <li class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-light last-no-border">
                                 <div>
                                     <small class="d-block fw-bold text-dark">{{ txn.amount|intcomma }} <span class="text-muted" style="font-size: 0.7em;">تومان</span></small>
-                                    <small class="text-muted" style="font-size: 0.7em;">{{ txn.created_at|to_jalali:'%Y/%m/%d' }}</small>
+                                    {# اصلاح شده #}
+                                    <small class="text-muted" style="font-size: 0.7em;">{{ txn.created_at|jalali_format:'%Y/%m/%d' }}</small>
                                 </div>
                                 {% if txn.status == 'SUCCESS' %}
                                     <i class="bi bi-arrow-down-left-circle-fill text-success"></i>
@@ -114,8 +118,9 @@
                             {% endif %}
                         </td>
                         <td>
-                            <div class="text-dark">{{ appt.start_time|to_jalali:'%Y/%m/%d' }}</div>
-                            <small class="text-muted">{{ appt.start_time|to_jalali:'%H:%M' }}</small>
+                            {# اصلاح شده #}
+                            <div class="text-dark">{{ appt.start_time|jalali_format:'%Y/%m/%d' }}</div>
+                            <small class="text-muted">{{ appt.start_time|jalali_format:'%H:%M' }}</small>
                         </td>
                         <td>
                             {% if appt.status == 'PENDING' %}

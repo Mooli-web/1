@@ -76,7 +76,7 @@ class Profile(models.Model):
         verbose_name=_("امتیاز وفاداری")
     )
 
-    referral_code = models.CharField(max_length=10, unique=True, blank=True, verbose_name="کد معرف اختصاصی")
+    referral_code = models.CharField(max_length=10, unique=True, blank=True,verbose_name="کد معرف اختصاصی")
     referred_by = models.ForeignKey(
         CustomUser, 
         on_delete=models.SET_NULL, 
