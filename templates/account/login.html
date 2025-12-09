@@ -1,4 +1,3 @@
-{# templates/account/login.html #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load i18n %}
@@ -19,6 +18,7 @@
                 <form class="login" method="POST" action="{% url 'account_login' %}">
                     {% csrf_token %}
                     
+                    {# رندر کردن فرم #}
                     {{ form|crispy }}
                     
                     {% if redirect_field_value %}
@@ -49,42 +49,38 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // پیدا کردن تمام فیلدهای پسورد در صفحه
+        // پیدا کردن تمام فیلدهای پسورد
         const passwordInputs = document.querySelectorAll('input[type="password"]');
         
         passwordInputs.forEach(function (input) {
-            // ساخت دکمه چشم
+            // ساخت دکمه چشم با استایل جدید
             const eyeBtn = document.createElement('button');
             eyeBtn.type = 'button';
-            eyeBtn.className = 'btn btn-outline-secondary border-start-0';
+            eyeBtn.className = 'password-toggle-btn';
+            eyeBtn.tabIndex = -1; // جلوگیری از فوکوس با تب
             eyeBtn.innerHTML = '<i class="bi bi-eye"></i>';
-            eyeBtn.style.zIndex = '10';
             
-            // ساخت نگهدارنده (Input Group)
+            // ساخت نگهدارنده با کلاس جدید CSS
             const wrapper = document.createElement('div');
-            wrapper.className = 'input-group has-validation';
+            wrapper.className = 'password-group-wrapper';
             
-            // جابجایی فیلد به داخل نگهدارنده و افزودن دکمه
+            // جابجایی فیلد به داخل نگهدارنده
             input.parentNode.insertBefore(wrapper, input);
             wrapper.appendChild(input);
             wrapper.appendChild(eyeBtn);
             
-            // تنظیم استایل فیلد
-            input.classList.add('border-end-0');
-            
-            // لاجیک تغییر وضعیت نمایش رمز
+            // عملکرد دکمه
             eyeBtn.addEventListener('click', function () {
                 const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
                 input.setAttribute('type', type);
                 
-                // تغییر آیکون چشم
                 const icon = this.querySelector('i');
                 if (type === 'text') {
-                    icon.classList.remove('bi-eye');
-                    icon.classList.add('bi-eye-slash');
+                    icon.classList.replace('bi-eye', 'bi-eye-slash');
+                    icon.classList.add('text-primary');
                 } else {
-                    icon.classList.remove('bi-eye-slash');
-                    icon.classList.add('bi-eye');
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                    icon.classList.remove('text-primary');
                 }
             });
         });

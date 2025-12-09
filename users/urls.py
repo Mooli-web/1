@@ -11,4 +11,5 @@ urlpatterns = [
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('profile/', views.profile_update_view, name='profile_update'),
     path('api/notifications/mark-as-read/', views.mark_notifications_as_read_api, name='mark_notifications_as_read'),
+    path('api/claim-points/', views.claim_guest_points_api, name='claim_guest_points'),
 ]

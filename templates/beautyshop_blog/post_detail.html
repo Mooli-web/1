@@ -101,7 +101,8 @@
                         <button id="like-btn" 
                                 class="btn btn-lg d-flex align-items-center gap-2 {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %} rounded-pill px-4 transition-all"
                                 data-url="{% url 'beautyshop_blog:like_toggle' post.pk %}"
-                                {% if not user.is_authenticated %}onclick="window.location.href='{% url 'login' %}?next={{ request.path }}'; return false;"{% endif %}>
+                                {# اصلاح شد: استفاده از account_login بجای login #}
+                                {% if not user.is_authenticated %}onclick="window.location.href='{% url 'account_login' %}?next={{ request.path }}'; return false;"{% endif %}>
                             <i class="bi {% if is_liked %}bi-heart-fill{% else %}bi-heart{% endif %}" id="like-icon"></i>
                             <span id="like-text" class="fs-6 d-none d-sm-inline">{% if is_liked %}پسندیدم{% else %}مفید بود{% endif %}</span>
                         </button>
@@ -164,7 +165,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Like System (Updated)
     const likeBtn = document.getElementById('like-btn');
-    if (likeBtn && !likeBtn.hasAttribute('onclick')) { // Check if not guarded by login redirect
+    if (likeBtn && !likeBtn.hasAttribute('onclick')) { 
         likeBtn.addEventListener('click', function(e) {
             e.preventDefault();
             const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
@@ -193,7 +194,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         likeBtn.classList.replace('btn-outline-danger', 'btn-danger');
                         icon.classList.replace('bi-heart', 'bi-heart-fill');
                         text.textContent = 'پسندیدم';
-                        // افکت تپش قلب کوچک
                         icon.style.transform = 'scale(1.3)';
                         setTimeout(() => icon.style.transform = 'scale(1)', 200);
                     } else {

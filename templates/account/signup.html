@@ -1,4 +1,3 @@
-{# templates/account/signup.html #}
 {% extends "base.html" %}
 {% load crispy_forms_tags %}
 {% load i18n %}
@@ -18,7 +17,6 @@
                 <form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
                     {% csrf_token %}
                     
-                    {# نمایش ارورهای کلی فرم #}
                     {% if form.non_field_errors %}
                         <div class="alert alert-danger">
                             {% for error in form.non_field_errors %}
@@ -27,13 +25,16 @@
                         </div>
                     {% endif %}
 
-                    {# رندر کردن فیلدها #}
                     {{ form|crispy }}
                     
                     {% if redirect_field_value %}
                     <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
                     {% endif %}
                     
+                    <div class="alert alert-light border-0 small text-muted mt-3">
+                        <i class="bi bi-info-circle me-1"></i>رمز عبور باید حداقل ۵ کاراکتر باشد.
+                    </div>
+
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm fw-bold">
                             <i class="bi bi-person-plus-fill me-2"></i>{% trans "ثبت‌نام" %}
@@ -56,42 +57,34 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // پیدا کردن تمام فیلدهای پسورد
+        // همان اسکریپت مدرن لاگین برای هماهنگی
         const passwordInputs = document.querySelectorAll('input[type="password"]');
         
         passwordInputs.forEach(function (input) {
-            // ساخت دکمه چشم
             const eyeBtn = document.createElement('button');
             eyeBtn.type = 'button';
-            eyeBtn.className = 'btn btn-outline-secondary border-start-0';
+            eyeBtn.className = 'password-toggle-btn';
+            eyeBtn.tabIndex = -1;
             eyeBtn.innerHTML = '<i class="bi bi-eye"></i>';
-            eyeBtn.style.zIndex = '10';
             
-            // ساخت نگهدارنده (Input Group) برای چسباندن دکمه به فیلد
             const wrapper = document.createElement('div');
-            wrapper.className = 'input-group has-validation';
+            wrapper.className = 'password-group-wrapper';
             
-            // جابجایی فیلد به داخل نگهدارنده
             input.parentNode.insertBefore(wrapper, input);
             wrapper.appendChild(input);
             wrapper.appendChild(eyeBtn);
             
-            // تنظیم استایل فیلد برای اتصال صحیح به دکمه
-            input.classList.add('border-end-0');
-            
-            // لاجیک تغییر وضعیت نمایش رمز
             eyeBtn.addEventListener('click', function () {
                 const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
                 input.setAttribute('type', type);
                 
-                // تغییر آیکون چشم (باز/بسته)
                 const icon = this.querySelector('i');
                 if (type === 'text') {
-                    icon.classList.remove('bi-eye');
-                    icon.classList.add('bi-eye-slash');
+                    icon.classList.replace('bi-eye', 'bi-eye-slash');
+                    icon.classList.add('text-primary');
                 } else {
-                    icon.classList.remove('bi-eye-slash');
-                    icon.classList.add('bi-eye');
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                    icon.classList.remove('text-primary');
                 }
             });
         });

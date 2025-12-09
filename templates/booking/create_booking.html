@@ -52,7 +52,8 @@
                         <div>
                             شما به صورت <strong>مهمان</strong> رزرو می‌کنید.
                             <br>
-                            <a href="{% url 'login' %}?next={% url 'booking:create_booking' %}" class="fw-bold text-decoration-none">ورود به حساب</a> برای دریافت امتیاز.
+                            {# اصلاح شد: استفاده از account_login بجای login #}
+                            <a href="{% url 'account_login' %}?next={% url 'booking:create_booking' %}" class="fw-bold text-decoration-none">ورود به حساب</a> برای دریافت امتیاز.
                         </div>
                     </div>
                     {% endif %}
@@ -207,9 +208,8 @@
 <script src="{% static 'js/booking-calendar.js' %}"></script>
 <script src="{% static 'js/booking-ui.js' %}"></script>
 <script src="{% static 'js/booking-api.js' %}"></script>
-{# اسکریپت اینلاین شده برای هندل کردن تغییرات جدید HTML #}
 <script>
-    // --- اصلاح فایل booking-init.js به صورت اینلاین برای هماهنگی با کارت‌ها ---
+    // --- اسکریپت اینلاین شده برای هماهنگی ---
     document.addEventListener('DOMContentLoaded', async () => {
         const configEl = document.getElementById('bookingForm');
         const config = {
@@ -290,21 +290,17 @@
             // فرمت قیمت
             const formattedPrice = totalPrice.toLocaleString('fa-IR') + ' تومان';
 
-            // --- بروزرسانی UI (نسخه ایمن) ---
-            
-            // 1. قیمت در فرم اصلی
+            // --- بروزرسانی UI ---
             const finalPriceEl = document.getElementById('finalPrice');
             if (finalPriceEl) finalPriceEl.textContent = formattedPrice;
 
-            // 2. قیمت در سایدبار (اگر وجود داشت)
             const finalPriceDisplayEl = document.getElementById('finalPriceDisplay');
             if (finalPriceDisplayEl) finalPriceDisplayEl.textContent = formattedPrice;
 
-            // 3. تعداد خدمات در سایدبار (اگر وجود داشت)
             const summaryCountEl = document.getElementById('summaryServiceCount');
             if (summaryCountEl) summaryCountEl.textContent = checkedInputs.length + ' مورد';
 
-            // ذخیره قیمت پایه در اینپوت مخفی (برای محاسبات تخفیف)
+            // ذخیره قیمت پایه
             const basePriceInput = document.getElementById('basePrice');
             if (basePriceInput) basePriceInput.value = totalPrice;
 

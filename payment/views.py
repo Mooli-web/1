@@ -118,9 +118,21 @@ def payment_callback_view(request: HttpRequest) -> HttpResponse:
                 
                 _send_success_notifications(request, appointment, txn_obj)
 
+                is_guest = appointment.patient is None
+                earned_points = 0
+                
+                # محاسبه امتیاز (مثلا بر اساس مبلغ یا عدد ثابت ۵۰۰ برای خوش‌آمدگویی)
+                if is_guest:
+                    # مثلا ۵۰۰ امتیاز ثابت برای تبدیل مهمان به عضو
+                    earned_points = 500
+
             return render(request, 'payment/payment_success.html', {
                 'ref_id': res.data.ref_id,
-                'tracking_code': appointment.tracking_code # ارسال کد رهگیری به تمپلیت
+                'tracking_code': appointment.tracking_code,
+                # ارسال متغیرهای جدید به تمپلیت
+                'is_guest': is_guest,
+                'appointment_id': appointment.id,
+                'earned_points': earned_points
             })
         
         else:

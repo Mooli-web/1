@@ -116,7 +116,14 @@ ACCOUNT_SIGNUP_FORM_CLASS = 'users.allauth_forms.AllauthSignupForm'
 AUTH_USER_MODEL = 'users.CustomUser'
 LOGIN_URL = 'account_login'
 
-AUTH_PASSWORD_VALIDATORS = []
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 5,  # حداقل ۵ کاراکتر
+        },
+    }
+]
 LANGUAGE_CODE = 'fa-ir'
 TIME_ZONE = 'Asia/Tehran'
 USE_I18N = True

@@ -74,3 +74,52 @@
     70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); }
     100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
 }
+
+/* --- Modern Password Input Styling --- */
+.password-group-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-light); /* رنگ حاشیه پیش‌فرض */
+    border-radius: var(--radius-md); /* یا 50px برای حالت قرصی */
+    background-color: #fff;
+    transition: all 0.3s ease;
+    overflow: hidden; /* برای جلوگیری از بیرون زدگی */
+}
+
+/* وقتی روی فیلد کلیک می‌شود، کل قاب رنگی شود */
+.password-group-wrapper:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15); /* افکت سایه رنگی */
+}
+
+/* استایل خود اینپوت */
+.password-group-wrapper input.form-control {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding-left: 15px; /* فاصله از چپ */
+    height: 48px; /* ارتفاع استاندارد */
+}
+
+/* استایل دکمه چشم */
+.password-toggle-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-light);
+    padding: 0 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+    height: 100%;
+}
+
+.password-toggle-btn:hover {
+    color: var(--primary);
+}
+
+.password-toggle-btn i {
+    font-size: 1.2rem;
+}
