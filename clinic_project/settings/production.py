@@ -26,12 +26,12 @@ if not DATABASE_URL:
 # هشدار: این تنظیمات را فقط زمانی فعال کنید که SSL/HTTPS روی سرور فعال باشد.
 # در غیر این صورت ممکن است دسترسی به سایت قطع شود.
 
-# SECURE_SSL_REDIRECT = True         # هدایت تمام درخواست‌ها به HTTPS
-# SESSION_COOKIE_SECURE = True       # کوکی نشست فقط در HTTPS
-# CSRF_COOKIE_SECURE = True          # کوکی CSRF فقط در HTTPS
-# SECURE_HSTS_SECONDS = 31536000     # اجبار مرورگر به استفاده از HTTPS (یک سال)
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = True         # هدایت تمام درخواست‌ها به HTTPS
+SESSION_COOKIE_SECURE = True       # کوکی نشست فقط در HTTPS
+CSRF_COOKIE_SECURE = True          # کوکی CSRF فقط در HTTPS
+SECURE_HSTS_SECONDS = 31536000     # اجبار مرورگر به استفاده از HTTPS (یک سال)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 
 # --- Static Files in Production ---

@@ -2,6 +2,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from .models import CustomUser
+from .models import CustomUser, Profile
 
 class AllauthSignupForm(forms.Form):
     """
@@ -28,6 +29,11 @@ class AllauthSignupForm(forms.Form):
         choices=CustomUser.Gender.choices, 
         widget=forms.Select(attrs={'class': 'form-select'})
     )
+    referral_code = forms.CharField(
+        label=_("کد معرف (اختیاری)"),
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'کد دوستتان را وارد کنید'})
+    )
 
     def signup(self, request, user):
         """
@@ -43,3 +49,13 @@ class AllauthSignupForm(forms.Form):
         
         # ذخیره نهایی کاربر در دیتابیس
         user.save()
+
+        ref_code = self.cleaned_data.get('referral_code')
+        if ref_code:
+            try:
+                referrer_profile = Profile.objects.get(referral_code__iexact=ref_code)
+                # ثبت معرف برای کاربر جدید
+                user.profile.referred_by = referrer_profile.user
+                user.profile.save()
+            except Profile.DoesNotExist:
+                pass # کد معرف اشتباه بود، نادیده می‌گیریم

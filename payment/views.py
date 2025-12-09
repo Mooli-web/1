@@ -12,14 +12,14 @@ from booking.models import Appointment
 from reception_panel.models import Notification
 from users.models import CustomUser
 
-def start_payment_view(request: HttpRequest, appointment_id: int) -> HttpResponse:
+def start_payment_view(request: HttpRequest, tracking_code: str) -> HttpResponse:
     """
     شروع پرداخت.
     برای مهمانان، دیگر patient=request.user چک نمی‌شود.
     """
     # تغییر مهم: حذف شرط patient=request.user برای پشتیبانی از مهمان
     # بهتر است در اینجا چک کنیم اگر نوبت مال کس دیگری است اجازه ندهد (فعلاً برای سادگی حذف کردیم)
-    appointment = get_object_or_404(Appointment, id=appointment_id)
+    appointment = get_object_or_404(Appointment,tracking_code=tracking_code)
 
     # امنیت ساده: اگر نوبت کاربر دارد ولی کاربر جاری لاگین نیست یا متفاوت است، جلوگیری کن
     if appointment.patient and appointment.patient != request.user:
@@ -125,6 +125,28 @@ def payment_callback_view(request: HttpRequest) -> HttpResponse:
                 if is_guest:
                     # مثلا ۵۰۰ امتیاز ثابت برای تبدیل مهمان به عضو
                     earned_points = 500
+
+                if appointment.patient:
+                    successful_txns = Transaction.objects.filter(
+                        appointment__patient=appointment.patient, 
+                        status='SUCCESS'
+                    ).count()
+                    
+                    # چون این تراکنش الان ذخیره شده، اگر تعداد ۱ باشد یعنی خرید اول است
+                    # (یا اگر لاجیک قبل از سیو باشد، تعداد ۰)
+                    # اما چون txn_obj.status = 'SUCCESS' را چند خط بالاتر زدیم، تعداد باید ۱ باشد.
+                    if successful_txns == 1:
+                        referrer = appointment.patient.profile.referred_by
+                        if referrer:
+                            # اعطای ۵۰۰۰ امتیاز (۵۰ هزار تومان) به معرف
+                            referrer.profile.points += 5000 
+                            referrer.profile.save()
+                            
+                            # ارسال نوتیفیکیشن به معرف
+                            Notification.objects.create(
+                                user=referrer,
+                                message=f"تبریک! دوست شما {appointment.patient.first_name} اولین خریدش را انجام داد. ۵۰۰۰ امتیاز به شما تعلق گرفت."
+                            )   
 
             return render(request, 'payment/payment_success.html', {
                 'ref_id': res.data.ref_id,

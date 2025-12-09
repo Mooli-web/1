@@ -35,6 +35,9 @@ def create_booking_view(request):
     except:
         points_rate = 0
 
+    initial_discount_code = request.GET.get('code', '')
+    initial_service_id = request.GET.get('service_id')
+
     if request.method == 'POST':
         # --- دریافت داده‌ها ---
         service_ids = request.POST.getlist('services[]') 
@@ -160,7 +163,7 @@ def create_booking_view(request):
                 messages.success(request, f"نوبت برای {name} با موفقیت ثبت شد. کد رهگیری: {appt.tracking_code}")
                 return redirect('reception_panel:dashboard')
 
-            return redirect(reverse('payment:start_payment', args=[appt.id]))
+            return redirect(reverse('payment:start_payment', args=[appt.tracking_code]))
 
         except ValueError as e:
             messages.error(request, str(e))
@@ -181,7 +184,8 @@ def create_booking_view(request):
         'price_to_points_rate': points_rate,
         'today_date_server': timezone.now().strftime("%Y-%m-%d"),
         'suggested_service': suggested_service,
-        'is_guest': patient_user is None
+        'is_guest': patient_user is None,
+        'initial_discount_code': initial_discount_code,
     }
     return render(request, 'booking/create_booking.html', context)
 

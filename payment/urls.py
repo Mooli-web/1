@@ -1,10 +1,10 @@
-# payment/urls.py
 from django.urls import path
 from . import views
 
 app_name = 'payment'
 
 urlpatterns = [
-    path('start/<int:appointment_id>/', views.start_payment_view, name='start_payment'),
+    # تغییر: استفاده از tracking_code به جای appointment_id برای جلوگیری از حدس زدن
+    path('start/<str:tracking_code>/', views.start_payment_view, name='start_payment'),
     path('callback/', views.payment_callback_view, name='payment_callback'),
 ]

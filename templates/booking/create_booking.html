@@ -139,7 +139,13 @@
                             <div class="mb-4">
                                 <label class="form-label small text-muted">کد تخفیف</label>
                                 <div class="input-group">
-                                    <input type="text" name="discount_code" class="form-control rounded-end-pill border-secondary-subtle" id="discountCode" placeholder="کد تخفیف دارید؟">
+                                    <div class="input-group">
+                                        <input type="text" name="discount_code" 
+                                            value="{{ initial_discount_code }}" 
+                                            class="form-control rounded-end-pill border-secondary-subtle" 
+                                            id="discountCode" placeholder="کد تخفیف دارید؟">
+                                        <button class="btn btn-dark rounded-start-pill px-4" type="button" id="applyDiscountBtn">اعمال</button>
+                                    </div>
                                     <button class="btn btn-dark rounded-start-pill px-4" type="button" id="applyDiscountBtn">اعمال</button>
                                 </div>
                                 <div id="discountMessage" class="form-text"></div>
@@ -326,6 +332,19 @@
             } else {
                 if (window.BookingCalendar) BookingCalendar.updateEvents({});
             }
+        }
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+        const discountInput = document.getElementById('discountCode');
+        const applyBtn = document.getElementById('applyDiscountBtn');
+        
+        // اگر مقدار اینپوت خالی نبود (یعنی از سمت سرور پر شده بود)
+        if (discountInput.value.trim() !== "") {
+            // ۱ ثانیه صبر کن (تا سایر اسکریپت‌ها و قیمت اولیه لود شوند)
+            setTimeout(() => {
+                // شبیه‌سازی کلیک روی دکمه اعمال
+                applyBtn.click(); 
+            }, 1000);
         }
     });
 </script>

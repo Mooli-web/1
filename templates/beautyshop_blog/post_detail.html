@@ -217,3 +217,32 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ request.build_absolute_uri }}"
+  },
+  "headline": "{{ post.title|escapejs }}",
+  "description": "{{ post.meta_description|default:post.content|striptags|truncatewords:20|escapejs }}",
+  "image": "{% if post.image %}{{ request.scheme }}://{{ request.get_host }}{{ post.image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/blog-placeholder.jpg' %}{% endif %}",  
+  "author": {
+    "@type": "Person",
+    "name": "{{ post.author.get_full_name|default:post.author.username }}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "کلینیک ونوس",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}"
+    }
+  },
+  "datePublished": "{{ post.created_at|date:'Y-m-d' }}",
+  "dateModified": "{{ post.updated_at|date:'Y-m-d' }}"
+}
+</script>
+{% endblock %}

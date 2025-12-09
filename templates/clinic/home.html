@@ -200,7 +200,11 @@
             <div class="card border-0 shadow-sm rounded-4 flex-shrink-0 snap-center" style="width: 300px;">
                 <div class="position-relative overflow-hidden rounded-top-4" style="height: 300px;">
                     {# نمایش عکس بعد به عنوان پیش‌فرض #}
-                    <img src="{{ item.after_image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ item.title }}">
+                    <img src="{{ item.after_image.url }}" 
+                        class="w-100 h-100 object-fit-cover" 
+                        alt="{{ item.title }}" 
+                        loading="lazy" 
+                        width="300" height="300">
                     <span class="position-absolute bottom-0 start-0 m-3 badge bg-success bg-opacity-75 backdrop-blur">نتیجه نهایی</span>
                 </div>
                 <div class="card-body">

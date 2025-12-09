@@ -16,10 +16,26 @@
 }
 
 .btn-primary:hover {
-    background-color: var(--accent-darker);
-    border-color: var(--accent-darker);
+    /* اصلاح شد: استفاده از متغیر صحیح */
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
     transform: translateY(-2px);
     box-shadow: 0 7px 14px rgba(0,0,0,0.1);
+    color: white; /* اطمینان از سفید ماندن متن */
+}
+
+/* استایل جدید برای دکمه‌های سفید (در گالری) */
+.btn-white {
+    background-color: #fff;
+    border: 1px solid var(--border-light);
+    color: var(--text-dark);
+}
+
+.btn-white:hover {
+    background-color: var(--bg-light);
+    border-color: var(--border-light);
+    color: var(--primary);
+    transform: translateY(-2px);
 }
 
 /* --- Cards --- */
@@ -37,10 +53,12 @@
 
 /* --- Accordion --- */
 .accordion-button:not(.collapsed) {
-    color: var(--accent-darker);
-    background-color: rgba(212, 175, 55, 0.1);
+    color: var(--accent-hover); /* اصلاح شد */
+    background-color: rgba(251, 113, 133, 0.1); /* رنگ هماهنگ با accent */
 }
-.accordion-button:focus { box-shadow: 0 0 0 0.25rem rgba(212, 175, 55, 0.25); }
+.accordion-button:focus { 
+    box-shadow: 0 0 0 0.25rem rgba(251, 113, 133, 0.25); /* اصلاح شد */
+}
 
 /* --- Sticky Consultation Button --- */
 .sticky-consultation-btn {
@@ -62,17 +80,17 @@
 }
 
 .sticky-consultation-btn:hover {
-    background-color: var(--accent-darker);
+    background-color: var(--accent-hover); /* اصلاح شد */
     color: white;
     transform: scale(1.05);
-    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
+    box-shadow: 0 8px 20px rgba(251, 113, 133, 0.4); /* اصلاح شد */
     animation: none;
 }
 
 @keyframes pulse-animation {
-    0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
-    70% { box-shadow: 0 0 0 15px rgba(212, 175, 55, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(251, 113, 133, 0.7); }
+    70% { box-shadow: 0 0 0 15px rgba(251, 113, 133, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(251, 113, 133, 0); }
 }
 
 /* --- Modern Password Input Styling --- */
@@ -80,29 +98,26 @@
     position: relative;
     display: flex;
     align-items: center;
-    border: 1px solid var(--border-light); /* رنگ حاشیه پیش‌فرض */
-    border-radius: var(--radius-md); /* یا 50px برای حالت قرصی */
+    border: 1px solid var(--border-light); 
+    border-radius: var(--radius-md); 
     background-color: #fff;
     transition: all 0.3s ease;
-    overflow: hidden; /* برای جلوگیری از بیرون زدگی */
+    overflow: hidden; 
 }
 
-/* وقتی روی فیلد کلیک می‌شود، کل قاب رنگی شود */
 .password-group-wrapper:focus-within {
     border-color: var(--primary);
-    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15); /* افکت سایه رنگی */
+    box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.15); 
 }
 
-/* استایل خود اینپوت */
 .password-group-wrapper input.form-control {
     border: none !important;
     box-shadow: none !important;
     background: transparent !important;
-    padding-left: 15px; /* فاصله از چپ */
-    height: 48px; /* ارتفاع استاندارد */
+    padding-left: 15px; 
+    height: 48px; 
 }
 
-/* استایل دکمه چشم */
 .password-toggle-btn {
     border: none;
     background: transparent;

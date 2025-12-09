@@ -137,7 +137,7 @@
                         </td>
                         <td class="text-end pe-4">
                             {% if appt.status == 'PENDING' %}
-                                <a href="{% url 'payment:start_payment' appt.id %}" class="btn btn-success btn-sm rounded-pill px-3">
+                                <a href="{% url 'payment:start_payment' appt.tracking_code %}" class="btn btn-success btn-sm rounded-pill px-3">
                                     پرداخت
                                 </a>
                             {% endif %}

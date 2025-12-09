@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /reception/
+Disallow: /booking/
+Allow: /
+
+Sitemap: https://yourdomain.com/sitemap.xml
