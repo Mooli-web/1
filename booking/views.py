@@ -16,8 +16,9 @@ from .utils import _get_patient_for_booking, _calculate_discounts
 def create_booking_view(request):
     """
     ویو ایجاد نوبت جدید.
-    پشتیبانی از کاربران مهمان (بدون لاگین) و کاربران عضو.
+    پشتیبانی کامل از کاربران مهمان و اعضا.
     """
+    # دریافت کاربر (اگر لاگین نباشد None برمی‌گرداند)
     patient_user, is_reception_booking, tmpl_patient = _get_patient_for_booking(request)
     
     # محاسبه امتیاز کاربر (فقط اگر کاربر لاگین باشد)
@@ -82,6 +83,7 @@ def create_booking_view(request):
         total_price = sum(s.price for s in selected_services)
         total_duration = sum(s.duration for s in selected_services)
 
+        # تابع محاسبه تخفیف طوری نوشته شده که اگر patient_user نال باشد، خطا ندهد
         p_disc, p_used, c_disc, c_obj, err_msg = _calculate_discounts(
             patient_user, total_price, apply_points, discount_code
         )
@@ -120,12 +122,13 @@ def create_booking_view(request):
 
                 status = 'CONFIRMED' if (is_reception_booking and manual_confirm) else 'PENDING'
 
-                # ایجاد نوبت (با یا بدون کاربر)
+                # ایجاد نوبت
+                # نکته: اگر patient_user نال باشد، فیلد patient نال می‌شود (که در مدل مجاز است)
                 appt = Appointment.objects.create(
-                    patient=patient_user, # ممکن است None باشد
-                    guest_first_name=guest_fname,
-                    guest_last_name=guest_lname,
-                    guest_phone_number=guest_phone,
+                    patient=patient_user, 
+                    guest_first_name=guest_fname if not patient_user else None,
+                    guest_last_name=guest_lname if not patient_user else None,
+                    guest_phone_number=guest_phone if not patient_user else None,
                     start_time=aware_start,
                     end_time=aware_end,
                     status=status,
@@ -173,12 +176,12 @@ def create_booking_view(request):
 
     context = {
         'groups': groups,
-        'user_points': user_points, # برای مهمان 0 است
+        'user_points': user_points,
         'patient_user_for_template': tmpl_patient,
         'price_to_points_rate': points_rate,
         'today_date_server': timezone.now().strftime("%Y-%m-%d"),
         'suggested_service': suggested_service,
-        'is_guest': patient_user is None # پرچم برای نمایش فرم مهمان در فرانت
+        'is_guest': patient_user is None
     }
     return render(request, 'booking/create_booking.html', context)
 
