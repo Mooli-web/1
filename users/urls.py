@@ -12,4 +12,6 @@ urlpatterns = [
     path('profile/', views.profile_update_view, name='profile_update'),
     path('api/notifications/mark-as-read/', views.mark_notifications_as_read_api, name='mark_notifications_as_read'),
     path('api/claim-points/', views.claim_guest_points_api, name='claim_guest_points'),
+    path('signup/', views.signup_view, name='signup_otp'),
+    path('verify/', views.verify_otp_view, name='verify_otp'),
 ]

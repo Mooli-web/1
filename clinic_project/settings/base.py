@@ -23,6 +23,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-key-change
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 CSRF_TRUSTED_ORIGINS = os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://127.0.0.1').split(',')
+KAVENEGAR_API_KEY = '49674661386B454E564655632B6A5145667355362B33763253684C6A4869543261554D6F447473484A30553D'
 
 # --- اپلیکیشن‌ها (Apps) ---
 INSTALLED_APPS = [

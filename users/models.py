@@ -22,6 +22,8 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(
         max_length=15, 
         unique=True, 
+        null=True,     
+        blank=True,    
         verbose_name=_("شماره تلفن"),
         error_messages={
             'unique': _("این شماره تلفن قبلاً ثبت شده است.")

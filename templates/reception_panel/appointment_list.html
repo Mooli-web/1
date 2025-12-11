@@ -1,55 +1,83 @@
-<tbody>
-    {% for appt in appointments %}
-    <tr>
-        <td class="ps-3">
-            {% if appt.patient %}
-                <div class="fw-bold">{{ appt.patient.get_full_name|default:appt.patient.username }}</div>
-                <small class="text-muted">{{ appt.patient.phone_number }}</small>
-            {% else %}
-                <div class="fw-bold text-dark">
-                    {{ appt.guest_first_name }} {{ appt.guest_last_name }}
-                    <span class="badge bg-secondary ms-1" style="font-size: 0.6rem;">مهمان</span>
-                </div>
-                <small class="text-muted">{{ appt.guest_phone }}</small>
-            {% endif %}
-        </td>
-        <td>
-            <div>{{ appt.get_services_display|truncatechars:30 }}</div>
-            {% if appt.selected_device %}
-                <small class="text-info">{{ appt.selected_device.name }}</small>
-            {% endif %}
-        </td>
-        <td>
-            <div class="fw-bold">{{ appt.start_time|to_jalali:'%Y/%m/%d' }}</div>
-            <small class="text-muted">{{ appt.start_time|to_jalali:'%H:%M' }}</small>
-        </td>
-        <td>
-            {% if appt.status == 'PENDING' %}
-                <span class="badge bg-warning text-dark">در انتظار</span>
-            {% elif appt.status == 'CONFIRMED' %}
-                <span class="badge bg-success">تایید شده</span>
-            {% elif appt.status == 'DONE' %}
-                <span class="badge bg-info">انجام شده</span>
-            {% elif appt.status == 'CANCELED' %}
-                <span class="badge bg-secondary">لغو شده</span>
-            {% endif %}
-        </td>
-        <td class="text-end pe-3">
-            {% if appt.status == 'CONFIRMED' %}
-                <form action="{% url 'reception_panel:appointment_mark_done' appt.pk %}" method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-success" title="انجام شد"><i class="bi bi-check-lg"></i></button>
-                </form>
-            {% endif %}
-            {% if appt.status != 'CANCELED' and appt.status != 'DONE' %}
-                <form action="{% url 'reception_panel:appointment_cancel' appt.pk %}" method="post" class="d-inline" onsubmit="return confirm('آیا از لغو این نوبت اطمینان دارید؟');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-sm btn-outline-danger" title="لغو نوبت"><i class="bi bi-x-lg"></i></button>
-                </form>
-            {% endif %}
-        </td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="5" class="text-center py-4 text-muted">نوبتی یافت نشد.</td></tr>
-    {% endfor %}
-</tbody>
+{% extends 'reception_panel/reception_base.html' %}
+{% load static %}
+{# تغییر ۱: لود کردن تگ‌های اختصاصی خودتان #}
+{% load reception_tags %}
+
+{% block title %}لیست نوبت‌ها{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-3">
+    <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0">مدیریت نوبت‌ها</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-3">بیمار</th>
+                    <th>خدمت</th>
+                    <th>زمان</th>
+                    <th>وضعیت</th>
+                    <th class="text-end pe-3">عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                <tr>
+                    <td class="ps-3">
+                        {% if appt.patient %}
+                            <div class="fw-bold">{{ appt.patient.get_full_name|default:appt.patient.username }}</div>
+                            <small class="text-muted">{{ appt.patient.phone_number }}</small>
+                        {% else %}
+                            <div class="fw-bold text-dark">
+                                {{ appt.guest_first_name }} {{ appt.guest_last_name }}
+                                <span class="badge bg-secondary ms-1" style="font-size: 0.6rem;">مهمان</span>
+                            </div>
+                            <small class="text-muted">{{ appt.guest_phone }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div>{{ appt.get_services_display|truncatechars:30 }}</div>
+                        {% if appt.selected_device %}
+                            <small class="text-info">{{ appt.selected_device.name }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {# تغییر ۲: استفاده از jalali_format به جای to_jalali #}
+                        <div class="fw-bold">{{ appt.start_time|jalali_format:'%Y/%m/%d' }}</div>
+                        <small class="text-muted">{{ appt.start_time|jalali_format:'%H:%M' }}</small>
+                    </td>
+                    <td>
+                        {% if appt.status == 'PENDING' %}
+                            <span class="badge bg-warning text-dark">در انتظار</span>
+                        {% elif appt.status == 'CONFIRMED' %}
+                            <span class="badge bg-success">تایید شده</span>
+                        {% elif appt.status == 'DONE' %}
+                            <span class="badge bg-info">انجام شده</span>
+                        {% elif appt.status == 'CANCELED' %}
+                            <span class="badge bg-secondary">لغو شده</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-3">
+                        {% if appt.status == 'CONFIRMED' %}
+                            <form action="{% url 'reception_panel:appointment_mark_done' appt.pk %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success" title="انجام شد"><i class="bi bi-check-lg"></i></button>
+                            </form>
+                        {% endif %}
+                        {% if appt.status != 'CANCELED' and appt.status != 'DONE' %}
+                            <form action="{% url 'reception_panel:appointment_cancel' appt.pk %}" method="post" class="d-inline" onsubmit="return confirm('آیا از لغو این نوبت اطمینان دارید؟');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="لغو نوبت"><i class="bi bi-x-lg"></i></button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center py-4 text-muted">نوبتی یافت نشد.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

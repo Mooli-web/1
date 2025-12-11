@@ -116,7 +116,7 @@
                     {% else %}
                         {# تغییر مهم: استفاده از url 'account_login' و 'account_signup' #}
                         <a href="{% url 'account_login' %}" class="btn btn-light rounded-pill px-4">ورود</a>
-                        <a href="{% url 'account_signup' %}" class="btn btn-primary rounded-pill px-4 shadow-sm">ثبت‌نام</a>
+                        <a href="{% url 'users:signup_otp' %}" class="btn btn-primary rounded-pill px-4 shadow-sm">ثبت‌نام</a>
                     {% endif %}
                     
                     <a href="{% url 'booking:create_booking' %}" class="btn btn-warning text-dark rounded-circle p-2 ms-2 shadow-sm animate-pulse" title="رزرو آنلاین">

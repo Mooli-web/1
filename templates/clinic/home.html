@@ -170,16 +170,18 @@
 {% endfor %}
 
 {# ================= SECTION 4: CTA BANNER ================= #}
-<section class="py-5 bg-dark text-white text-center position-relative overflow-hidden">
+<section class="py-5 bg-primary text-white text-center position-relative overflow-hidden">
     <div class="container py-5 position-relative z-2">
         <h2 class="display-5 fw-bold mb-3">هنوز مطمئن نیستید؟</h2>
-        <p class="lead text-white-50 mb-4">همین حالا مشاوره رایگان دریافت کنید تا بهترین راهکار را به شما پیشنهاد دهیم.</p>
-        <a href="{% url 'consultation:create_request' %}" class="btn btn-warning text-dark fw-bold btn-lg rounded-pill px-5 py-3 shadow-lg animate-pulse">
+        
+        <p class="lead text-white mb-4">همین حالا مشاوره رایگان دریافت کنید تا بهترین راهکار را به شما پیشنهاد دهیم.</p>
+        
+        <a href="{% url 'consultation:create_request' %}" class="btn btn-light text-primary fw-bold btn-lg rounded-pill px-5 py-3 shadow-lg animate-pulse">
             <i class="bi bi-chat-text-fill me-2"></i>درخواست مشاوره رایگان
         </a>
     </div>
-    {# پترن پس‌زمینه #}
-    <i class="bi bi-question-circle position-absolute top-50 start-0 translate-middle text-white opacity-05" style="font-size: 20rem;"></i>
+    
+    <i class="bi bi-question-circle position-absolute top-50 start-0 translate-middle text-white" style="font-size: 20rem; opacity: 0.1;"></i>
 </section>
 
 {# ================= SECTION 5: PORTFOLIO SLIDER ================= #}
